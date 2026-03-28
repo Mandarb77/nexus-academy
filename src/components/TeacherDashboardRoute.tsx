@@ -1,0 +1,35 @@
+import type { ReactNode } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+
+/** Like ProtectedRoute, but only teachers see the dashboard; students use `/`. */
+export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
+  const { user, authReady, loading, profile } = useAuth()
+  const location = useLocation()
+
+  if (!authReady) {
+    return (
+      <div className="app-shell">
+        <p className="muted">Checking session…</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/" state={{ from: location }} replace />
+  }
+
+  if (loading) {
+    return (
+      <div className="app-shell">
+        <p className="muted">Loading your profile…</p>
+      </div>
+    )
+  }
+
+  if (profile?.role !== 'teacher') {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
