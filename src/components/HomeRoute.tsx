@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { isTeacherUser } from '../lib/teacher'
 import { LoginPage } from '../pages/LoginPage'
 import { StudentHomePage } from '../pages/StudentHomePage'
 
 /** `/` — sign-in when logged out; student home when logged in as a student; teachers go to `/dashboard`. */
 export function HomeRoute() {
-  const { user, authReady, loading, profile } = useAuth()
+  const { user, authReady, loading } = useAuth()
 
   if (!authReady) {
     return (
@@ -27,7 +28,7 @@ export function HomeRoute() {
     )
   }
 
-  if (profile?.role === 'teacher') {
+  if (isTeacherUser(user)) {
     return <Navigate to="/dashboard" replace />
   }
 

@@ -11,8 +11,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Profile } from '../types/profile'
 
-const PROFILE_COLUMNS =
-  'id, email, full_name, role, wp_total, gold_balance, rank, created_at' as const
+const PROFILE_COLUMNS = 'id, email, display_name, wp, gold, rank' as const
 
 function displayNameFromUser(user: User): string {
   const meta = user.user_metadata
@@ -28,11 +27,10 @@ async function ensureProfileIfMissing(user: User): Promise<void> {
   const { error } = await supabase.from('profiles').insert({
     id: user.id,
     email: user.email ?? null,
-    full_name: displayNameFromUser(user),
-    wp_total: 0,
-    gold_balance: 0,
+    display_name: displayNameFromUser(user),
+    wp: 0,
+    gold: 0,
     rank: 'Initiate',
-    role: 'student',
   })
   if (error && error.code !== '23505') {
     console.error('ensure profile:', error.message)
@@ -168,6 +166,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [authReady, user?.id])
 
+  /** When WP changes after a teacher approves a skill, refresh without reloading the page. */
+  useEffect(() => {
+    if (!isSupabaseConfigured || !user?.id) return
+
+    const channel = supabase
+      .channel(`profiles-wp-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        () => {
+          void refreshProfile()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [user?.id, refreshProfile])
+
   const loading = !authReady || !profileReady
 
   const signInWithGoogle = useCallback(async () => {
@@ -175,7 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Supabase is not configured')
     }
     const redirectTo = `${window.location.origin}/auth/callback`
-    // Enable Google in Dashboard → Authentication → Providers → Google
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },

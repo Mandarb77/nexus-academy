@@ -1,0 +1,2 @@
+-- Uncomment if you use postgres_changes / Realtime for profiles in the app:
+-- alter publication supabase_realtime add table public.profiles;

@@ -6,14 +6,14 @@ export function StudentHomePage() {
   const { profile, user, signOut } = useAuth()
 
   const displayName =
-    profile?.full_name?.trim() ||
+    profile?.display_name?.trim() ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     user?.email ||
     'Student'
 
-  const wpTotal = profile?.wp_total ?? 0
-  const gold = profile?.gold_balance ?? 0
+  const wpTotal = profile?.wp ?? 0
+  const gold = profile?.gold ?? 0
   const rank = profile?.rank?.trim() || 'Initiate'
   const progress = progressToApprenticeMage(wpTotal)
 

@@ -655,3 +655,59 @@ a.btn-primary {
     border-color: rgba(134, 239, 172, 0.4);
   }
 }
+
+.teacher-pending-section {
+  margin-top: 1.25rem;
+}
+
+.teacher-pending-hint {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.teacher-pending-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.teacher-pending-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.teacher-pending-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.teacher-pending-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.teacher-pending-label {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 0.95rem;
+}
+
+.teacher-pending-meta {
+  font-size: 0.8rem;
+}
+
+.teacher-approve-btn {
+  flex-shrink: 0;
+}

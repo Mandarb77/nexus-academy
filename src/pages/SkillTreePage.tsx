@@ -1,12 +1,19 @@
 import { StudentNav } from '../components/StudentNav'
 import { useAuth } from '../contexts/AuthContext'
-import { GUILDS } from '../data/skillTree'
-import { useSkillCompletions } from '../hooks/useSkillCompletions'
+import { useSkillTree } from '../hooks/useSkillTree'
 
 export function SkillTreePage() {
   const { signOut } = useAuth()
-  const { statusBySkill, loading, submittingKey, markComplete, canUseDb } =
-    useSkillCompletions()
+  const {
+    guildKeys,
+    tilesByGuild,
+    guildHeading,
+    statusByTileId,
+    loading,
+    submittingTileId,
+    markComplete,
+    canUseDb,
+  } = useSkillTree()
 
   return (
     <div className="app-shell skill-tree-page">
@@ -16,8 +23,8 @@ export function SkillTreePage() {
           <div>
             <h1 className="skill-tree-title">Skill tree</h1>
             <p className="muted skill-tree-subtitle">
-              Mark skills complete to request credit. Each skill is worth 10 Workshop Points once
-              approved.
+              Mark a skill to request credit. Your teacher approves it to add Workshop Points to your
+              profile.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>
@@ -34,25 +41,34 @@ export function SkillTreePage() {
 
       {loading ? (
         <p className="muted">Loading skills…</p>
+      ) : guildKeys.length === 0 ? (
+        <p className="muted" role="status">
+          No tiles found. Add rows to the <code className="inline-code">tiles</code> table in
+          Supabase.
+        </p>
       ) : (
         <div className="skill-tree-guilds">
-          {GUILDS.map((guild) => (
-            <section key={guild.id} className="skill-tree-guild" aria-labelledby={`guild-${guild.id}`}>
-              <h2 id={`guild-${guild.id}`} className="skill-tree-guild-name">
-                {guild.name} guild
+          {guildKeys.map((guildKey) => (
+            <section
+              key={guildKey}
+              className="skill-tree-guild"
+              aria-labelledby={`guild-${guildKey}`}
+            >
+              <h2 id={`guild-${guildKey}`} className="skill-tree-guild-name">
+                {guildHeading(guildKey)} guild
               </h2>
               <ul className="skill-tile-list">
-                {guild.tiles.map((tile) => {
-                  const status = statusBySkill.get(tile.key)
+                {(tilesByGuild.get(guildKey) ?? []).map((tile) => {
+                  const status = statusByTileId.get(tile.id)
                   const isPending = status === 'pending'
                   const isApproved = status === 'approved'
-                  const busy = submittingKey === tile.key
+                  const busy = submittingTileId === tile.id
 
                   return (
-                    <li key={tile.key} className="skill-tile card">
+                    <li key={tile.id} className="skill-tile card">
                       <div className="skill-tile-main">
-                        <h3 className="skill-tile-name">{tile.name}</h3>
-                        <p className="skill-tile-wp">{tile.wp} WP</p>
+                        <h3 className="skill-tile-name">{tile.skill_name}</h3>
+                        <p className="skill-tile-wp">{tile.wp_value} WP</p>
                       </div>
                       <div className="skill-tile-action">
                         {isApproved ? (
@@ -73,7 +89,7 @@ export function SkillTreePage() {
                             type="button"
                             className="btn-skill btn-skill--complete"
                             disabled={!canUseDb || busy}
-                            onClick={() => void markComplete(tile.key)}
+                            onClick={() => void markComplete(tile)}
                           >
                             {busy ? 'Saving…' : 'Mark complete'}
                           </button>
