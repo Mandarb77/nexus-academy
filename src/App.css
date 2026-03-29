@@ -546,6 +546,85 @@ a.btn-primary {
   color: var(--text-h);
 }
 
+/* Forge guild: gold titles */
+.skill-tree-guild--forge .skill-tree-guild-name,
+.skill-tree-guild--forge .skill-tile-name {
+  background: linear-gradient(165deg, #fde68a 0%, #f59e0b 35%, #b45309 70%, #78350f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.skill-tree-guild--forge .skill-tile-wp {
+  color: #a16207;
+}
+
+@media (prefers-color-scheme: dark) {
+  .skill-tree-guild--forge .skill-tree-guild-name,
+  .skill-tree-guild--forge .skill-tile-name {
+    background: linear-gradient(165deg, #fef3c7 0%, #fbbf24 40%, #d97706 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .skill-tree-guild--forge .skill-tile-wp {
+    color: #fbbf24;
+    opacity: 0.9;
+  }
+}
+
+/* Prism guild: rainbow titles */
+.skill-tree-guild--prism .skill-tree-guild-name,
+.skill-tree-guild--prism .skill-tile-name {
+  background-image: linear-gradient(
+    110deg,
+    #ef4444 0%,
+    #f97316 14%,
+    #eab308 28%,
+    #22c55e 42%,
+    #14b8a6 56%,
+    #3b82f6 70%,
+    #8b5cf6 84%,
+    #ec4899 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: skill-tree-rainbow-flow 10s linear infinite;
+}
+
+.skill-tree-guild--prism .skill-tile-wp {
+  color: #6366f1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .skill-tree-guild--prism .skill-tile-wp {
+    color: #a5b4fc;
+  }
+}
+
+@keyframes skill-tree-rainbow-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-tree-guild--prism .skill-tree-guild-name,
+  .skill-tree-guild--prism .skill-tile-name {
+    animation: none;
+    background-size: 100% 100%;
+  }
+}
+
 .skill-tile-list {
   list-style: none;
   margin: 0;

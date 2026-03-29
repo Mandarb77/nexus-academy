@@ -2,6 +2,13 @@ import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 
+function skillTreeGuildModifier(guildKey: string): 'forge' | 'prism' | 'default' {
+  const key = guildKey.trim().toLowerCase()
+  if (key === 'forge') return 'forge'
+  if (key === 'prism') return 'prism'
+  return 'default'
+}
+
 export function SkillTreePage() {
   const { signOut } = useAuth()
   const {
@@ -51,7 +58,7 @@ export function SkillTreePage() {
           {guildKeys.map((guildKey) => (
             <section
               key={guildKey}
-              className="skill-tree-guild"
+              className={`skill-tree-guild skill-tree-guild--${skillTreeGuildModifier(guildKey)}`}
               aria-labelledby={`guild-${guildKey}`}
             >
               <h2 id={`guild-${guildKey}`} className="skill-tree-guild-name">
