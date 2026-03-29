@@ -54,8 +54,7 @@ export function GoldShopPage() {
               <span className="gold-currency-text">Gold</span> shop
             </h1>
             <p className="gold-shop-balance" aria-live="polite">
-              Your <span className="gold-currency-text">gold</span>:{' '}
-              <strong>{gold}</strong>
+              Your gold: <strong>{gold}</strong>
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>

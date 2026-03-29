@@ -881,7 +881,7 @@ a.btn-primary {
 .gold-shop-balance {
   margin: 0;
   font-size: 1.1rem;
-  color: var(--text);
+  color: var(--gold-text-bright);
 }
 
 .gold-shop-balance strong {
