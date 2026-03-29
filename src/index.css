@@ -9,6 +9,8 @@
   --accent-bg: rgba(109, 40, 217, 0.12);
   --accent-border: rgba(109, 40, 217, 0.35);
   --card-bg: #fff;
+  --gold-text: #b45309;
+  --gold-text-bright: #ca8a04;
   --shadow:
     rgba(15, 23, 42, 0.06) 0 12px 24px -6px,
     rgba(15, 23, 42, 0.04) 0 4px 8px -4px;
@@ -37,6 +39,8 @@
     --accent-bg: rgba(167, 139, 250, 0.15);
     --accent-border: rgba(167, 139, 250, 0.4);
     --card-bg: #1a1626;
+    --gold-text: #fbbf24;
+    --gold-text-bright: #fde047;
     --shadow:
       rgba(0, 0, 0, 0.35) 0 12px 28px -8px,
       rgba(0, 0, 0, 0.2) 0 4px 10px -4px;

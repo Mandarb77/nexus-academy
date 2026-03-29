@@ -34,7 +34,7 @@ export function DashboardPage() {
             <dt>WP</dt>
             <dd>{profile?.wp ?? 0}</dd>
           </div>
-          <div className="stat">
+          <div className="stat stat--gold">
             <dt>Gold</dt>
             <dd>{profile?.gold ?? 0}</dd>
           </div>

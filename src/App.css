@@ -76,6 +76,16 @@
   color: var(--text-h);
 }
 
+.stat--gold dt,
+.stat--gold dd {
+  color: var(--gold-text-bright);
+}
+
+/* Profile + shop: word “gold” and gold amounts */
+.gold-currency-text {
+  color: var(--gold-text-bright);
+}
+
 .dash-blurb {
   margin: 0;
 }
@@ -402,6 +412,11 @@ a.btn-primary {
 .student-home-stat--gold {
   padding-top: 0.25rem;
   border-top: 1px solid var(--border);
+}
+
+.student-home-stat--gold .student-home-stat-label,
+.student-home-stat--gold .student-home-stat-value {
+  color: var(--gold-text-bright);
 }
 
 .student-home-progress-block {
@@ -870,7 +885,7 @@ a.btn-primary {
 }
 
 .gold-shop-balance strong {
-  color: var(--accent-strong);
+  color: var(--gold-text-bright);
   font-size: 1.2rem;
 }
 
@@ -957,7 +972,7 @@ a.btn-primary {
 .gold-shop-cost-amount {
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--accent-strong);
+  color: var(--gold-text-bright);
   letter-spacing: -0.02em;
 }
 
@@ -966,12 +981,13 @@ a.btn-primary {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text);
+  color: var(--gold-text-bright);
 }
 
-.gold-shop-card--locked .gold-shop-cost-amount {
-  color: var(--text);
-  opacity: 0.75;
+.gold-shop-card--locked .gold-shop-cost-amount,
+.gold-shop-card--locked .gold-shop-cost-unit {
+  color: var(--gold-text);
+  opacity: 0.92;
 }
 
 .gold-shop-card-footer {
@@ -994,6 +1010,10 @@ a.btn-primary {
   border: 2px dashed var(--border);
   background: var(--code-bg);
   color: var(--text);
+}
+
+.gold-shop-buy-btn:not(.gold-shop-buy-btn--active) .gold-currency-text {
+  color: var(--gold-text-bright);
 }
 
 .gold-shop-buy-btn:disabled {

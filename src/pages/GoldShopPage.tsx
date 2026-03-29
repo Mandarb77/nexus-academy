@@ -50,9 +50,12 @@ export function GoldShopPage() {
         <MainNav />
         <div className="gold-shop-top-row">
           <div>
-            <h1 className="gold-shop-title">Gold shop</h1>
+            <h1 className="gold-shop-title">
+              <span className="gold-currency-text">Gold</span> shop
+            </h1>
             <p className="gold-shop-balance" aria-live="polite">
-              Your gold: <strong>{gold}</strong>
+              Your <span className="gold-currency-text">gold</span>:{' '}
+              <strong>{gold}</strong>
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>
@@ -69,7 +72,13 @@ export function GoldShopPage() {
 
       {message ? (
         <p className="gold-shop-message muted" role="status">
-          {message}
+          {message === 'Not enough gold.' ? (
+            <>
+              Not enough <span className="gold-currency-text">gold</span>.
+            </>
+          ) : (
+            message
+          )}
         </p>
       ) : null}
 
@@ -103,7 +112,15 @@ export function GoldShopPage() {
                   disabled={!isSupabaseConfigured || !canAfford || busy}
                   onClick={() => void buy(item.key)}
                 >
-                  {busy ? 'Buying…' : canAfford ? 'Buy' : 'Not enough gold'}
+                  {busy ? (
+                    'Buying…'
+                  ) : canAfford ? (
+                    'Buy'
+                  ) : (
+                    <>
+                      Not enough <span className="gold-currency-text">gold</span>
+                    </>
+                  )}
                 </button>
               </div>
             </li>
