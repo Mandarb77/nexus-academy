@@ -579,7 +579,6 @@ a.btn-primary {
 /* Prism guild: rainbow titles */
 .skill-tree-guild--prism .skill-tree-guild-name,
 .skill-tree-guild--prism .skill-tile-name {
-  /* Two identical rainbow runs so looping 0→100% with ease-in-out lines up without a color snap */
   background-image: linear-gradient(
     110deg,
     #ef4444 0%,
@@ -589,22 +588,15 @@ a.btn-primary {
     #14b8a6 56%,
     #3b82f6 70%,
     #8b5cf6 84%,
-    #ec4899 100%,
-    #ef4444 100%,
-    #f97316 114%,
-    #eab308 128%,
-    #22c55e 142%,
-    #14b8a6 156%,
-    #3b82f6 170%,
-    #8b5cf6 184%,
-    #ec4899 200%
+    #ec4899 100%
   );
-  background-size: 200% 100%;
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: skill-tree-rainbow-flow 22s ease-in-out infinite;
+  /* ease-in-out on both the forward and reverse sweep (alternate); no linear segments */
+  animation: skill-tree-rainbow-flow 22s ease-in-out infinite alternate;
 }
 
 .skill-tree-guild--prism .skill-tile-wp {
@@ -622,7 +614,6 @@ a.btn-primary {
     background-position: 0% 50%;
   }
   100% {
-    /* One full pattern width; matches 0% because the gradient repeats to 200% */
     background-position: 100% 50%;
   }
 }
