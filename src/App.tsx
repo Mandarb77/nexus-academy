@@ -7,6 +7,7 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { GoldShopPage } from './pages/GoldShopPage'
+import { InventoryPage } from './pages/InventoryPage'
 import { GuildSkillTreePage } from './pages/GuildSkillTreePage'
 import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
@@ -39,6 +40,14 @@ export default function App() {
             element={
               <StudentOnlyRoute>
                 <GoldShopPage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <StudentOnlyRoute>
+                <InventoryPage />
               </StudentOnlyRoute>
             }
           />
