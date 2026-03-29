@@ -85,7 +85,11 @@ export function GoldShopPage() {
               className={`gold-shop-card${locked ? ' gold-shop-card--locked' : ''}`}
             >
               <div className="gold-shop-card-body">
-                <h2 className="gold-shop-item-name">{item.name}</h2>
+                <h2
+                  className={`gold-shop-item-name${canAfford ? ' gold-shop-item-name--affordable' : ' gold-shop-item-name--unaffordable'}`}
+                >
+                  {item.name}
+                </h2>
                 <p className="gold-shop-item-desc">{item.description}</p>
                 <div className="gold-shop-cost" aria-label={`Cost: ${item.cost} gold`}>
                   <span className="gold-shop-cost-amount">{item.cost}</span>
