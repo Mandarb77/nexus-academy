@@ -800,7 +800,7 @@ a.btn-primary {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 @media (max-width: 520px) {
@@ -812,34 +812,122 @@ a.btn-primary {
 .gold-shop-card {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  padding: 1.15rem 1.2rem;
-  min-height: 100%;
+  min-height: 15.5rem;
+  padding: 1.35rem 1.4rem 1.25rem;
+  box-sizing: border-box;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.gold-shop-card--locked {
+  background: var(--code-bg);
+  border-color: var(--border);
+  opacity: 0.88;
+  filter: saturate(0.65);
+}
+
+.gold-shop-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .gold-shop-item-name {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 1.08rem;
+  font-weight: 700;
   color: var(--text-h);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .gold-shop-item-desc {
   margin: 0;
-  flex: 1;
   font-size: 0.9rem;
-  line-height: 1.45;
+  line-height: 1.5;
+  color: var(--text);
+  flex: 1;
 }
 
-.gold-shop-item-cost {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-h);
+.gold-shop-cost {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--border);
 }
 
-.gold-shop-buy {
+.gold-shop-cost-amount {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+  letter-spacing: -0.02em;
+}
+
+.gold-shop-cost-unit {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.gold-shop-card--locked .gold-shop-cost-amount {
+  color: var(--text);
+  opacity: 0.75;
+}
+
+.gold-shop-card-footer {
   margin-top: auto;
+  padding-top: 1.1rem;
+}
+
+.gold-shop-buy-btn {
   width: 100%;
   box-sizing: border-box;
+  min-height: 2.85rem;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: not-allowed;
+  border: 2px dashed var(--border);
+  background: var(--code-bg);
+  color: var(--text);
+}
+
+.gold-shop-buy-btn:disabled {
+  cursor: not-allowed;
+}
+
+.gold-shop-buy-btn--active {
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #fff;
+  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.3);
+}
+
+.gold-shop-buy-btn--active:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.gold-shop-buy-btn--active:disabled {
+  opacity: 0.65;
+  filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gold-shop-buy-btn--active {
+    background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
 }

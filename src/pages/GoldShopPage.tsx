@@ -77,24 +77,31 @@ export function GoldShopPage() {
         {SHOP_ITEMS.map((item) => {
           const canAfford = gold >= item.cost
           const busy = buyingKey === item.key
+          const locked = !canAfford
 
           return (
-            <li key={item.key} className="card gold-shop-card">
-              <h2 className="gold-shop-item-name">{item.name}</h2>
-              <p className="muted gold-shop-item-desc">{item.description}</p>
-              <p className="gold-shop-item-cost">
-                <strong>{item.cost}</strong> gold
-              </p>
-              <button
-                type="button"
-                className={
-                  canAfford ? 'btn-primary gold-shop-buy' : 'btn-skill btn-skill--pending gold-shop-buy'
-                }
-                disabled={!isSupabaseConfigured || !canAfford || busy}
-                onClick={() => void buy(item.key)}
-              >
-                {busy ? 'Buying…' : canAfford ? 'Buy' : 'Not enough gold'}
-              </button>
+            <li
+              key={item.key}
+              className={`gold-shop-card${locked ? ' gold-shop-card--locked' : ''}`}
+            >
+              <div className="gold-shop-card-body">
+                <h2 className="gold-shop-item-name">{item.name}</h2>
+                <p className="gold-shop-item-desc">{item.description}</p>
+                <div className="gold-shop-cost" aria-label={`Cost: ${item.cost} gold`}>
+                  <span className="gold-shop-cost-amount">{item.cost}</span>
+                  <span className="gold-shop-cost-unit">gold</span>
+                </div>
+              </div>
+              <div className="gold-shop-card-footer">
+                <button
+                  type="button"
+                  className={`gold-shop-buy-btn${canAfford ? ' gold-shop-buy-btn--active' : ''}`}
+                  disabled={!isSupabaseConfigured || !canAfford || busy}
+                  onClick={() => void buy(item.key)}
+                >
+                  {busy ? 'Buying…' : canAfford ? 'Buy' : 'Not enough gold'}
+                </button>
+              </div>
             </li>
           )
         })}
