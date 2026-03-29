@@ -33,62 +33,6 @@ export function StudentHomePage() {
         </button>
       </header>
 
-      <section className="card student-home-card" aria-labelledby="student-home-stats-heading">
-        <h2 id="student-home-stats-heading" className="visually-hidden">
-          Your progress
-        </h2>
-
-        <div className="student-home-stat student-home-stat--hero">
-          <span className="student-home-stat-label">Workshop Points</span>
-          <span className="student-home-stat-value">{wpTotal}</span>
-        </div>
-
-        <div className="student-home-stat">
-          <span className="student-home-stat-label">Rank</span>
-          <span className="student-home-stat-value student-home-stat-value--rank">{rank}</span>
-        </div>
-
-        <div className="student-home-progress-block">
-          <div className="student-home-progress-head">
-            <span className="student-home-progress-title">Next rank</span>
-            <span className="student-home-progress-target">
-              {progress.nextRankName} · {progress.targetWp} WP
-            </span>
-          </div>
-          <div
-            className="rank-progress-track"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={progress.targetWp}
-            aria-valuenow={Math.min(progress.currentWp, progress.targetWp)}
-            aria-label={`Progress toward ${progress.nextRankName}`}
-          >
-            <div
-              className="rank-progress-fill"
-              style={{ width: `${progress.percent}%` }}
-            />
-          </div>
-          <p className="student-home-progress-caption muted">
-            {progress.reachedNextRank ? (
-              <>
-                {progress.currentWp} / {progress.targetWp} WP — you have reached{' '}
-                <strong>{progress.nextRankName}</strong>
-              </>
-            ) : (
-              <>
-                {progress.currentWp} / {progress.targetWp} Workshop Points to{' '}
-                <strong>{progress.nextRankName}</strong>
-              </>
-            )}
-          </p>
-        </div>
-
-        <div className="student-home-stat student-home-stat--gold">
-          <span className="student-home-stat-label">Gold</span>
-          <span className="student-home-stat-value">{gold}</span>
-        </div>
-      </section>
-
       <section className="student-home-guilds" aria-labelledby="student-home-guilds-heading">
         <h2 id="student-home-guilds-heading" className="student-home-guilds-heading">
           Guilds
@@ -96,20 +40,88 @@ export function StudentHomePage() {
         <p className="muted student-home-guilds-intro">
           Open a guild to view skills and request credit from your teacher.
         </p>
-        <div className="student-home-guild-banners">
-          <Link to="/tree/forge" className="student-home-guild-banner-link">
+
+        <div
+          className="student-home-main-layout"
+          role="group"
+          aria-label="Your progress and guild shortcuts"
+        >
+          <section className="card student-home-card" aria-labelledby="student-home-stats-heading">
+            <h2 id="student-home-stats-heading" className="visually-hidden">
+              Your progress
+            </h2>
+
+            <div className="student-home-stat student-home-stat--hero">
+              <span className="student-home-stat-label">Workshop Points</span>
+              <span className="student-home-stat-value">{wpTotal}</span>
+            </div>
+
+            <div className="student-home-stat">
+              <span className="student-home-stat-label">Rank</span>
+              <span className="student-home-stat-value student-home-stat-value--rank">{rank}</span>
+            </div>
+
+            <div className="student-home-progress-block">
+              <div className="student-home-progress-head">
+                <span className="student-home-progress-title">Next rank</span>
+                <span className="student-home-progress-target">
+                  {progress.nextRankName} · {progress.targetWp} WP
+                </span>
+              </div>
+              <div
+                className="rank-progress-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={progress.targetWp}
+                aria-valuenow={Math.min(progress.currentWp, progress.targetWp)}
+                aria-label={`Progress toward ${progress.nextRankName}`}
+              >
+                <div
+                  className="rank-progress-fill"
+                  style={{ width: `${progress.percent}%` }}
+                />
+              </div>
+              <p className="student-home-progress-caption muted">
+                {progress.reachedNextRank ? (
+                  <>
+                    {progress.currentWp} / {progress.targetWp} WP — you have reached{' '}
+                    <strong>{progress.nextRankName}</strong>
+                  </>
+                ) : (
+                  <>
+                    {progress.currentWp} / {progress.targetWp} Workshop Points to{' '}
+                    <strong>{progress.nextRankName}</strong>
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="student-home-stat student-home-stat--gold">
+              <span className="student-home-stat-label">Gold</span>
+              <span className="student-home-stat-value">{gold}</span>
+            </div>
+          </section>
+
+          <Link
+            to="/tree/forge"
+            className="student-home-guild-banner-link student-home-guild-banner-link--side student-home-guild-banner-link--forge"
+          >
             <img
               src={forgeBanner}
               alt="Forge guild — view skills and mark complete"
-              className="student-home-guild-banner-img"
+              className="student-home-guild-banner-img student-home-guild-banner-img--side"
               decoding="async"
             />
           </Link>
-          <Link to="/tree/prism" className="student-home-guild-banner-link">
+
+          <Link
+            to="/tree/prism"
+            className="student-home-guild-banner-link student-home-guild-banner-link--side student-home-guild-banner-link--prism"
+          >
             <img
               src={prismBanner}
               alt="Prism guild — view skills and mark complete"
-              className="student-home-guild-banner-img"
+              className="student-home-guild-banner-img student-home-guild-banner-img--side"
               decoding="async"
             />
           </Link>
