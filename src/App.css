@@ -595,7 +595,8 @@ a.btn-primary {
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: skill-tree-rainbow-flow 10s linear infinite;
+  /* alternate + ease-in-out: smooth sweep both ways — no hard jump when the loop repeats */
+  animation: skill-tree-rainbow-flow 18s ease-in-out infinite alternate;
 }
 
 .skill-tree-guild--prism .skill-tile-wp {
