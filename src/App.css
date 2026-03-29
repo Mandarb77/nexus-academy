@@ -499,7 +499,7 @@ a.btn-primary {
 }
 
 .skill-tree-page {
-  max-width: 40rem;
+  max-width: 56rem;
 }
 
 .skill-tree-top {
@@ -529,9 +529,14 @@ a.btn-primary {
 }
 
 .skill-tree-guilds {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16.5rem, 1fr));
+  gap: 1.5rem 1.75rem;
+  align-items: start;
+}
+
+.skill-tree-guild {
+  min-width: 0;
 }
 
 .skill-tree-guild-name {
