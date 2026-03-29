@@ -11,7 +11,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Profile } from '../types/profile'
 
-const PROFILE_COLUMNS = 'id, email, display_name, wp, gold, rank' as const
+const PROFILE_COLUMNS = 'id, email, display_name, wp, gold, rank, role' as const
 
 function displayNameFromUser(user: User): string {
   const meta = user.user_metadata
@@ -31,6 +31,7 @@ async function ensureProfileIfMissing(user: User): Promise<void> {
     wp: 0,
     gold: 0,
     rank: 'Initiate',
+    role: 'student',
   })
   if (error && error.code !== '23505') {
     console.error('ensure profile:', error.message)
@@ -61,7 +62,11 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
       .maybeSingle()
 
     if (data) {
-      return data as Profile
+      const p = data as Profile
+      return {
+        ...p,
+        role: p.role === 'teacher' ? 'teacher' : 'student',
+      }
     }
     if (error) {
       console.error('profiles fetch:', error.message)

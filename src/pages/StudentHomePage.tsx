@@ -1,4 +1,4 @@
-import { StudentNav } from '../components/StudentNav'
+import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { progressToApprenticeMage } from '../lib/rankProgress'
 
@@ -19,7 +19,7 @@ export function StudentHomePage() {
 
   return (
     <div className="app-shell student-home">
-      <StudentNav />
+      <MainNav />
       <header className="student-home-header">
         <div>
           <p className="student-home-label">Welcome back</p>

@@ -199,6 +199,10 @@ a.btn-primary {
   margin-bottom: 1.5rem;
 }
 
+.teacher-dash-header {
+  margin-top: 0.5rem;
+}
+
 .dash-header h1 {
   margin: 0 0 0.35rem;
   font-size: clamp(1.5rem, 3vw, 2rem);
@@ -548,11 +552,18 @@ a.btn-primary {
 
 .skill-tile {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.skill-tile-row {
+  display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.1rem 1.25rem;
 }
 
 .skill-tile-main {
@@ -577,6 +588,7 @@ a.btn-primary {
 
 .skill-tile-action {
   flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .btn-skill {
@@ -656,58 +668,178 @@ a.btn-primary {
   }
 }
 
-.teacher-pending-section {
-  margin-top: 1.25rem;
+.teacher-panel-page {
+  max-width: 44rem;
 }
 
-.teacher-pending-hint {
-  margin: 0 0 1rem;
+.teacher-panel-header {
+  margin-bottom: 1.5rem;
+}
+
+.teacher-panel-top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.teacher-panel-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+}
+
+.teacher-panel-subtitle {
+  margin: 0;
+  max-width: 36rem;
   font-size: 0.95rem;
   line-height: 1.45;
 }
 
-.teacher-pending-list {
+.teacher-panel-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.teacher-pending-row {
+.teacher-panel-item {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
 }
 
-.teacher-pending-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.teacher-pending-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
+.teacher-panel-item-main {
   flex: 1;
+  min-width: 12rem;
 }
 
-.teacher-pending-label {
+.teacher-panel-student {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-h);
+}
+
+.teacher-panel-skill {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.teacher-panel-guild {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.teacher-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.skill-tile-returned-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  width: 100%;
+}
+
+.gold-shop-page {
+  max-width: 48rem;
+}
+
+.gold-shop-header {
+  margin-bottom: 1.5rem;
+}
+
+.gold-shop-top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.gold-shop-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+}
+
+.gold-shop-balance {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.gold-shop-balance strong {
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+
+.gold-shop-message {
+  margin: 0 0 1rem;
   font-size: 0.95rem;
 }
 
-.teacher-pending-meta {
-  font-size: 0.8rem;
+.gold-shop-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
 }
 
-.teacher-approve-btn {
-  flex-shrink: 0;
+@media (max-width: 520px) {
+  .gold-shop-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gold-shop-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1.15rem 1.2rem;
+  min-height: 100%;
+}
+
+.gold-shop-item-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.gold-shop-item-desc {
+  margin: 0;
+  flex: 1;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.gold-shop-item-cost {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+
+.gold-shop-buy {
+  margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
 }

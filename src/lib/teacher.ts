@@ -1,6 +1,5 @@
-import type { User } from '@supabase/supabase-js'
+import type { Profile } from '../types/profile'
 
-/** Set `role: "teacher"` under App Metadata in Supabase Auth for teacher accounts. */
-export function isTeacherUser(user: User | null | undefined): boolean {
-  return user?.app_metadata?.role === 'teacher'
+export function isTeacherProfile(profile: Profile | null | undefined): boolean {
+  return profile?.role === 'teacher'
 }

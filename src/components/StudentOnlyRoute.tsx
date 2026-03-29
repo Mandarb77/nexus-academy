@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isTeacherUser } from '../lib/teacher'
+import { isTeacherProfile } from '../lib/teacher'
 
 /** Auth gate for student-only pages (e.g. `/tree`). Unauthenticated users go home to sign in. */
 export function StudentOnlyRoute({ children }: { children: ReactNode }) {
-  const { user, authReady, loading } = useAuth()
+  const { user, profile, authReady, loading } = useAuth()
 
   if (!authReady) {
     return (
@@ -27,7 +27,7 @@ export function StudentOnlyRoute({ children }: { children: ReactNode }) {
     )
   }
 
-  if (isTeacherUser(user)) {
+  if (isTeacherProfile(profile)) {
     return <Navigate to="/dashboard" replace />
   }
 

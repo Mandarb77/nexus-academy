@@ -6,7 +6,9 @@ import { TeacherDashboardRoute } from './components/TeacherDashboardRoute'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { GoldShopPage } from './pages/GoldShopPage'
 import { SkillTreePage } from './pages/SkillTreePage'
+import { TeacherPanelPage } from './pages/TeacherPanelPage'
 import './App.css'
 
 export default function App() {
@@ -23,6 +25,14 @@ export default function App() {
               </StudentOnlyRoute>
             }
           />
+          <Route
+            path="/shop"
+            element={
+              <StudentOnlyRoute>
+                <GoldShopPage />
+              </StudentOnlyRoute>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route
@@ -30,6 +40,14 @@ export default function App() {
             element={
               <TeacherDashboardRoute>
                 <DashboardPage />
+              </TeacherDashboardRoute>
+            }
+          />
+          <Route
+            path="/teacher"
+            element={
+              <TeacherDashboardRoute>
+                <TeacherPanelPage />
               </TeacherDashboardRoute>
             }
           />

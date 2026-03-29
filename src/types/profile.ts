@@ -1,3 +1,5 @@
+export type ProfileRole = 'student' | 'teacher'
+
 export interface Profile {
   id: string
   email: string | null
@@ -5,4 +7,5 @@ export interface Profile {
   wp: number
   gold: number
   rank: string
+  role: ProfileRole
 }

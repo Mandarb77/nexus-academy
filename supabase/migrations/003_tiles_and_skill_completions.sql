@@ -35,7 +35,7 @@ create table if not exists public.skill_completions (
   student_id uuid not null references auth.users (id) on delete cascade,
   tile_id uuid not null references public.tiles (id) on delete cascade,
   skill_key text not null,
-  status text not null default 'pending' check (status in ('pending', 'approved')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'returned')),
   created_at timestamptz not null default now(),
   unique (student_id, tile_id)
 );
@@ -60,11 +60,16 @@ create policy "Students insert own skill completions"
   on public.skill_completions for insert
   with check (auth.uid() = student_id);
 
+create policy "Students update returned to pending"
+  on public.skill_completions for update
+  using (auth.uid() = student_id and status = 'returned')
+  with check (auth.uid() = student_id and status = 'pending');
+
 create policy "Teachers read skill completions"
   on public.skill_completions for select
-  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'teacher');
+  using (public.is_teacher());
 
 create policy "Teachers update skill completions"
   on public.skill_completions for update
-  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'teacher')
-  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'teacher');
+  using (public.is_teacher())
+  with check (public.is_teacher());

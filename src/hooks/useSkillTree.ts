@@ -6,6 +6,11 @@ import type { SkillCompletionStatus } from '../types/skillCompletion'
 
 const GUILD_ORDER = ['forge', 'prism']
 
+export type TileCompletionState = {
+  status: SkillCompletionStatus
+  completionId: string
+}
+
 function sortGuildKeys(guilds: string[]): string[] {
   const seen = [...new Set(guilds)]
   return seen.sort((a, b) => {
@@ -27,8 +32,8 @@ function guildHeading(guild: string): string {
 export function useSkillTree() {
   const { user } = useAuth()
   const [tiles, setTiles] = useState<TileRow[]>([])
-  const [statusByTileId, setStatusByTileId] = useState<
-    Map<string, SkillCompletionStatus>
+  const [completionByTileId, setCompletionByTileId] = useState<
+    Map<string, TileCompletionState>
   >(() => new Map())
   const [loading, setLoading] = useState(true)
   const [submittingTileId, setSubmittingTileId] = useState<string | null>(null)
@@ -37,34 +42,35 @@ export function useSkillTree() {
 
   const refreshCompletions = useCallback(async () => {
     if (!studentId || !isSupabaseConfigured) {
-      setStatusByTileId(new Map())
+      setCompletionByTileId(new Map())
       return
     }
     const { data, error } = await supabase
       .from('skill_completions')
-      .select('tile_id, status')
+      .select('id, tile_id, status')
       .eq('student_id', studentId)
 
     if (error) {
       console.error('skill_completions:', error.message)
-      setStatusByTileId(new Map())
+      setCompletionByTileId(new Map())
       return
     }
-    const next = new Map<string, SkillCompletionStatus>()
+    const next = new Map<string, TileCompletionState>()
     for (const row of data ?? []) {
       const tid = row.tile_id as string
       const st = row.status as SkillCompletionStatus
-      if (st === 'pending' || st === 'approved') {
-        next.set(tid, st)
+      const id = row.id as string
+      if (st === 'pending' || st === 'approved' || st === 'returned') {
+        next.set(tid, { status: st, completionId: id })
       }
     }
-    setStatusByTileId(next)
+    setCompletionByTileId(next)
   }, [studentId])
 
   const refreshAll = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setTiles([])
-      setStatusByTileId(new Map())
+      setCompletionByTileId(new Map())
       setLoading(false)
       return
     }
@@ -110,6 +116,27 @@ export function useSkillTree() {
     async (tile: TileRow) => {
       if (!studentId || !isSupabaseConfigured) return false
       setSubmittingTileId(tile.id)
+      const existing = completionByTileId.get(tile.id)
+
+      if (existing?.status === 'returned') {
+        const { error } = await supabase
+          .from('skill_completions')
+          .update({ status: 'pending' })
+          .eq('id', existing.completionId)
+        setSubmittingTileId(null)
+        if (error) {
+          console.error('skill completion resubmit:', error.message)
+          return false
+        }
+        setCompletionByTileId((prev) =>
+          new Map(prev).set(tile.id, {
+            status: 'pending',
+            completionId: existing.completionId,
+          }),
+        )
+        return true
+      }
+
       const skill_key = tile.id
       const { error } = await supabase.from('skill_completions').insert({
         student_id: studentId,
@@ -126,17 +153,17 @@ export function useSkillTree() {
         console.error('skill completion insert:', error.message)
         return false
       }
-      setStatusByTileId((prev) => new Map(prev).set(tile.id, 'pending'))
+      await refreshCompletions()
       return true
     },
-    [studentId, refreshCompletions],
+    [studentId, completionByTileId, refreshCompletions],
   )
 
   return {
     guildKeys,
     tilesByGuild,
     guildHeading,
-    statusByTileId,
+    completionByTileId,
     loading,
     submittingTileId,
     markComplete,

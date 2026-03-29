@@ -1,4 +1,4 @@
-export type SkillCompletionStatus = 'pending' | 'approved'
+export type SkillCompletionStatus = 'pending' | 'approved' | 'returned'
 
 export type SkillCompletionRow = {
   id: string
