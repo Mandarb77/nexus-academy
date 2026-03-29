@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom'
+import forgeBanner from '../assets/forge-banner.png'
+import prismBanner from '../assets/prism-banner.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { progressToApprenticeMage } from '../lib/rankProgress'
@@ -83,6 +86,33 @@ export function StudentHomePage() {
         <div className="student-home-stat student-home-stat--gold">
           <span className="student-home-stat-label">Gold</span>
           <span className="student-home-stat-value">{gold}</span>
+        </div>
+      </section>
+
+      <section className="student-home-guilds" aria-labelledby="student-home-guilds-heading">
+        <h2 id="student-home-guilds-heading" className="student-home-guilds-heading">
+          Guilds
+        </h2>
+        <p className="muted student-home-guilds-intro">
+          Open a guild to view skills and request credit from your teacher.
+        </p>
+        <div className="student-home-guild-banners">
+          <Link to="/tree/forge" className="student-home-guild-banner-link">
+            <img
+              src={forgeBanner}
+              alt="Forge guild — view skills and mark complete"
+              className="student-home-guild-banner-img"
+              decoding="async"
+            />
+          </Link>
+          <Link to="/tree/prism" className="student-home-guild-banner-link">
+            <img
+              src={prismBanner}
+              alt="Prism guild — view skills and mark complete"
+              className="student-home-guild-banner-img"
+              decoding="async"
+            />
+          </Link>
         </div>
       </section>
     </div>

@@ -1,22 +1,17 @@
 import forgeBanner from '../assets/forge-banner.png'
 import prismBanner from '../assets/prism-banner.png'
 import { MainNav } from '../components/MainNav'
+import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
-
-function skillTreeGuildModifier(guildKey: string): 'forge' | 'prism' | 'default' {
-  const key = guildKey.trim().toLowerCase()
-  if (key === 'forge') return 'forge'
-  if (key === 'prism') return 'prism'
-  return 'default'
-}
+import { skillTreeGuildModifier } from '../lib/guildTree'
 
 export function SkillTreePage() {
   const { signOut } = useAuth()
   const {
     guildKeys,
     tilesByGuild,
-    guildHeading,
+    guildHeading: heading,
     completionByTileId,
     loading,
     submittingTileId,
@@ -81,75 +76,22 @@ export function SkillTreePage() {
                         id={`guild-${guildKey}`}
                         className="skill-tree-guild-name skill-tree-guild-name--banner"
                       >
-                        <strong>{guildHeading(guildKey)}</strong> guild
+                        <strong>{heading(guildKey)}</strong> guild
                       </h2>
                     </div>
                   </div>
                 ) : (
                   <h2 id={`guild-${guildKey}`} className="skill-tree-guild-name">
-                    {guildHeading(guildKey)} guild
+                    {heading(guildKey)} guild
                   </h2>
                 )}
-                <ul className="skill-tile-list">
-                  {(tilesByGuild.get(guildKey) ?? []).map((tile) => {
-                    const completion = completionByTileId.get(tile.id)
-                    const status = completion?.status
-                    const isPending = status === 'pending'
-                    const isApproved = status === 'approved'
-                    const isReturned = status === 'returned'
-                    const busy = submittingTileId === tile.id
-
-                    return (
-                      <li key={tile.id} className="skill-tile card">
-                        <div className="skill-tile-row">
-                          <div className="skill-tile-main">
-                            <h3 className="skill-tile-name">{tile.skill_name}</h3>
-                            <p className="skill-tile-wp">{tile.wp_value} WP</p>
-                          </div>
-                          <div className="skill-tile-action">
-                            {isApproved ? (
-                              <span className="skill-tile-badge skill-tile-badge--approved">
-                                Approved
-                              </span>
-                            ) : isPending ? (
-                              <button
-                                type="button"
-                                className="btn-skill btn-skill--pending"
-                                disabled
-                                aria-disabled="true"
-                              >
-                                Pending
-                              </button>
-                            ) : isReturned ? (
-                              <button
-                                type="button"
-                                className="btn-skill btn-skill--complete"
-                                disabled={!canUseDb || busy}
-                                onClick={() => void markComplete(tile)}
-                              >
-                                {busy ? 'Saving…' : 'Submit again'}
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="btn-skill btn-skill--complete"
-                                disabled={!canUseDb || busy}
-                                onClick={() => void markComplete(tile)}
-                              >
-                                {busy ? 'Saving…' : 'Mark complete'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {isReturned ? (
-                          <p className="skill-tile-returned-hint muted">
-                            Returned by your teacher — submit again when you are ready.
-                          </p>
-                        ) : null}
-                      </li>
-                    )
-                  })}
-                </ul>
+                <SkillTilesList
+                  tiles={tilesByGuild.get(guildKey) ?? []}
+                  completionByTileId={completionByTileId}
+                  submittingTileId={submittingTileId}
+                  markComplete={markComplete}
+                  canUseDb={canUseDb}
+                />
               </section>
             )
           })}

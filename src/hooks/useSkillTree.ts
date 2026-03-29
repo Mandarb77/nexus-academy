@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { guildHeading } from '../lib/guildTree'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
@@ -21,12 +22,6 @@ function sortGuildKeys(guilds: string[]): string[] {
     if (bi === -1) return -1
     return ai - bi
   })
-}
-
-function guildHeading(guild: string): string {
-  const g = guild.trim()
-  if (!g) return 'Guild'
-  return g.charAt(0).toUpperCase() + g.slice(1).toLowerCase()
 }
 
 export function useSkillTree() {

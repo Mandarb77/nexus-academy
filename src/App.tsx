@@ -7,6 +7,7 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { GoldShopPage } from './pages/GoldShopPage'
+import { GuildSkillTreePage } from './pages/GuildSkillTreePage'
 import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
 import './App.css'
@@ -22,6 +23,14 @@ export default function App() {
             element={
               <StudentOnlyRoute>
                 <SkillTreePage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/tree/:guildSlug"
+            element={
+              <StudentOnlyRoute>
+                <GuildSkillTreePage />
               </StudentOnlyRoute>
             }
           />
