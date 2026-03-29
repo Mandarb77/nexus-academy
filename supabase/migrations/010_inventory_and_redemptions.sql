@@ -150,7 +150,7 @@ begin
   end if;
 
   update public.profiles set gold = gold - v_cost where id = v_uid;
-  insert into public.gold_purchases (student_id, item_name, cost)
+  insert into public.gold_purchases (student_id, item_name, gold_cost)
   values (v_uid, v_name, v_cost);
 
   insert into public.inventory (student_id, item_name, item_description, gold_cost)

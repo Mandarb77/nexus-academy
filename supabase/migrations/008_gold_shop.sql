@@ -4,7 +4,7 @@ create table if not exists public.gold_purchases (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references auth.users (id) on delete cascade,
   item_name text not null,
-  cost integer not null check (cost > 0),
+  gold_cost integer not null check (gold_cost > 0),
   created_at timestamptz not null default now()
 );
 
@@ -66,7 +66,7 @@ begin
   end if;
 
   update public.profiles set gold = gold - v_cost where id = v_uid;
-  insert into public.gold_purchases (student_id, item_name, cost)
+  insert into public.gold_purchases (student_id, item_name, gold_cost)
   values (v_uid, v_name, v_cost);
 
   return jsonb_build_object(
