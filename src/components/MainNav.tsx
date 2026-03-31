@@ -31,6 +31,14 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
         >
           Teacher panel
         </NavLink>
+        <NavLink
+          to="/teacher/reset"
+          className={({ isActive }) =>
+            `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
+          }
+        >
+          Reset
+        </NavLink>
       </nav>
     )
   }

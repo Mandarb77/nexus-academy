@@ -11,6 +11,7 @@ import { InventoryPage } from './pages/InventoryPage'
 import { GuildSkillTreePage } from './pages/GuildSkillTreePage'
 import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
+import { TeacherResetPage } from './pages/TeacherResetPage'
 import './App.css'
 
 export default function App() {
@@ -66,6 +67,14 @@ export default function App() {
             element={
               <TeacherDashboardRoute>
                 <TeacherPanelPage />
+              </TeacherDashboardRoute>
+            }
+          />
+          <Route
+            path="/teacher/reset"
+            element={
+              <TeacherDashboardRoute>
+                <TeacherResetPage />
               </TeacherDashboardRoute>
             }
           />

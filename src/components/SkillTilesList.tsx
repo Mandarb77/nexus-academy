@@ -50,6 +50,7 @@ export function SkillTilesList({
     () => new Map(),
   )
   const [submittingPatentTileId, setSubmittingPatentTileId] = useState<string | null>(null)
+  const [planSubmitError, setPlanSubmitError] = useState<string | null>(null)
   const [planByTileId, setPlanByTileId] = useState<
     Map<string, { id: string; status: PlanStatus }>
   >(() => new Map())
@@ -158,6 +159,7 @@ export function SkillTilesList({
     setOpenTileId(tileId)
     setOpenMode('checklist')
     void loadPlan(tileId)
+    setPlanSubmitError(null)
   }
 
   const closeModal = () => {
@@ -249,7 +251,14 @@ export function SkillTilesList({
                       type="button"
                       className="btn-skill btn-skill--complete"
                       disabled={!canUseDb}
-                      onClick={() => openChecklist(tile.id)}
+                      onClick={() => {
+                        console.log('design3d: open patent application click', {
+                          tileId: tile.id,
+                          skill: tile.skill_name,
+                          guild: tile.guild,
+                        })
+                        openChecklist(tile.id)
+                      }}
                     >
                       {gateReady ? 'Open tile' : 'Open patent application'}
                     </button>
@@ -393,6 +402,12 @@ export function SkillTilesList({
                           disabled={!canUseDb || !user?.id || !(openPatent?.field1 ?? '').trim()}
                           onClick={async () => {
                             try {
+                              console.log('design3d: open patent application submit', {
+                                tileId: openTile.id,
+                                studentId: user?.id,
+                                hasField1: Boolean((openPatent?.field1 ?? '').trim()),
+                              })
+                              setPlanSubmitError(null)
                               if (!user?.id) throw new Error('Not signed in')
                               const { error } = await supabase.from('patents').insert({
                                 student_id: user.id,
@@ -403,14 +418,21 @@ export function SkillTilesList({
                               })
                               if (error) throw error
                               await loadPlan(openTile.id)
+                              console.log('design3d: plan inserted')
                             } catch (e: any) {
                               console.error('open patent application:', e)
+                              setPlanSubmitError(e?.message ?? 'Could not submit plan.')
                             }
                           }}
                         >
                           Open patent application
                         </button>
                       )}
+                      {planSubmitError ? (
+                        <p className="error" role="alert" style={{ margin: 0 }}>
+                          {planSubmitError}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
 
