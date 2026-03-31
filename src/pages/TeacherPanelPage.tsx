@@ -470,18 +470,88 @@ export function TeacherPanelPage() {
       'This will reset all student WP, gold, rank, and completions. This cannot be undone. Are you sure?',
     )
     if (!ok) return
+    const ZERO_UUID = '00000000-0000-0000-0000-000000000000'
     setResetBusy(true)
-    const { data, error } = await supabase.rpc('teacher_full_reset')
+
+    // 1) profiles
+    {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ wp: 0, gold: 0, rank: 'Initiate' })
+        .neq('id', ZERO_UUID)
+      if (error) {
+        console.error('full reset: profiles update failed:', error)
+        setAdminMessage(`Reset failed updating profiles: ${error.message}`)
+        setResetBusy(false)
+        return
+      }
+      console.log('full reset: profiles updated')
+    }
+
+    // 2) skill_completions
+    {
+      const { error } = await supabase.from('skill_completions').delete().neq('id', ZERO_UUID)
+      if (error) {
+        console.error('full reset: skill_completions delete failed:', error)
+        setAdminMessage(`Reset failed deleting skill completions: ${error.message}`)
+        setResetBusy(false)
+        return
+      }
+      console.log('full reset: skill_completions deleted')
+    }
+
+    // 3) patents
+    {
+      const { error } = await supabase.from('patents').delete().neq('id', ZERO_UUID)
+      if (error) {
+        console.error('full reset: patents delete failed:', error)
+        setAdminMessage(`Reset failed deleting patents: ${error.message}`)
+        setResetBusy(false)
+        return
+      }
+      console.log('full reset: patents deleted')
+    }
+
+    // 4) inventory
+    {
+      const { error } = await supabase.from('inventory').delete().neq('id', ZERO_UUID)
+      if (error) {
+        console.error('full reset: inventory delete failed:', error)
+        setAdminMessage(`Reset failed deleting inventory: ${error.message}`)
+        setResetBusy(false)
+        return
+      }
+      console.log('full reset: inventory deleted')
+    }
+
+    // 5) redemption_requests
+    {
+      const { error } = await supabase
+        .from('redemption_requests')
+        .delete()
+        .neq('id', ZERO_UUID)
+      if (error) {
+        console.error('full reset: redemption_requests delete failed:', error)
+        setAdminMessage(`Reset failed deleting redemption requests: ${error.message}`)
+        setResetBusy(false)
+        return
+      }
+      console.log('full reset: redemption_requests deleted')
+    }
+
+    // 6) gold_purchases
+    {
+      const { error } = await supabase.from('gold_purchases').delete().neq('id', ZERO_UUID)
+      if (error) {
+        console.error('full reset: gold_purchases delete failed:', error)
+        setAdminMessage(`Reset failed deleting gold purchases: ${error.message}`)
+        setResetBusy(false)
+        return
+      }
+      console.log('full reset: gold_purchases deleted')
+    }
+
     setResetBusy(false)
-    if (error) {
-      setAdminMessage(`Reset failed: ${error.message}`)
-      return
-    }
-    const res = data as { ok?: boolean; error?: string }
-    if (!res?.ok) {
-      setAdminMessage(`Reset failed: ${res?.error ?? 'unknown error'}`)
-      return
-    }
     setAdminMessage('Full reset complete.')
     setSelectedStudentId(null)
     setStudentProfile(null)
