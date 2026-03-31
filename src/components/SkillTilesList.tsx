@@ -29,6 +29,8 @@ type PatentDraft = {
   field4: string
 }
 
+type PlanStatus = 'none' | 'pending' | 'approved' | 'returned'
+
 export function SkillTilesList({
   tiles,
   completionByTileId,
@@ -40,8 +42,7 @@ export function SkillTilesList({
   const { user } = useAuth()
   const studentId = user?.id ?? 'anonymous'
   const [openTileId, setOpenTileId] = useState<string | null>(null)
-  const [openMode, setOpenMode] = useState<'checklist' | 'patent' | null>(null)
-  const [patentStep, setPatentStep] = useState<1 | 2 | 3 | 4>(1)
+  const [openMode, setOpenMode] = useState<'checklist' | null>(null)
   const [checksByTileId, setChecksByTileId] = useState<Map<string, boolean[]>>(
     () => new Map(),
   )
@@ -49,6 +50,9 @@ export function SkillTilesList({
     () => new Map(),
   )
   const [submittingPatentTileId, setSubmittingPatentTileId] = useState<string | null>(null)
+  const [planByTileId, setPlanByTileId] = useState<
+    Map<string, { id: string; status: PlanStatus }>
+  >(() => new Map())
 
   useEffect(() => {
     if (openTileId) return
@@ -153,29 +157,40 @@ export function SkillTilesList({
   const openChecklist = (tileId: string) => {
     setOpenTileId(tileId)
     setOpenMode('checklist')
-    setPatentStep(1)
-  }
-
-  const openPatentForm = () => {
-    setOpenMode('patent')
-    setPatentStep(1)
+    void loadPlan(tileId)
   }
 
   const closeModal = () => {
     setOpenTileId(null)
     setOpenMode(null)
-    setPatentStep(1)
+  }
+
+  const loadPlan = async (tileId: string) => {
+    if (!user?.id) return
+    const { data, error } = await supabase
+      .from('patents')
+      .select('id, status, stage, created_at')
+      .eq('student_id', user.id)
+      .eq('tile_id', tileId)
+      .eq('stage', 'plan')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    if (error) {
+      console.error('load plan:', error.message)
+      return
+    }
+    const row = (data ?? [])[0] as any
+    setPlanByTileId((prev) => {
+      const next = new Map(prev)
+      if (!row) next.set(tileId, { id: '', status: 'none' })
+      else next.set(tileId, { id: row.id as string, status: (row.status as PlanStatus) ?? 'pending' })
+      return next
+    })
   }
 
   const canStartChecklist = (tileId: string) => {
-    const d = patentByTileId.get(tileId)
-    return Boolean(d?.field1?.trim())
-  }
-
-  const openPatentForTile = (tileId: string) => {
-    setOpenTileId(tileId)
-    setOpenMode('patent')
-    setPatentStep(1)
+    const plan = planByTileId.get(tileId)
+    return plan?.status === 'approved'
   }
 
   return (
@@ -194,7 +209,6 @@ export function SkillTilesList({
             checksByTileId.get(tile.id) ??
             Array(DESIGN_3D_PRINTING_STEPS.length).fill(false)
           const doneCount = isChecklistTile ? savedChecks.filter(Boolean).length : 0
-          const allDone = isChecklistTile ? doneCount === DESIGN_3D_PRINTING_STEPS.length : false
           const gateReady = isChecklistTile ? canStartChecklist(tile.id) : false
 
           return (
@@ -235,9 +249,9 @@ export function SkillTilesList({
                       type="button"
                       className="btn-skill btn-skill--complete"
                       disabled={!canUseDb}
-                      onClick={() => (allDone ? openPatentForTile(tile.id) : openChecklist(tile.id))}
+                      onClick={() => openChecklist(tile.id)}
                     >
-                      {allDone ? 'Submit patent packet' : gateReady ? 'Open checklist' : 'Start packet'}
+                      {gateReady ? 'Open tile' : 'Submit plan'}
                     </button>
                   ) : (
                     <button
@@ -285,241 +299,212 @@ export function SkillTilesList({
                   {openDoneCount} of {DESIGN_3D_PRINTING_STEPS.length} steps complete
                 </p>
 
-                <div className="patent-gate">
-                  <label className="patent-field">
-                    <span className="patent-label">
-                      Field 1 — What did you make? <span className="patent-required">*</span>
-                    </span>
-                    <input
-                      type="text"
-                      value={openPatent?.field1 ?? ''}
-                      placeholder="One or two sentences…"
-                      onChange={(e) => {
-                        const next = {
-                          ...(openPatent ?? { field1: '', field2: '', field3: '', field4: '' }),
-                          field1: e.target.value,
-                        }
-                        setPatentByTileId((prev) => {
-                          const m = new Map(prev)
-                          m.set(openTile.id, next)
-                          return m
-                        })
-                        persistPatent(openTile.id, next)
-                      }}
-                    />
-                    <span className="muted patent-hint">
-                      Required before you can start the checklist.
-                    </span>
-                  </label>
-                </div>
+                <div className="design3d-two-col">
+                  <div className="design3d-patent-col">
+                    <h3 className="design3d-col-title">Patent packet</h3>
 
-                <ol className="checklist">
-                  {DESIGN_3D_PRINTING_STEPS.map((label, idx) => (
-                    <li key={label} className="checklist-item">
-                      <label className="checklist-label">
-                        <input
-                          type="checkbox"
-                          checked={openChecks[idx] ?? false}
-                          disabled={!canStartChecklist(openTile.id)}
-                          onChange={(e) => {
-                            const nextArr = [...openChecks]
-                            nextArr[idx] = e.target.checked
-                            setChecksByTileId((prev) => {
-                              const next = new Map(prev)
-                              next.set(openTile.id, nextArr)
-                              return next
-                            })
-                            persistChecks(openTile.id, nextArr)
+                    <label className="patent-field">
+                      <span className="patent-label">
+                        What are you going to make <span className="patent-required">*</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={openPatent?.field1 ?? ''}
+                        placeholder="One or two sentences maximum…"
+                        disabled={(planByTileId.get(openTile.id)?.status ?? 'none') === 'pending'}
+                        onChange={(e) => {
+                          const next = {
+                            ...(openPatent ?? { field1: '', field2: '', field3: '', field4: '' }),
+                            field1: e.target.value,
+                          }
+                          setPatentByTileId((prev) => {
+                            const m = new Map(prev)
+                            m.set(openTile.id, next)
+                            return m
+                          })
+                          persistPatent(openTile.id, next)
+                        }}
+                      />
+                    </label>
+
+                    <label className="patent-field">
+                      <span className="patent-label">What makes it yours</span>
+                      <textarea
+                        value={openPatent?.field2 ?? ''}
+                        rows={4}
+                        disabled={!canStartChecklist(openTile.id)}
+                        onChange={(e) => {
+                          const next = { ...(openPatent as PatentDraft), field2: e.target.value }
+                          setPatentByTileId((prev) => {
+                            const m = new Map(prev)
+                            m.set(openTile.id, next)
+                            return m
+                          })
+                          persistPatent(openTile.id, next)
+                        }}
+                      />
+                    </label>
+
+                    <label className="patent-field">
+                      <span className="patent-label">What failed and what did you change</span>
+                      <textarea
+                        value={openPatent?.field3 ?? ''}
+                        rows={5}
+                        disabled={!canStartChecklist(openTile.id)}
+                        onChange={(e) => {
+                          const next = { ...(openPatent as PatentDraft), field3: e.target.value }
+                          setPatentByTileId((prev) => {
+                            const m = new Map(prev)
+                            m.set(openTile.id, next)
+                            return m
+                          })
+                          persistPatent(openTile.id, next)
+                        }}
+                      />
+                    </label>
+
+                    <label className="patent-field">
+                      <span className="patent-label">Who is this for</span>
+                      <input
+                        type="text"
+                        value={openPatent?.field4 ?? ''}
+                        disabled={!canStartChecklist(openTile.id)}
+                        onChange={(e) => {
+                          const next = { ...(openPatent as PatentDraft), field4: e.target.value }
+                          setPatentByTileId((prev) => {
+                            const m = new Map(prev)
+                            m.set(openTile.id, next)
+                            return m
+                          })
+                          persistPatent(openTile.id, next)
+                        }}
+                      />
+                    </label>
+
+                    <div className="design3d-plan-actions">
+                      {(planByTileId.get(openTile.id)?.status ?? 'none') === 'pending' ? (
+                        <p className="muted" style={{ margin: 0 }}>
+                          Plan submitted — waiting for teacher approval.
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={!canUseDb || !user?.id || !(openPatent?.field1 ?? '').trim()}
+                          onClick={async () => {
+                            try {
+                              if (!user?.id) throw new Error('Not signed in')
+                              const { error } = await supabase.from('patents').insert({
+                                student_id: user.id,
+                                tile_id: openTile.id,
+                                field_1: openPatent?.field1 ?? '',
+                                stage: 'plan',
+                                status: 'pending',
+                              })
+                              if (error) throw error
+                              await loadPlan(openTile.id)
+                            } catch (e: any) {
+                              console.error('submit plan:', e)
+                            }
                           }}
-                        />
-                        <span>{label}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ol>
+                        >
+                          Submit plan
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                <div className="modal-actions">
-                  {openAllDone ? (
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      disabled={!canUseDb}
-                      onClick={() => openPatentForm()}
-                    >
-                      Submit patent packet
-                    </button>
-                  ) : (
-                    <button type="button" className="btn-primary" disabled>
-                      Submit patent packet
-                    </button>
-                  )}
-                  <button type="button" className="btn-secondary" onClick={() => closeModal()}>
-                    Close
-                  </button>
-                </div>
-              </>
-            ) : openMode === 'patent' ? (
-              <>
-                <p className="muted modal-subtitle">
-                  Patent packet — {patentStep} of 4
-                </p>
-
-                <div className="patent-progress" aria-label={`Patent packet step ${patentStep} of 4`}>
-                  <div className="patent-progress__track" role="progressbar" aria-valuemin={1} aria-valuemax={4} aria-valuenow={patentStep}>
-                    <div className="patent-progress__fill" style={{ width: `${(patentStep / 4) * 100}%` }} />
+                  <div className="design3d-checklist-col">
+                    <h3 className="design3d-col-title">Checklist</h3>
+                    <ol className="checklist">
+                      {DESIGN_3D_PRINTING_STEPS.map((label, idx) => (
+                        <li key={label} className="checklist-item">
+                          <label className="checklist-label">
+                            <input
+                              type="checkbox"
+                              checked={openChecks[idx] ?? false}
+                              disabled={!canStartChecklist(openTile.id)}
+                              onChange={(e) => {
+                                const nextArr = [...openChecks]
+                                nextArr[idx] = e.target.checked
+                                setChecksByTileId((prev) => {
+                                  const next = new Map(prev)
+                                  next.set(openTile.id, nextArr)
+                                  return next
+                                })
+                                persistChecks(openTile.id, nextArr)
+                              }}
+                            />
+                            <span>{label}</span>
+                          </label>
+                        </li>
+                      ))}
+                    </ol>
+                    {!canStartChecklist(openTile.id) ? (
+                      <p className="muted" style={{ margin: '0.75rem 0 0' }}>
+                        Checklist locked until the plan is approved.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
-                {patentStep === 1 ? (
-                  <label className="patent-field">
-                    <span className="patent-label">Field 1 — What did you make?</span>
-                    <input
-                      type="text"
-                      value={openPatent?.field1 ?? ''}
-                      placeholder="One or two sentences maximum…"
-                      onChange={(e) => {
-                        const next = { ...(openPatent as PatentDraft), field1: e.target.value }
-                        setPatentByTileId((prev) => {
-                          const m = new Map(prev)
-                          m.set(openTile.id, next)
-                          return m
-                        })
-                        persistPatent(openTile.id, next)
-                      }}
-                    />
-                  </label>
-                ) : patentStep === 2 ? (
-                  <label className="patent-field">
-                    <span className="patent-label">Field 2 — What makes it yours?</span>
-                    <textarea
-                      value={openPatent?.field2 ?? ''}
-                      rows={6}
-                      onChange={(e) => {
-                        const next = { ...(openPatent as PatentDraft), field2: e.target.value }
-                        setPatentByTileId((prev) => {
-                          const m = new Map(prev)
-                          m.set(openTile.id, next)
-                          return m
-                        })
-                        persistPatent(openTile.id, next)
-                      }}
-                    />
-                  </label>
-                ) : patentStep === 3 ? (
-                  <label className="patent-field">
-                    <span className="patent-label">Field 3 — What failed and what did you change?</span>
-                    <textarea
-                      value={openPatent?.field3 ?? ''}
-                      rows={7}
-                      onChange={(e) => {
-                        const next = { ...(openPatent as PatentDraft), field3: e.target.value }
-                        setPatentByTileId((prev) => {
-                          const m = new Map(prev)
-                          m.set(openTile.id, next)
-                          return m
-                        })
-                        persistPatent(openTile.id, next)
-                      }}
-                    />
-                    <span className="muted patent-hint">
-                      Describe at least one failure and what you changed. If nothing failed, explain what was harder than expected.
-                    </span>
-                  </label>
-                ) : (
-                  <label className="patent-field">
-                    <span className="patent-label">Field 4 — Who is this for?</span>
-                    <input
-                      type="text"
-                      value={openPatent?.field4 ?? ''}
-                      onChange={(e) => {
-                        const next = { ...(openPatent as PatentDraft), field4: e.target.value }
-                        setPatentByTileId((prev) => {
-                          const m = new Map(prev)
-                          m.set(openTile.id, next)
-                          return m
-                        })
-                        persistPatent(openTile.id, next)
-                      }}
-                    />
-                  </label>
-                )}
-
                 <div className="modal-actions">
+                  <button type="button" className="btn-secondary" onClick={() => closeModal()}>
+                    Close
+                  </button>
                   <button
                     type="button"
-                    className="btn-secondary"
-                    disabled={patentStep === 1}
-                    onClick={() => setPatentStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4) : 1))}
-                  >
-                    Back
-                  </button>
-                  {patentStep < 4 ? (
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      disabled={patentStep === 1 && !(openPatent?.field1 ?? '').trim()}
-                      onClick={() => setPatentStep((s) => (s < 4 ? ((s + 1) as 1 | 2 | 3 | 4) : 4))}
-                    >
-                      Next
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      disabled={
-                        !canUseDb ||
-                        submittingPatentTileId === openTile.id ||
-                        !user?.id ||
-                        !(openPatent?.field1 ?? '').trim() ||
-                        !(openPatent?.field2 ?? '').trim() ||
-                        !(openPatent?.field3 ?? '').trim() ||
-                        !(openPatent?.field4 ?? '').trim()
-                      }
-                      onClick={async () => {
-                        setSubmittingPatentTileId(openTile.id)
-                        try {
-                          if (!user?.id) throw new Error('Not signed in')
-                          // Create patent row, then create pending completion linked to it.
-                          const { data: pat, error: patErr } = await supabase
-                            .from('patents')
-                            .insert({
-                              student_id: user.id,
-                              tile_id: openTile.id,
-                              field_1: openPatent?.field1 ?? '',
-                              field_2: openPatent?.field2 ?? '',
-                              field_3: openPatent?.field3 ?? '',
-                              field_4: openPatent?.field4 ?? '',
-                            })
-                            .select('id')
-                            .single()
-                          if (patErr) throw patErr
+                    className="btn-primary"
+                    disabled={
+                      !canUseDb ||
+                      !user?.id ||
+                      submittingPatentTileId === openTile.id ||
+                      !canStartChecklist(openTile.id) ||
+                      !openAllDone ||
+                      !(openPatent?.field1 ?? '').trim() ||
+                      !(openPatent?.field2 ?? '').trim() ||
+                      !(openPatent?.field3 ?? '').trim() ||
+                      !(openPatent?.field4 ?? '').trim()
+                    }
+                    onClick={async () => {
+                      setSubmittingPatentTileId(openTile.id)
+                      try {
+                        if (!user?.id) throw new Error('Not signed in')
+                        const planId = planByTileId.get(openTile.id)?.id
+                        if (!planId) throw new Error('Missing plan id')
 
-                          const { error: scErr } = await supabase.from('skill_completions').insert({
-                            student_id: user.id,
-                            tile_id: openTile.id,
-                            skill_key: openTile.id,
-                            status: 'pending',
-                            patent_id: pat.id,
+                        const { error: updErr } = await supabase
+                          .from('patents')
+                          .update({
+                            stage: 'packet',
+                            field_2: openPatent?.field2 ?? '',
+                            field_3: openPatent?.field3 ?? '',
+                            field_4: openPatent?.field4 ?? '',
                           })
-                          if (scErr) throw scErr
+                          .eq('id', planId)
+                        if (updErr) throw updErr
 
-                          clearChecks(openTile.id)
-                          clearPatent(openTile.id)
-                          await refresh?.()
-                          closeModal()
-                        } catch (e: any) {
-                          // Best-effort: keep modal open so student can try again.
-                          console.error('submit patent packet:', e)
-                        } finally {
-                          setSubmittingPatentTileId(null)
-                        }
-                      }}
-                    >
-                      {submittingPatentTileId === openTile.id ? 'Submitting…' : 'Submit for approval'}
-                    </button>
-                  )}
-                  <button type="button" className="btn-secondary" onClick={() => setOpenMode('checklist')}>
-                    Back to checklist
+                        const { error: scErr } = await supabase.from('skill_completions').insert({
+                          student_id: user.id,
+                          tile_id: openTile.id,
+                          skill_key: openTile.id,
+                          status: 'pending',
+                          patent_id: planId,
+                        })
+                        if (scErr) throw scErr
+
+                        clearChecks(openTile.id)
+                        clearPatent(openTile.id)
+                        await refresh?.()
+                        closeModal()
+                      } catch (e: any) {
+                        console.error('submit for approval:', e)
+                      } finally {
+                        setSubmittingPatentTileId(null)
+                      }
+                    }}
+                  >
+                    {submittingPatentTileId === openTile.id ? 'Submitting…' : 'Submit for approval'}
                   </button>
                 </div>
               </>

@@ -37,6 +37,16 @@ type PendingRedemptionRow = {
   display_name: string | null
 }
 
+type PendingPlanRow = {
+  id: string
+  student_id: string
+  tile_id: string
+  created_at: string
+  display_name: string | null
+  tile: { guild: string; skill_name: string } | null
+  patent: { field_1: string } | null
+}
+
 type StudentSummary = {
   id: string
   display_name: string | null
@@ -81,6 +91,7 @@ export function TeacherPanelPage() {
   const { signOut } = useAuth()
   const [skillRows, setSkillRows] = useState<PendingSkillRow[]>([])
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
+  const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [studentProfile, setStudentProfile] = useState<StudentSummary | null>(null)
@@ -91,6 +102,8 @@ export function TeacherPanelPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [adminMessage, setAdminMessage] = useState<string | null>(null)
   const [acting, setActing] = useState<Acting>(null)
+  const [actingPlanId, setActingPlanId] = useState<string | null>(null)
+  const [actingPlanKind, setActingPlanKind] = useState<'approve' | 'return' | null>(null)
   const [resetType, setResetType] = useState<
     'skill_completions' | 'inventory_and_purchases' | 'redemption_requests' | ''
   >('')
@@ -112,7 +125,7 @@ export function TeacherPanelPage() {
     setLoading(true)
     setLoadError(null)
 
-    const [compRes, redRes] = await Promise.all([
+    const [compRes, redRes, planRes] = await Promise.all([
       supabase
         .from('skill_completions')
         .select('id, student_id, tile_id, patent_id, created_at, status')
@@ -121,6 +134,12 @@ export function TeacherPanelPage() {
       supabase
         .from('redemption_requests')
         .select('id, student_id, inventory_id, item_name, created_at, status')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('patents')
+        .select('id, student_id, tile_id, field_1, created_at, stage, status')
+        .eq('stage', 'plan')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
     ])
@@ -141,14 +160,25 @@ export function TeacherPanelPage() {
       setLoading(false)
       return
     }
+    if (planRes.error) {
+      console.error('teacher panel plan approvals:', planRes.error.message)
+      setSkillRows([])
+      setRedemptionRows([])
+      setPlanRows([])
+      setLoadError(planRes.error.message)
+      setLoading(false)
+      return
+    }
 
     const completions = compRes.data ?? []
     const redemptions = redRes.data ?? []
+    const plans = planRes.data ?? []
 
     const studentIds = [
       ...new Set([
         ...completions.map((r) => r.student_id as string),
         ...redemptions.map((r) => r.student_id as string),
+        ...plans.map((r) => r.student_id as string),
       ]),
     ]
 
@@ -191,6 +221,30 @@ export function TeacherPanelPage() {
           guild: t.guild as string,
           skill_name: t.skill_name as string,
           wp_value: (t.wp_value as number) ?? 10,
+        })
+      }
+    }
+
+    const planTileIds = [...new Set(plans.map((r) => r.tile_id as string))]
+    const planTileById = new Map<string, { guild: string; skill_name: string }>()
+    if (planTileIds.length > 0) {
+      const { data: tiles, error: ptErr } = await supabase
+        .from('tiles')
+        .select('id, guild, skill_name')
+        .in('id', planTileIds)
+      if (ptErr) {
+        console.error('tiles for plan approvals:', ptErr.message)
+        setSkillRows([])
+        setRedemptionRows([])
+        setPlanRows([])
+        setLoadError(ptErr.message)
+        setLoading(false)
+        return
+      }
+      for (const t of tiles ?? []) {
+        planTileById.set(t.id as string, {
+          guild: t.guild as string,
+          skill_name: t.skill_name as string,
         })
       }
     }
@@ -254,6 +308,18 @@ export function TeacherPanelPage() {
       })),
     )
 
+    setPlanRows(
+      plans.map((r) => ({
+        id: r.id as string,
+        student_id: r.student_id as string,
+        tile_id: r.tile_id as string,
+        created_at: r.created_at as string,
+        display_name: nameById.get(r.student_id as string) ?? null,
+        tile: planTileById.get(r.tile_id as string) ?? null,
+        patent: { field_1: (r.field_1 as string) ?? '' },
+      })),
+    )
+
     setLoading(false)
   }, [])
 
@@ -303,6 +369,40 @@ export function TeacherPanelPage() {
     clearActing()
     if (error) {
       console.error('approve redemption:', error.message)
+      return
+    }
+    void loadPending()
+  }
+
+  const setActingPlan = (id: string, kind: 'approve' | 'return') => {
+    setActingPlanId(id)
+    setActingPlanKind(kind)
+  }
+
+  const clearActingPlan = () => {
+    setActingPlanId(null)
+    setActingPlanKind(null)
+  }
+
+  const approvePlan = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActingPlan(id, 'approve')
+    const { error } = await supabase.from('patents').update({ status: 'approved' }).eq('id', id)
+    clearActingPlan()
+    if (error) {
+      console.error('approve plan:', error.message)
+      return
+    }
+    void loadPending()
+  }
+
+  const returnPlan = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActingPlan(id, 'return')
+    const { error } = await supabase.from('patents').update({ status: 'returned' }).eq('id', id)
+    clearActingPlan()
+    if (error) {
+      console.error('return plan:', error.message)
       return
     }
     void loadPending()
@@ -685,6 +785,64 @@ export function TeacherPanelPage() {
         <p className="muted">Loading pending requests…</p>
       ) : loadError ? null : (
         <>
+          <section className="teacher-panel-section" aria-labelledby="teacher-panel-plans-heading">
+            <h2 id="teacher-panel-plans-heading" className="teacher-panel-section-title">
+              Plan approvals
+            </h2>
+            {planRows.length === 0 ? (
+              <p className="muted teacher-panel-section-empty">No pending plans.</p>
+            ) : (
+              <ul className="teacher-panel-list">
+                {planRows.map((row) => {
+                  const studentName =
+                    row.display_name?.trim() || `Student (${row.student_id.slice(0, 8)}…)`
+                  const busyApprove = actingPlanId === row.id && actingPlanKind === 'approve'
+                  const busyReturn = actingPlanId === row.id && actingPlanKind === 'return'
+                  const busy = busyApprove || busyReturn
+                  return (
+                    <li key={row.id} className="card teacher-panel-item">
+                      <div className="teacher-panel-item-main">
+                        <p className="teacher-panel-student">{studentName}</p>
+                        <p className="teacher-panel-skill">
+                          <strong>{row.tile?.skill_name ?? 'Plan'}</strong>
+                        </p>
+                        <p className="muted teacher-panel-guild">
+                          Plan approval · {row.tile?.guild ? <strong>{row.tile.guild}</strong> : null}
+                        </p>
+                        <div className="teacher-panel-patent">
+                          <p className="teacher-panel-patent-title">
+                            <strong>What are you going to make?</strong>
+                          </p>
+                          <p className="muted" style={{ margin: 0 }}>
+                            {row.patent?.field_1}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="teacher-panel-actions">
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={busy}
+                          onClick={() => void approvePlan(row.id)}
+                        >
+                          {busyApprove ? 'Approving…' : 'Approve plan'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={busy}
+                          onClick={() => void returnPlan(row.id)}
+                        >
+                          {busyReturn ? 'Returning…' : 'Return'}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+
           <section className="teacher-panel-section" aria-labelledby="teacher-panel-reset-heading">
             <h2 id="teacher-panel-reset-heading" className="teacher-panel-section-title">
               Reset

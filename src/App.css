@@ -1139,6 +1139,42 @@ a.btn-primary {
   transition: width 0.25s ease;
 }
 
+.design3d-two-col {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 1.1rem 1.25rem;
+  align-items: start;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 680px) {
+  .design3d-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  /* On small screens: patent form above checklist */
+  .design3d-patent-col {
+    order: 1;
+  }
+  .design3d-checklist-col {
+    order: 2;
+  }
+}
+
+.design3d-col-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.design3d-plan-actions {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
 .inline-code {
   font-size: 0.88em;
   padding: 0.1em 0.35em;
