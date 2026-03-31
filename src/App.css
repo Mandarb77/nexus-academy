@@ -200,6 +200,35 @@ a.btn-primary {
   background: var(--code-bg);
 }
 
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
+  cursor: pointer;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: 0 3px 12px rgba(185, 28, 28, 0.35);
+}
+
+.btn-danger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  filter: none;
+}
+
 .dash-header {
   display: flex;
   flex-wrap: wrap;
@@ -1175,6 +1204,160 @@ a.btn-primary {
 .teacher-panel-section-empty {
   margin: 0;
   font-size: 0.95rem;
+}
+
+.teacher-panel-reset-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  align-items: start;
+}
+
+@media (min-width: 720px) {
+  .teacher-panel-reset-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.teacher-panel-reset-by-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.teacher-panel-reset-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+  flex: 1;
+  min-width: 14rem;
+}
+
+.teacher-panel-select {
+  font: inherit;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-h);
+}
+
+.teacher-panel-reset-hint {
+  margin: 0.9rem 0 0;
+  font-size: 0.9rem;
+}
+
+.teacher-panel-students {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.teacher-panel-student-row {
+  width: 100%;
+  text-align: left;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.teacher-panel-student-row:hover {
+  border-color: var(--accent-border);
+  background: rgba(109, 40, 217, 0.04);
+}
+
+.teacher-panel-student-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.teacher-panel-student-row-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.teacher-panel-student-row-meta {
+  font-size: 0.9rem;
+}
+
+.teacher-panel-student-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.teacher-panel-subheading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.teacher-panel-kv {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.teacher-panel-kv dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.teacher-panel-kv dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.teacher-panel-mini-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.teacher-panel-mini-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+}
+
+.teacher-panel-mini-title {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.teacher-panel-mini-meta {
+  font-size: 0.9rem;
 }
 
 .inventory-page {
