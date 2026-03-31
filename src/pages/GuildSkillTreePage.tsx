@@ -28,6 +28,7 @@ export function GuildSkillTreePage() {
     submittingTileId,
     markComplete,
     canUseDb,
+    refresh,
   } = useSkillTree()
 
   const guildKey = useMemo(() => {
@@ -96,6 +97,7 @@ export function GuildSkillTreePage() {
             submittingTileId={submittingTileId}
             markComplete={markComplete}
             canUseDb={canUseDb}
+            refresh={refresh}
           />
         </section>
       )}

@@ -10,6 +10,7 @@ type Props = {
   submittingTileId: string | null
   markComplete: (tile: TileRow) => Promise<boolean>
   canUseDb: boolean
+  refresh?: () => Promise<void> | void
 }
 
 const DESIGN_3D_PRINTING_STEPS = [
@@ -34,6 +35,7 @@ export function SkillTilesList({
   submittingTileId,
   markComplete,
   canUseDb,
+  refresh,
 }: Props) {
   const { user } = useAuth()
   const studentId = user?.id ?? 'anonymous'
@@ -170,6 +172,12 @@ export function SkillTilesList({
     return Boolean(d?.field1?.trim())
   }
 
+  const openPatentForTile = (tileId: string) => {
+    setOpenTileId(tileId)
+    setOpenMode('patent')
+    setPatentStep(1)
+  }
+
   return (
     <>
       <ul className="skill-tile-list">
@@ -186,6 +194,8 @@ export function SkillTilesList({
             checksByTileId.get(tile.id) ??
             Array(DESIGN_3D_PRINTING_STEPS.length).fill(false)
           const doneCount = isChecklistTile ? savedChecks.filter(Boolean).length : 0
+          const allDone = isChecklistTile ? doneCount === DESIGN_3D_PRINTING_STEPS.length : false
+          const gateReady = isChecklistTile ? canStartChecklist(tile.id) : false
 
           return (
             <li key={tile.id} className="skill-tile card">
@@ -225,9 +235,9 @@ export function SkillTilesList({
                       type="button"
                       className="btn-skill btn-skill--complete"
                       disabled={!canUseDb}
-                      onClick={() => openChecklist(tile.id)}
+                      onClick={() => (allDone ? openPatentForTile(tile.id) : openChecklist(tile.id))}
                     >
-                      Open checklist
+                      {allDone ? 'Submit patent packet' : gateReady ? 'Open checklist' : 'Start packet'}
                     </button>
                   ) : (
                     <button
@@ -339,8 +349,8 @@ export function SkillTilesList({
                       Submit patent packet
                     </button>
                   ) : (
-                    <button type="button" className="btn-secondary" onClick={() => closeModal()}>
-                      Keep working
+                    <button type="button" className="btn-primary" disabled>
+                      Submit patent packet
                     </button>
                   )}
                   <button type="button" className="btn-secondary" onClick={() => closeModal()}>
@@ -459,6 +469,7 @@ export function SkillTilesList({
                       disabled={
                         !canUseDb ||
                         submittingPatentTileId === openTile.id ||
+                        !user?.id ||
                         !(openPatent?.field1 ?? '').trim() ||
                         !(openPatent?.field2 ?? '').trim() ||
                         !(openPatent?.field3 ?? '').trim() ||
@@ -467,11 +478,12 @@ export function SkillTilesList({
                       onClick={async () => {
                         setSubmittingPatentTileId(openTile.id)
                         try {
+                          if (!user?.id) throw new Error('Not signed in')
                           // Create patent row, then create pending completion linked to it.
                           const { data: pat, error: patErr } = await supabase
                             .from('patents')
                             .insert({
-                              student_id: user?.id,
+                              student_id: user.id,
                               tile_id: openTile.id,
                               field_1: openPatent?.field1 ?? '',
                               field_2: openPatent?.field2 ?? '',
@@ -483,7 +495,7 @@ export function SkillTilesList({
                           if (patErr) throw patErr
 
                           const { error: scErr } = await supabase.from('skill_completions').insert({
-                            student_id: user?.id,
+                            student_id: user.id,
                             tile_id: openTile.id,
                             skill_key: openTile.id,
                             status: 'pending',
@@ -493,10 +505,11 @@ export function SkillTilesList({
 
                           clearChecks(openTile.id)
                           clearPatent(openTile.id)
+                          await refresh?.()
                           closeModal()
                         } catch (e: any) {
                           // Best-effort: keep modal open so student can try again.
-                          console.error('submit patent packet:', e?.message ?? e)
+                          console.error('submit patent packet:', e)
                         } finally {
                           setSubmittingPatentTileId(null)
                         }

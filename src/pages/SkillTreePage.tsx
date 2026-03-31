@@ -17,6 +17,7 @@ export function SkillTreePage() {
     submittingTileId,
     markComplete,
     canUseDb,
+    refresh,
   } = useSkillTree()
 
   return (
@@ -91,6 +92,7 @@ export function SkillTreePage() {
                   submittingTileId={submittingTileId}
                   markComplete={markComplete}
                   canUseDb={canUseDb}
+                  refresh={refresh}
                 />
               </section>
             )
