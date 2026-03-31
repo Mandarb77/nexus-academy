@@ -1115,15 +1115,15 @@ export function TeacherPanelPage() {
                                 <dd>{row.patent.field_1}</dd>
                               </div>
                               <div>
-                                <dt>What makes it yours?</dt>
+                                <dt>Who is it for, and why does it matter?</dt>
                                 <dd>{row.patent.field_2}</dd>
                               </div>
                               <div>
-                                <dt>What failed and what did you change?</dt>
+                                <dt>How did you make it an original work?</dt>
                                 <dd>{row.patent.field_3}</dd>
                               </div>
                               <div>
-                                <dt>Who is this for?</dt>
+                                <dt>What do you have to iterate?</dt>
                                 <dd>{row.patent.field_4}</dd>
                               </div>
                             </dl>

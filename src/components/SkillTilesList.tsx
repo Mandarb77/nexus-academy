@@ -251,7 +251,7 @@ export function SkillTilesList({
                       disabled={!canUseDb}
                       onClick={() => openChecklist(tile.id)}
                     >
-                      {gateReady ? 'Open tile' : 'Submit plan'}
+                      {gateReady ? 'Open tile' : 'Open patent application'}
                     </button>
                   ) : (
                     <button
@@ -328,7 +328,7 @@ export function SkillTilesList({
                     </label>
 
                     <label className="patent-field">
-                      <span className="patent-label">What makes it yours</span>
+                      <span className="patent-label">Who is it for, and why does it matter?</span>
                       <textarea
                         value={openPatent?.field2 ?? ''}
                         rows={4}
@@ -346,7 +346,7 @@ export function SkillTilesList({
                     </label>
 
                     <label className="patent-field">
-                      <span className="patent-label">What failed and what did you change</span>
+                      <span className="patent-label">How did you make it an original work?</span>
                       <textarea
                         value={openPatent?.field3 ?? ''}
                         rows={5}
@@ -364,7 +364,7 @@ export function SkillTilesList({
                     </label>
 
                     <label className="patent-field">
-                      <span className="patent-label">Who is this for</span>
+                      <span className="patent-label">What do you have to iterate?</span>
                       <input
                         type="text"
                         value={openPatent?.field4 ?? ''}
@@ -404,11 +404,11 @@ export function SkillTilesList({
                               if (error) throw error
                               await loadPlan(openTile.id)
                             } catch (e: any) {
-                              console.error('submit plan:', e)
+                              console.error('open patent application:', e)
                             }
                           }}
                         >
-                          Submit plan
+                          Open patent application
                         </button>
                       )}
                     </div>
