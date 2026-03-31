@@ -13,9 +13,19 @@ type PendingSkillRow = {
   id: string
   student_id: string
   tile_id: string
+  patent_id: string | null
   created_at: string
   display_name: string | null
   tile: TileInfo | null
+  patent: PatentRow | null
+}
+
+type PatentRow = {
+  id: string
+  field_1: string
+  field_2: string
+  field_3: string
+  field_4: string
 }
 
 type PendingRedemptionRow = {
@@ -105,7 +115,7 @@ export function TeacherPanelPage() {
     const [compRes, redRes] = await Promise.all([
       supabase
         .from('skill_completions')
-        .select('id, student_id, tile_id, created_at, status')
+        .select('id, student_id, tile_id, patent_id, created_at, status')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
       supabase
@@ -185,14 +195,51 @@ export function TeacherPanelPage() {
       }
     }
 
+    const patentIds = [
+      ...new Set(
+        completions
+          .map((r) => (r.patent_id as string | null) ?? null)
+          .filter(Boolean) as string[],
+      ),
+    ]
+    const patentById = new Map<string, PatentRow>()
+    if (patentIds.length > 0) {
+      const { data: pats, error: patErr } = await supabase
+        .from('patents')
+        .select('id, field_1, field_2, field_3, field_4')
+        .in('id', patentIds)
+      if (patErr) {
+        console.error('patents for teacher panel:', patErr.message)
+        setSkillRows([])
+        setRedemptionRows([])
+        setLoadError(patErr.message)
+        setLoading(false)
+        return
+      }
+      for (const p of pats ?? []) {
+        patentById.set(p.id as string, {
+          id: p.id as string,
+          field_1: (p.field_1 as string) ?? '',
+          field_2: (p.field_2 as string) ?? '',
+          field_3: (p.field_3 as string) ?? '',
+          field_4: (p.field_4 as string) ?? '',
+        })
+      }
+    }
+
     setSkillRows(
       completions.map((r) => ({
         id: r.id as string,
         student_id: r.student_id as string,
         tile_id: r.tile_id as string,
+        patent_id: (r.patent_id as string | null) ?? null,
         created_at: r.created_at as string,
         display_name: nameById.get(r.student_id as string) ?? null,
         tile: tileById.get(r.tile_id as string) ?? null,
+        patent:
+          (r.patent_id as string | null)
+            ? patentById.get(r.patent_id as string) ?? null
+            : null,
       })),
     )
 
@@ -817,6 +864,31 @@ export function TeacherPanelPage() {
                             </>
                           ) : null}
                         </p>
+                        {row.patent ? (
+                          <div className="teacher-panel-patent">
+                            <p className="teacher-panel-patent-title">
+                              <strong>Patent packet</strong>
+                            </p>
+                            <dl className="teacher-panel-patent-dl">
+                              <div>
+                                <dt>What did you make?</dt>
+                                <dd>{row.patent.field_1}</dd>
+                              </div>
+                              <div>
+                                <dt>What makes it yours?</dt>
+                                <dd>{row.patent.field_2}</dd>
+                              </div>
+                              <div>
+                                <dt>What failed and what did you change?</dt>
+                                <dd>{row.patent.field_3}</dd>
+                              </div>
+                              <div>
+                                <dt>Who is this for?</dt>
+                                <dd>{row.patent.field_4}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                        ) : null}
                       </div>
                       <div className="teacher-panel-actions">
                         <button

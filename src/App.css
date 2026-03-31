@@ -1086,6 +1086,59 @@ a.btn-primary {
   justify-content: flex-end;
 }
 
+.patent-gate {
+  margin: 0.75rem 0 1rem;
+}
+
+.patent-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.patent-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.patent-required {
+  color: #ef4444;
+}
+
+.patent-field input,
+.patent-field textarea {
+  font: inherit;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-h);
+}
+
+.patent-field textarea {
+  resize: vertical;
+}
+
+.patent-hint {
+  font-size: 0.85rem;
+}
+
+.patent-progress__track {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.patent-progress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6d28d9, #a78bfa);
+  transition: width 0.25s ease;
+}
+
 .inline-code {
   font-size: 0.88em;
   padding: 0.1em 0.35em;
@@ -1403,6 +1456,40 @@ a.btn-primary {
 
 .teacher-panel-mini-warn {
   font-size: 0.85rem;
+}
+
+.teacher-panel-patent {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.teacher-panel-patent-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+
+.teacher-panel-patent-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.teacher-panel-patent-dl dt {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.teacher-panel-patent-dl dd {
+  margin: 0.3rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text-h);
 }
 
 .teacher-panel-mini-title {
