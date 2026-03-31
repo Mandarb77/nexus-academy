@@ -490,7 +490,10 @@ export function TeacherPanelPage() {
 
     // 2) skill_completions
     {
-      const { error } = await supabase.from('skill_completions').delete().neq('id', ZERO_UUID)
+      const { error } = await supabase
+        .from('skill_completions')
+        .delete()
+        .gt('created_at', '0001-01-01T00:00:00Z')
       if (error) {
         console.error('full reset: skill_completions delete failed:', error)
         setAdminMessage(`Reset failed deleting skill completions: ${error.message}`)
@@ -502,7 +505,10 @@ export function TeacherPanelPage() {
 
     // 3) patents
     {
-      const { error } = await supabase.from('patents').delete().neq('id', ZERO_UUID)
+      const { error } = await supabase
+        .from('patents')
+        .delete()
+        .gt('created_at', '0001-01-01T00:00:00Z')
       if (error) {
         console.error('full reset: patents delete failed:', error)
         setAdminMessage(`Reset failed deleting patents: ${error.message}`)
@@ -514,7 +520,10 @@ export function TeacherPanelPage() {
 
     // 4) inventory
     {
-      const { error } = await supabase.from('inventory').delete().neq('id', ZERO_UUID)
+      const { error } = await supabase
+        .from('inventory')
+        .delete()
+        .gt('created_at', '0001-01-01T00:00:00Z')
       if (error) {
         console.error('full reset: inventory delete failed:', error)
         setAdminMessage(`Reset failed deleting inventory: ${error.message}`)
@@ -529,7 +538,7 @@ export function TeacherPanelPage() {
       const { error } = await supabase
         .from('redemption_requests')
         .delete()
-        .neq('id', ZERO_UUID)
+        .gt('created_at', '0001-01-01T00:00:00Z')
       if (error) {
         console.error('full reset: redemption_requests delete failed:', error)
         setAdminMessage(`Reset failed deleting redemption requests: ${error.message}`)
@@ -541,7 +550,10 @@ export function TeacherPanelPage() {
 
     // 6) gold_purchases
     {
-      const { error } = await supabase.from('gold_purchases').delete().neq('id', ZERO_UUID)
+      const { error } = await supabase
+        .from('gold_purchases')
+        .delete()
+        .gt('created_at', '0001-01-01T00:00:00Z')
       if (error) {
         console.error('full reset: gold_purchases delete failed:', error)
         setAdminMessage(`Reset failed deleting gold purchases: ${error.message}`)
