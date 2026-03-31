@@ -39,6 +39,8 @@ type StudentSkillCompletion = {
   id: string
   tile_id: string
   status: string
+  wp_awarded: number | null
+  gold_awarded: number | null
   created_at: string
   tile: { guild: string; skill_name: string } | null
 }
@@ -84,6 +86,10 @@ export function TeacherPanelPage() {
   >('')
   const [resetBusy, setResetBusy] = useState(false)
   const [studentsBusy, setStudentsBusy] = useState(false)
+  const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
+    () => new Map(),
+  )
+  const [resettingCompletionId, setResettingCompletionId] = useState<string | null>(null)
 
   const loadPending = useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -326,7 +332,7 @@ export function TeacherPanelPage() {
           .maybeSingle(),
         supabase
           .from('skill_completions')
-          .select('id, tile_id, status, created_at')
+          .select('id, tile_id, status, wp_awarded, gold_awarded, created_at')
           .eq('student_id', studentId)
           .order('created_at', { ascending: false }),
         supabase
@@ -398,6 +404,8 @@ export function TeacherPanelPage() {
           id: r.id as string,
           tile_id: r.tile_id as string,
           status: r.status as string,
+          wp_awarded: (r.wp_awarded as number | null) ?? null,
+          gold_awarded: (r.gold_awarded as number | null) ?? null,
           created_at: r.created_at as string,
           tile: tileById.get(r.tile_id as string) ?? null,
         })),
@@ -467,6 +475,50 @@ export function TeacherPanelPage() {
     setAdminMessage(`${label} reset complete.`)
     void loadPending()
     void loadStudents()
+  }
+
+  const resetCompletion = async (row: StudentSkillCompletion) => {
+    if (!isSupabaseConfigured || resettingCompletionId) return
+    const wp = row.wp_awarded ?? 0
+    const gold = row.gold_awarded ?? 0
+    const pen = Math.max(
+      0,
+      Math.min(100, penaltyByCompletionId.get(row.id) ?? 0),
+    )
+    const wpPen = Math.floor((wp * pen) / 100)
+    const goldPen = Math.floor((gold * pen) / 100)
+    const wpTotal = wp + wpPen
+    const goldTotal = gold + goldPen
+
+    const message =
+      `This will remove ${wp} WP and ${gold} gold for this completion. ` +
+      `Penalty of ${pen}% applied — additional ${wpPen} WP and ${goldPen} gold deducted. ` +
+      `Total deduction: ${wpTotal} WP and ${goldTotal} gold. ` +
+      `This cannot be undone. Confirm?`
+
+    if (!window.confirm(message)) return
+
+    setResettingCompletionId(row.id)
+    const { data, error } = await supabase.rpc('teacher_reset_skill_completion', {
+      p_completion_id: row.id,
+      p_penalty_percent: pen,
+    })
+    setResettingCompletionId(null)
+    if (error) {
+      setAdminMessage(`Reset failed: ${error.message}`)
+      return
+    }
+    const res = data as { ok?: boolean; error?: string }
+    if (!res?.ok) {
+      setAdminMessage(`Reset failed: ${res?.error ?? 'unknown error'}`)
+      return
+    }
+    setAdminMessage(`Reset complete. Deducted ${wpTotal} WP and ${goldTotal} gold.`)
+    if (selectedStudentId) {
+      void loadStudentDetail(selectedStudentId)
+    }
+    void loadStudents()
+    void loadPending()
   }
 
   return (
@@ -598,17 +650,69 @@ export function TeacherPanelPage() {
                     <p className="muted">No skill completions.</p>
                   ) : (
                     <ul className="teacher-panel-mini-list">
-                      {studentSkills.map((r) => (
-                        <li key={r.id} className="teacher-panel-mini-row">
-                          <span className="teacher-panel-mini-title">
-                            {r.tile?.skill_name ?? 'Unknown skill'}
-                          </span>
-                          <span className="teacher-panel-mini-meta muted">
-                            {r.tile?.guild ? `${r.tile.guild} · ` : ''}
-                            {r.status}
-                          </span>
-                        </li>
-                      ))}
+                      {studentSkills.map((r) => {
+                        const penalty = penaltyByCompletionId.get(r.id) ?? 0
+                        const canReset = r.status === 'approved'
+                        const missingAwards = r.wp_awarded == null || r.gold_awarded == null
+                        const busy = resettingCompletionId === r.id
+
+                        return (
+                          <li key={r.id} className="teacher-panel-mini-row teacher-panel-mini-row--reset">
+                            <div className="teacher-panel-mini-main">
+                              <span className="teacher-panel-mini-title">
+                                {r.tile?.skill_name ?? 'Unknown skill'}
+                              </span>
+                              <span className="teacher-panel-mini-meta muted">
+                                {r.tile?.guild ? `${r.tile.guild} · ` : ''}
+                                {r.status}
+                                {r.wp_awarded != null && r.gold_awarded != null ? (
+                                  <>
+                                    {' '}
+                                    · awarded {r.wp_awarded} WP / {r.gold_awarded} gold
+                                  </>
+                                ) : null}
+                              </span>
+                              {canReset && missingAwards ? (
+                                <span className="muted teacher-panel-mini-warn">
+                                  Missing awarded amounts — apply migration 014.
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="teacher-panel-mini-actions">
+                              <label className="teacher-panel-penalty">
+                                Penalty
+                                <div className="teacher-panel-penalty-input">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={penalty}
+                                    onChange={(e) => {
+                                      const n = Number(e.target.value)
+                                      const v = Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0
+                                      setPenaltyByCompletionId((prev) => {
+                                        const next = new Map(prev)
+                                        next.set(r.id, v)
+                                        return next
+                                      })
+                                    }}
+                                    disabled={!canReset || busy}
+                                  />
+                                  <span className="muted">%</span>
+                                </div>
+                              </label>
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                disabled={!canReset || missingAwards || busy}
+                                onClick={() => void resetCompletion(r)}
+                              >
+                                {busy ? 'Resetting…' : 'Reset'}
+                              </button>
+                            </div>
+                          </li>
+                        )
+                      })}
                     </ul>
                   )}
                 </div>
