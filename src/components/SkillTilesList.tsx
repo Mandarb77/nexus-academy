@@ -122,6 +122,12 @@ export function SkillTilesList({
     openTile ? patentByTileId.get(openTile.id) ?? { field1: '', field2: '', field3: '', field4: '' } : null
 
   const isPersonalGamePiece = (tile: TileRow) => {
+    // Prefer matching by tile id when possible (some DBs use integer ids like "5").
+    if (tile.id === '5') return true
+    const asNum = Number(tile.id)
+    if (Number.isFinite(asNum) && asNum === 5) return true
+
+    // Fallback for UUID-based installs: match by exact guild + name.
     const skill = tile.skill_name?.trim().toLowerCase()
     const guild = tile.guild?.trim().toLowerCase()
     return guild === 'forge' && skill === 'design your personal game piece'
