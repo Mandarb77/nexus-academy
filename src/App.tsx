@@ -8,6 +8,8 @@ import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { GoldShopPage } from './pages/GoldShopPage'
 import { InventoryPage } from './pages/InventoryPage'
+import { ResourcesPage } from './pages/ResourcesPage'
+import { PowerUpsPage } from './pages/PowerUpsPage'
 import { GuildSkillTreePage } from './pages/GuildSkillTreePage'
 import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
@@ -49,6 +51,22 @@ export default function App() {
             element={
               <StudentOnlyRoute>
                 <InventoryPage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/resources"
+            element={
+              <StudentOnlyRoute>
+                <ResourcesPage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/powerups"
+            element={
+              <StudentOnlyRoute>
+                <PowerUpsPage />
               </StudentOnlyRoute>
             }
           />

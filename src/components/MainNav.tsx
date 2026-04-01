@@ -78,6 +78,22 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
       >
         Inventory
       </NavLink>
+      <NavLink
+        to="/resources"
+        className={({ isActive }) =>
+          `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
+        }
+      >
+        Resources
+      </NavLink>
+      <NavLink
+        to="/powerups"
+        className={({ isActive }) =>
+          `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
+        }
+      >
+        Power Ups
+      </NavLink>
       {teacher ? (
         <NavLink
           to="/teacher"
