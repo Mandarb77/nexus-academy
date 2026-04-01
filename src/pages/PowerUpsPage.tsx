@@ -48,6 +48,31 @@ export function PowerUpsPage() {
                   {p}
                 </p>
               ))}
+              {s.title === 'Maine History' ? (
+                <div
+                  className="card"
+                  role="note"
+                  aria-label="Important note about consultation"
+                  style={{
+                    marginTop: '0.9rem',
+                    padding: '0.9rem',
+                    border: '1px solid rgba(239, 68, 68, 0.45)',
+                    background: 'rgba(239, 68, 68, 0.06)',
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
+                    Important
+                  </strong>
+                  <p style={{ margin: 0 }}>
+                    <strong>Important —</strong> Before the Wabanaki Confederacy is formally included
+                    in the game curriculum or used in any student-facing quests or rewards, the
+                    teacher must first make contact with Wabanaki community representatives to
+                    ensure that any use of their history, knowledge, and cultural identity is done
+                    with their full awareness and approval. This content is a placeholder only and
+                    should not be presented to students until that consultation has taken place.
+                  </p>
+                </div>
+              ) : null}
             </section>
           ))}
 
