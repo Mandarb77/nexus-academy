@@ -22,7 +22,7 @@ insert into public.tiles (guild, skill_name, wp_value) values
   ('Forge', 'Create a model', 10),
   ('Forge', 'Export STL file', 10),
   ('Forge', 'Check size before printing', 10),
-  ('Forge', 'Design for 3D printing', 10),
+  ('Forge', 'Design Your Personal Game Piece', 10),
   ('Prism', 'Vector vs raster', 10),
   ('Prism', 'Create shapes in Cuttle', 10),
   ('Prism', 'Label cut and engrave lines', 10),

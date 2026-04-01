@@ -13,13 +13,14 @@ type Props = {
   refresh?: () => Promise<void> | void
 }
 
-const DESIGN_3D_PRINTING_STEPS = [
-  "Step 1 — Sketch your design on paper first. What is your Maker's Mark? What symbol represents you as a Remembrancer?",
-  'Step 2 — Open TinkerCAD and create a new design. Your piece must fit within a 1 inch by 1 inch by 1 inch cube.',
-  'Step 3 — Import the teacher-supplied clip base file and lock it. Build your design around it.',
-  'Step 4 — Check your dimensions. Select your whole model and confirm it does not exceed 25.4mm in any direction.',
-  'Step 5 — Export your file as an STL and show the teacher before printing.',
-  'Step 6 — Print your piece. If it fails document what went wrong and what you changed for version 2.',
+const PERSONAL_GAME_PIECE_STEPS = [
+  'Step 1 — Sketch your design on paper. Before opening any software draw at least one rough sketch of your game piece. What symbol or shape represents you as a maker? Your piece must fit within a 1 inch by 1 inch by 1 inch cube.',
+  'Step 2 — Learn the basics of TinkerCAD. Watch this video before you start building. Watch TinkerCAD basics video here (link coming soon).',
+  'Step 3 — Build your design in TinkerCAD. Place objects, size them while keeping scale, and align them carefully. Use what you learned in the video.',
+  'Step 4 — Optional: Import a base from Thingiverse or Printables.',
+  'Step 5 — Check your dimensions. Select your whole model and confirm it does not exceed 25.4mm in any direction.',
+  'Step 6 — Show the teacher your design before printing. Export your STL and get approval before sending to the printer.',
+  'Step 7 — Print your piece. If the print fails document what went wrong in your patent packet and what you changed for version 2.',
 ] as const
 
 type PatentDraft = {
@@ -51,6 +52,7 @@ export function SkillTilesList({
   )
   const [submittingPatentTileId, setSubmittingPatentTileId] = useState<string | null>(null)
   const [planSubmitError, setPlanSubmitError] = useState<string | null>(null)
+  const [showImportNote, setShowImportNote] = useState(false)
   const [planByTileId, setPlanByTileId] = useState<
     Map<string, { id: string; status: PlanStatus }>
   >(() => new Map())
@@ -68,7 +70,7 @@ export function SkillTilesList({
         const arr = JSON.parse(raw) as unknown
         if (
           Array.isArray(arr) &&
-          arr.length === DESIGN_3D_PRINTING_STEPS.length &&
+          arr.length === PERSONAL_GAME_PIECE_STEPS.length &&
           arr.every((v) => typeof v === 'boolean')
         ) {
           next.set(tile.id, arr)
@@ -110,19 +112,19 @@ export function SkillTilesList({
   }, [openTileId, tiles])
 
   const openChecks = openTile
-    ? checksByTileId.get(openTile.id) ?? Array(DESIGN_3D_PRINTING_STEPS.length).fill(false)
+    ? checksByTileId.get(openTile.id) ?? Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false)
     : null
 
   const openDoneCount = openChecks ? openChecks.filter(Boolean).length : 0
-  const openAllDone = openChecks ? openDoneCount === DESIGN_3D_PRINTING_STEPS.length : false
+  const openAllDone = openChecks ? openDoneCount === PERSONAL_GAME_PIECE_STEPS.length : false
 
   const openPatent =
     openTile ? patentByTileId.get(openTile.id) ?? { field1: '', field2: '', field3: '', field4: '' } : null
 
-  const isDesignFor3DPrinting = (tile: TileRow) => {
+  const isPersonalGamePiece = (tile: TileRow) => {
     const skill = tile.skill_name?.trim().toLowerCase()
     const guild = tile.guild?.trim().toLowerCase()
-    return guild === 'forge' && skill === 'design for 3d printing'
+    return guild === 'forge' && skill === 'design your personal game piece'
   }
 
   const persistChecks = (tileId: string, checks: boolean[]) => {
@@ -160,11 +162,13 @@ export function SkillTilesList({
     setOpenMode('checklist')
     void loadPlan(tileId)
     setPlanSubmitError(null)
+    setShowImportNote(false)
   }
 
   const closeModal = () => {
     setOpenTileId(null)
     setOpenMode(null)
+    setShowImportNote(false)
   }
 
   const loadPlan = async (tileId: string) => {
@@ -206,10 +210,10 @@ export function SkillTilesList({
           const isReturned = status === 'returned'
           const busy = submittingTileId === tile.id
 
-          const isChecklistTile = isDesignFor3DPrinting(tile)
+          const isChecklistTile = isPersonalGamePiece(tile)
           const savedChecks =
             checksByTileId.get(tile.id) ??
-            Array(DESIGN_3D_PRINTING_STEPS.length).fill(false)
+            Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false)
           const doneCount = isChecklistTile ? savedChecks.filter(Boolean).length : 0
           const gateReady = isChecklistTile ? canStartChecklist(tile.id) : false
 
@@ -221,7 +225,7 @@ export function SkillTilesList({
                   <p className="skill-tile-wp">{tile.wp_value} WP</p>
                   {isChecklistTile && !isApproved && !isPending ? (
                     <p className="muted skill-tile-checklist-progress">
-                      {doneCount} of {DESIGN_3D_PRINTING_STEPS.length} steps complete
+                      {doneCount} of {PERSONAL_GAME_PIECE_STEPS.length} steps complete
                     </p>
                   ) : null}
                 </div>
@@ -305,7 +309,7 @@ export function SkillTilesList({
             {openMode === 'checklist' ? (
               <>
                 <p className="muted modal-subtitle">
-                  {openDoneCount} of {DESIGN_3D_PRINTING_STEPS.length} steps complete
+                  {openDoneCount} of {PERSONAL_GAME_PIECE_STEPS.length} steps complete
                 </p>
 
                 <div className="design3d-two-col">
@@ -439,8 +443,8 @@ export function SkillTilesList({
                   <div className="design3d-checklist-col">
                     <h3 className="design3d-col-title">Checklist</h3>
                     <ol className="checklist">
-                      {DESIGN_3D_PRINTING_STEPS.map((label, idx) => (
-                        <li key={label} className="checklist-item">
+                      {PERSONAL_GAME_PIECE_STEPS.map((label, idx) => (
+                        <li key={`${label}-${idx}`} className="checklist-item">
                           <label className="checklist-label">
                             <input
                               type="checkbox"
@@ -459,9 +463,55 @@ export function SkillTilesList({
                             />
                             <span>{label}</span>
                           </label>
+                          {idx === 3 ? (
+                            <div style={{ marginTop: '0.5rem' }}>
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                disabled={!canStartChecklist(openTile.id)}
+                                onClick={() => setShowImportNote(true)}
+                              >
+                                Read import note
+                              </button>
+                              {showImportNote ? (
+                                <div
+                                  className="card"
+                                  role="note"
+                                  style={{
+                                    marginTop: '0.5rem',
+                                    padding: '0.75rem',
+                                  }}
+                                >
+                                  <p style={{ margin: 0 }}>
+                                    You may import a starting shape from <strong>thingiverse.com</strong> or{' '}
+                                    <strong>printables.com</strong> and modify it to make it your own. Imported
+                                    designs must be meaningfully changed — not just printed as-is.
+                                  </p>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </li>
                       ))}
                     </ol>
+                    <div
+                      className="card"
+                      style={{
+                        marginTop: '1rem',
+                        padding: '0.85rem',
+                        border: '1px solid rgba(250, 204, 21, 0.35)',
+                        background: 'rgba(250, 204, 21, 0.08)',
+                      }}
+                    >
+                      <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
+                        Bonus completion available
+                      </strong>
+                      <p style={{ margin: 0 }}>
+                        This quest can be completed again for bonus WP as you improve your TinkerCAD skills. Each
+                        version must show clear improvement over the last. Document the differences in your patent
+                        packet.
+                      </p>
+                    </div>
                     {!canStartChecklist(openTile.id) ? (
                       <p className="muted" style={{ margin: '0.75rem 0 0' }}>
                         Checklist locked until the plan is approved.
