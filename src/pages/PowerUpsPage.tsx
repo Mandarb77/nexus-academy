@@ -66,10 +66,9 @@ export function PowerUpsPage() {
                   <p style={{ margin: 0 }}>
                     <strong>Important —</strong> Before the Wabanaki Confederacy is formally included
                     in the game curriculum or used in any student-facing quests or rewards, the
-                    teacher must first make contact with Wabanaki community representatives to
+                    I must first make contact with Wabanaki community representatives to
                     ensure that any use of their history, knowledge, and cultural identity is done
-                    with their full awareness and approval. This content is a placeholder only and
-                    should not be presented to students until that consultation has taken place.
+                    with their full awareness and approval.
                   </p>
                 </div>
               ) : null}
