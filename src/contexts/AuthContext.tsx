@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Profile } from '../types/profile'
@@ -78,6 +79,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -205,7 +207,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const redirectTo = `${window.location.origin}/auth/callback`
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo },
+      options: {
+        redirectTo,
+        queryParams: { prompt: 'select_account' },
+      },
     })
     if (error) {
       console.error('Google sign-in:', error.message)
@@ -214,17 +219,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
+    setProfile(null)
     if (!isSupabaseConfigured) {
-      setProfile(null)
+      setSession(null)
+      setUser(null)
+      navigate('/login', { replace: true })
       return
     }
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut({ scope: 'global' })
     if (error) {
-      console.error('Sign out:', error.message)
-      throw error
+      console.error('Sign out (global):', error.message)
+      const { error: localErr } = await supabase.auth.signOut({ scope: 'local' })
+      if (localErr) console.error('Sign out (local):', localErr.message)
     }
-    setProfile(null)
-  }, [])
+    navigate('/login', { replace: true })
+  }, [navigate])
 
   const value = useMemo(
     () => ({
