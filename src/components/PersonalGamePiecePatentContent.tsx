@@ -422,6 +422,22 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                   <span>{label}</span>
                 </label>
 
+                {idx === 1 ? (
+                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <a
+                      href="https://www.tinkercad.com/joinclass/2XTJEL26G"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`btn-secondary${!canStartChecklist ? ' btn-disabled' : ''}`}
+                      aria-disabled={!canStartChecklist}
+                      onClick={!canStartChecklist ? (e) => e.preventDefault() : undefined}
+                      style={{ display: 'inline-block', textDecoration: 'none' }}
+                    >
+                      Join TinkerCAD class — code: 2XTJEL26G
+                    </a>
+                  </div>
+                ) : null}
+
                 {idx === 2 ? (
                   <div style={{ marginTop: '0.5rem' }}>
                     <a
