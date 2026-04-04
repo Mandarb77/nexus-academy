@@ -5,7 +5,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
-const GUILD_ORDER = ['forge', 'prism']
+const GUILD_ORDER = ['forge', 'prism', 'folded path']
 
 export type TileCompletionState = {
   status: SkillCompletionStatus

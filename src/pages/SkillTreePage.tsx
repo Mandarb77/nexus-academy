@@ -1,5 +1,6 @@
 import forgeBanner from '../assets/forge-banner.png'
 import prismBanner from '../assets/prism-banner.png'
+import foldedBanner from '../assets/folded-banner.png'
 import { MainNav } from '../components/MainNav'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
@@ -56,7 +57,7 @@ export function SkillTreePage() {
           {guildKeys.map((guildKey) => {
             const mod = skillTreeGuildModifier(guildKey)
             const bannerSrc =
-              mod === 'forge' ? forgeBanner : mod === 'prism' ? prismBanner : null
+              mod === 'forge' ? forgeBanner : mod === 'prism' ? prismBanner : mod === 'folded' ? foldedBanner : null
 
             return (
               <section

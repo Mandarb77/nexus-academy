@@ -15,6 +15,7 @@ import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
 import { TeacherResetPage } from './pages/TeacherResetPage'
 import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
+import { PatentStickerPage } from './pages/PatentStickerPage'
 import './App.css'
 
 export default function App() {
@@ -76,6 +77,14 @@ export default function App() {
             element={
               <StudentOnlyRoute>
                 <PatentGamePiecePage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/patent-sticker/:tileId"
+            element={
+              <StudentOnlyRoute>
+                <PatentStickerPage />
               </StudentOnlyRoute>
             }
           />

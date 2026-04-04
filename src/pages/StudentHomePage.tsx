@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import forgeBanner from '../assets/forge-banner.png'
 import prismBanner from '../assets/prism-banner.png'
+import foldedBanner from '../assets/folded-banner.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { progressToApprenticeMage } from '../lib/rankProgress'
@@ -41,15 +42,9 @@ export function StudentHomePage() {
           Open a guild to view skills and request credit from your teacher.
         </p>
 
-        <div
-          className="student-home-main-layout"
-          role="group"
-          aria-label="Your progress and guild shortcuts"
-        >
+        <div className="student-home-main-layout" role="group" aria-label="Your progress and guild shortcuts">
           <section className="card student-home-card" aria-labelledby="student-home-stats-heading">
-            <h2 id="student-home-stats-heading" className="visually-hidden">
-              Your progress
-            </h2>
+            <h2 id="student-home-stats-heading" className="visually-hidden">Your progress</h2>
 
             <div className="student-home-stat student-home-stat--hero">
               <span className="student-home-stat-label">Workshop Points</span>
@@ -76,22 +71,13 @@ export function StudentHomePage() {
                 aria-valuenow={Math.min(progress.currentWp, progress.targetWp)}
                 aria-label={`Progress toward ${progress.nextRankName}`}
               >
-                <div
-                  className="rank-progress-fill"
-                  style={{ width: `${progress.percent}%` }}
-                />
+                <div className="rank-progress-fill" style={{ width: `${progress.percent}%` }} />
               </div>
               <p className="student-home-progress-caption muted">
                 {progress.reachedNextRank ? (
-                  <>
-                    {progress.currentWp} / {progress.targetWp} WP — you have reached{' '}
-                    <strong>{progress.nextRankName}</strong>
-                  </>
+                  <>{progress.currentWp} / {progress.targetWp} WP — you have reached <strong>{progress.nextRankName}</strong></>
                 ) : (
-                  <>
-                    {progress.currentWp} / {progress.targetWp} Workshop Points to{' '}
-                    <strong>{progress.nextRankName}</strong>
-                  </>
+                  <>{progress.currentWp} / {progress.targetWp} Workshop Points to <strong>{progress.nextRankName}</strong></>
                 )}
               </p>
             </div>
@@ -102,29 +88,20 @@ export function StudentHomePage() {
             </div>
           </section>
 
-          <Link
-            to="/tree/forge"
-            className="student-home-guild-banner-link student-home-guild-banner-link--side student-home-guild-banner-link--forge"
-          >
-            <img
-              src={forgeBanner}
-              alt="Forge guild — view skills and mark complete"
-              className="student-home-guild-banner-img student-home-guild-banner-img--side"
-              decoding="async"
-            />
-          </Link>
-
-          <Link
-            to="/tree/prism"
-            className="student-home-guild-banner-link student-home-guild-banner-link--side student-home-guild-banner-link--prism"
-          >
-            <img
-              src={prismBanner}
-              alt="Prism guild — view skills and mark complete"
-              className="student-home-guild-banner-img student-home-guild-banner-img--side"
-              decoding="async"
-            />
-          </Link>
+          <div className="student-home-guild-grid">
+            <Link to="/tree/forge" className="student-home-guild-banner-link student-home-guild-banner-link--forge">
+              <img src={forgeBanner} alt="Forge guild — view skills and mark complete"
+                className="student-home-guild-banner-img" decoding="async" />
+            </Link>
+            <Link to="/tree/prism" className="student-home-guild-banner-link student-home-guild-banner-link--prism">
+              <img src={prismBanner} alt="Prism guild — view skills and mark complete"
+                className="student-home-guild-banner-img" decoding="async" />
+            </Link>
+            <Link to="/tree/folded" className="student-home-guild-banner-link student-home-guild-banner-link--folded">
+              <img src={foldedBanner} alt="Folded Path guild — view skills and mark complete"
+                className="student-home-guild-banner-img" decoding="async" />
+            </Link>
+          </div>
         </div>
       </section>
     </div>

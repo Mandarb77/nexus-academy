@@ -2,17 +2,18 @@ import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import forgeBanner from '../assets/forge-banner.png'
 import prismBanner from '../assets/prism-banner.png'
+import foldedBanner from '../assets/folded-banner.png'
 import { MainNav } from '../components/MainNav'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { guildHeading, skillTreeGuildModifier } from '../lib/guildTree'
 
-type GuildSlug = 'forge' | 'prism'
+type GuildSlug = 'forge' | 'prism' | 'folded'
 
 function parseGuildSlug(raw: string | undefined): GuildSlug | null {
   const s = raw?.trim().toLowerCase()
-  if (s === 'forge' || s === 'prism') return s
+  if (s === 'forge' || s === 'prism' || s === 'folded') return s
   return null
 }
 
@@ -43,7 +44,7 @@ export function GuildSkillTreePage() {
     return <Navigate to="/" replace />
   }
 
-  const bannerSrc = slug === 'forge' ? forgeBanner : prismBanner
+  const bannerSrc = slug === 'forge' ? forgeBanner : slug === 'prism' ? prismBanner : slug === 'folded' ? foldedBanner : null
   const guildTitle = guildKey ? `${guildHeading(guildKey)} guild` : `${guildHeading(slug)} guild`
 
   return (
@@ -80,14 +81,11 @@ export function GuildSkillTreePage() {
           className={`skill-tree-guild skill-tree-guild--single skill-tree-guild--${mod}`}
           aria-labelledby="guild-single-heading"
         >
-          <div className="skill-tree-guild-banner skill-tree-guild-banner--below-title">
-            <img
-              className="skill-tree-guild-banner__img"
-              src={bannerSrc}
-              alt=""
-              decoding="async"
-            />
-          </div>
+          {bannerSrc ? (
+            <div className="skill-tree-guild-banner skill-tree-guild-banner--below-title">
+              <img className="skill-tree-guild-banner__img" src={bannerSrc} alt="" decoding="async" />
+            </div>
+          ) : null}
           <h1 id="guild-single-heading" className="skill-tree-guild-page-title">
             {guildTitle}
           </h1>
