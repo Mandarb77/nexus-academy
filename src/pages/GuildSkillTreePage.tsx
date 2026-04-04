@@ -24,6 +24,7 @@ export function GuildSkillTreePage() {
     guildKeys,
     tilesByGuild,
     completionByTileId,
+    patentProgressByTileId,
     loading,
     submittingTileId,
     markComplete,
@@ -93,6 +94,7 @@ export function GuildSkillTreePage() {
           <SkillTilesList
             tiles={tiles}
             completionByTileId={completionByTileId}
+            patentProgressByTileId={patentProgressByTileId}
             submittingTileId={submittingTileId}
             markComplete={markComplete}
             canUseDb={canUseDb}

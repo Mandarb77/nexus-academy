@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import type { TileRow } from '../types/tile'
-import type { TileCompletionState } from '../hooks/useSkillTree'
+import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
 
 type Props = {
   tiles: TileRow[]
   completionByTileId: Map<string, TileCompletionState>
+  patentProgressByTileId: Map<string, PatentProgress>
   submittingTileId: string | null
   markComplete: (tile: TileRow) => Promise<boolean>
   canUseDb: boolean
@@ -16,57 +16,16 @@ type Props = {
 export function SkillTilesList({
   tiles,
   completionByTileId,
+  patentProgressByTileId,
   submittingTileId,
   markComplete,
   canUseDb,
 }: Props) {
-  const { user } = useAuth()
-  const studentId = user?.id ?? 'anonymous'
-  const [checksByTileId, setChecksByTileId] = useState<Map<string, boolean[]>>(
-    () => new Map(),
-  )
+  const navigate = useNavigate()
 
-  const loadChecklistProgress = useCallback(() => {
-    const next = new Map<string, boolean[]>()
-    for (const tile of tiles) {
-      if (!isPersonalGamePieceTile(tile)) continue
-      const key = `nexus:tile-checklist:${studentId}:${tile.id}`
-      const raw = localStorage.getItem(key)
-      if (!raw) continue
-      try {
-        const arr = JSON.parse(raw) as unknown
-        if (
-          Array.isArray(arr) &&
-          arr.length === PERSONAL_GAME_PIECE_STEPS.length &&
-          arr.every((v) => typeof v === 'boolean')
-        ) {
-          next.set(tile.id, arr)
-        }
-      } catch {
-        // ignore
-      }
-    }
-    setChecksByTileId(next)
-  }, [tiles, studentId])
-
-  useEffect(() => {
-    loadChecklistProgress()
-  }, [loadChecklistProgress])
-
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (!e.key?.includes(`:${studentId}:`) || !e.key.startsWith('nexus:tile-checklist:')) return
-      loadChecklistProgress()
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [loadChecklistProgress, studentId])
-
-  const openPatentWindow = (tileId: string) => {
-    const path = `/patent-game-piece/${encodeURIComponent(tileId)}`
-    const url = `${window.location.origin}${path}`
-    const w = window.open(url, '_blank', 'noopener,noreferrer')
-    if (w) w.opener = null
+  const openPatentPage = (tileId: string) => {
+    console.log('[SkillTilesList] Opening patent application for tile:', tileId)
+    navigate(`/patent-game-piece/${encodeURIComponent(tileId)}`)
   }
 
   return (
@@ -81,9 +40,8 @@ export function SkillTilesList({
           const busy = submittingTileId === tile.id
 
           const isChecklistTile = isPersonalGamePieceTile(tile)
-          const savedChecks =
-            checksByTileId.get(tile.id) ?? Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false)
-          const doneCount = isChecklistTile ? savedChecks.filter(Boolean).length : 0
+          const patentProgress = isChecklistTile ? patentProgressByTileId.get(tile.id) : undefined
+          const doneCount = patentProgress?.checklistState.filter(Boolean).length ?? 0
 
           return (
             <li key={tile.id} className="skill-tile card">
@@ -123,7 +81,7 @@ export function SkillTilesList({
                       type="button"
                       className="btn-skill btn-skill--complete"
                       disabled={!canUseDb}
-                      onClick={() => openPatentWindow(tile.id)}
+                      onClick={() => openPatentPage(tile.id)}
                     >
                       Open patent application
                     </button>

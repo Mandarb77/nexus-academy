@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
@@ -14,7 +15,6 @@ type PatentDraft = {
 }
 
 type PlanStatus = 'none' | 'pending' | 'approved' | 'returned'
-
 type PlanState = { id: string; status: PlanStatus }
 
 type Props = {
@@ -26,46 +26,16 @@ type Props = {
 const TINKERCAD_TEMPLATE_URL =
   'https://www.tinkercad.com/things/1v3brIkBiqu/edit?returnTo=%2Fclassrooms%2F7CUhdwU3tyT%2Factivities%2FkSIm4lUkPQI&sharecode=DX6LI_t08XwEVWpoDJ2Puk_CeJgr5t7fhARIwRkhF2Q'
 
-const EMPTY_CHECKS = () => Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false) as boolean[]
+const EMPTY_CHECKS = (): boolean[] => Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false)
 const EMPTY_DRAFT: PatentDraft = { field1: '', field2: '', field3: '', field4: '' }
 
 export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus }: Props) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
 
-  // ── local cache helpers ────────────────────────────────────────────────────
-  const checklistKey = `nexus:tile-checklist:${studentId}:${tile.id}`
-  const patentKey = `nexus:tile-patent:${studentId}:${tile.id}`
-
-  const readCachedChecks = (): boolean[] => {
-    try {
-      const raw = localStorage.getItem(checklistKey)
-      if (!raw) return EMPTY_CHECKS()
-      const arr = JSON.parse(raw) as unknown
-      if (
-        Array.isArray(arr) &&
-        arr.length === PERSONAL_GAME_PIECE_STEPS.length &&
-        arr.every((v) => typeof v === 'boolean')
-      ) {
-        return arr as boolean[]
-      }
-    } catch { /* ignore */ }
-    return EMPTY_CHECKS()
-  }
-
-  const readCachedDraft = (): Partial<PatentDraft> => {
-    try {
-      const raw = localStorage.getItem(patentKey)
-      if (!raw) return {}
-      return JSON.parse(raw) as Partial<PatentDraft>
-    } catch { /* ignore */ }
-    return {}
-  }
-
-  const wipeCachedState = () => {
-    localStorage.removeItem(checklistKey)
-    localStorage.removeItem(patentKey)
-  }
+  // field1 draft localStorage key (only used before plan row exists in DB)
+  const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
 
   // ── component state ────────────────────────────────────────────────────────
   const [initialised, setInitialised] = useState(false)
@@ -80,17 +50,17 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
   const canUseDb = Boolean(user?.id)
 
-  // ── load from DB (authoritative source of truth) ───────────────────────────
+  // ── DB fetch — single source of truth ─────────────────────────────────────
   // Rules:
-  //   • No DB patent row  → wipe local cache, show blank form.
-  //   • Plan pending      → field_1 from DB; clear checklist cache (not yet unlocked).
-  //   • Plan approved     → field_1 from DB; restore field2-4 and checklist from cache.
+  //  • No DB row (post-reset or brand new) → clear stale localStorage, show blank form.
+  //  • Plan pending/returned → field_1 from DB (or localStorage draft); no checklist.
+  //  • Plan approved → field_1/2/3/4 and checklist_state all from DB.
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) return
 
     const { data, error } = await supabase
       .from('patents')
-      .select('id, status, stage, field_1, created_at')
+      .select('id, status, stage, field_1, field_2, field_3, field_4, checklist_state, created_at')
       .eq('student_id', user.id)
       .eq('tile_id', tile.id)
       .eq('stage', 'plan')
@@ -98,16 +68,27 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       .limit(1)
 
     if (error) {
-      console.error('load plan from db:', error.message)
+      console.error('[PatentContent] load from db:', error.message)
       setInitialised(true)
       return
     }
 
-    const row = (data ?? [])[0] as { id: string; status: string; field_1: string } | undefined
+    const row = (data ?? [])[0] as {
+      id: string
+      status: string
+      field_1: string
+      field_2: string | null
+      field_3: string | null
+      field_4: string | null
+      checklist_state: unknown
+    } | undefined
 
     if (!row) {
-      // ── No patent row exists (fresh start or after a reset) ────────────────
-      wipeCachedState()
+      // No patent row → wipe any stale localStorage and show blank form.
+      localStorage.removeItem(field1DraftKey)
+      // Also clean up old-style keys from previous implementation.
+      localStorage.removeItem(`nexus:tile-checklist:${studentId}:${tile.id}`)
+      localStorage.removeItem(`nexus:tile-patent:${studentId}:${tile.id}`)
       setChecks(EMPTY_CHECKS())
       setPatent(EMPTY_DRAFT)
       setPlan({ id: '', status: 'none' })
@@ -115,34 +96,34 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       return
     }
 
-    // ── Patent row found ───────────────────────────────────────────────────
     const planStatus = (row.status as PlanStatus) ?? 'pending'
     setPlan({ id: row.id, status: planStatus })
 
-    const dbField1 = row.field_1 ?? ''
-
     if (planStatus === 'approved') {
-      // Restore checklist and draft fields 2-4 from cache (they live only client-side).
-      const restoredChecks = readCachedChecks()
-      const draft = readCachedDraft()
-      setChecks(restoredChecks)
+      // Restore checklist state from DB
+      const rawCs = row.checklist_state
+      const cs =
+        Array.isArray(rawCs) && rawCs.length === PERSONAL_GAME_PIECE_STEPS.length
+          ? (rawCs as boolean[])
+          : EMPTY_CHECKS()
+      setChecks(cs)
       setPatent({
-        field1: dbField1,
-        field2: typeof draft.field2 === 'string' ? draft.field2 : '',
-        field3: typeof draft.field3 === 'string' ? draft.field3 : '',
-        field4: typeof draft.field4 === 'string' ? draft.field4 : '',
+        field1: row.field_1 ?? '',
+        field2: row.field_2 ?? '',
+        field3: row.field_3 ?? '',
+        field4: row.field_4 ?? '',
       })
     } else {
-      // Plan is pending or returned — checklist is still locked, clear it.
-      localStorage.removeItem(checklistKey)
+      // Plan pending or returned — checklist is locked, only field1 visible.
       setChecks(EMPTY_CHECKS())
-
-      // Restore only field1 (try cache first in case student was still editing).
-      const draft = readCachedDraft()
-      const draftField1 = typeof draft.field1 === 'string' && draft.field1.trim()
-        ? draft.field1
-        : dbField1
-      setPatent({ field1: draftField1, field2: '', field3: '', field4: '' })
+      // Prefer any newer draft the student typed before plan was created.
+      const draftField1 = localStorage.getItem(field1DraftKey)
+      setPatent({
+        field1: draftField1 ?? row.field_1 ?? '',
+        field2: '',
+        field3: '',
+        field4: '',
+      })
     }
 
     setInitialised(true)
@@ -153,23 +134,27 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     void loadFromDatabase()
   }, [loadFromDatabase])
 
-  // ── cache write helpers ────────────────────────────────────────────────────
-  const persistChecks = (next: boolean[]) => {
-    localStorage.setItem(checklistKey, JSON.stringify(next))
+  // ── DB write helpers ───────────────────────────────────────────────────────
+  const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
+    if (!pid) return
+    const { error } = await supabase
+      .from('patents')
+      .update({ checklist_state: nextArr })
+      .eq('id', pid)
+    if (error) console.error('[PatentContent] checklist save:', error.message)
   }
 
-  const persistPatent = (draft: PatentDraft) => {
-    localStorage.setItem(patentKey, JSON.stringify(draft))
-  }
-
-  const clearChecks = () => {
-    localStorage.removeItem(checklistKey)
-    setChecks(EMPTY_CHECKS())
-  }
-
-  const clearPatent = () => {
-    localStorage.removeItem(patentKey)
-    setPatent(EMPTY_DRAFT)
+  const saveFieldToDb = async (
+    fieldName: 'field_2' | 'field_3' | 'field_4',
+    value: string,
+    pid: string,
+  ) => {
+    if (!pid) return
+    const { error } = await supabase
+      .from('patents')
+      .update({ [fieldName]: value })
+      .eq('id', pid)
+    if (error) console.error(`[PatentContent] ${fieldName} save:`, error.message)
   }
 
   // ── derived state ─────────────────────────────────────────────────────────
@@ -177,7 +162,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === PERSONAL_GAME_PIECE_STEPS.length
 
-  // ── actions ───────────────────────────────────────────────────────────────
+  // ── submit plan ────────────────────────────────────────────────────────────
   const onSubmitPlan = async () => {
     setPlanSubmitError(null)
     if (!user?.id) { setPlanSubmitError('Not signed in.'); return }
@@ -199,14 +184,17 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         }
         return
       }
+      // Plan submitted — clear the localStorage draft and reload from DB.
+      localStorage.removeItem(field1DraftKey)
       await loadFromDatabase()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Could not submit plan.'
-      console.error('submit plan:', e)
+      console.error('[PatentContent] submit plan:', e)
       setPlanSubmitError(msg)
     }
   }
 
+  // ── submit for approval ────────────────────────────────────────────────────
   const onSubmitForApproval = async () => {
     setSubmitApprovalError(null)
     setSubmitSuccessMessage(null)
@@ -243,9 +231,15 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
     setSubmittingPatent(true)
     try {
+      // Save all fields + advance stage to 'packet' in one update.
       const { error: updErr } = await supabase
         .from('patents')
-        .update({ stage: 'packet', field_2: patent.field2, field_3: patent.field3, field_4: patent.field4 })
+        .update({
+          stage: 'packet',
+          field_2: patent.field2,
+          field_3: patent.field3,
+          field_4: patent.field4,
+        })
         .eq('id', pid)
       if (updErr) throw updErr
 
@@ -258,19 +252,12 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       })
       if (scErr) throw scErr
 
-      clearChecks()
-      clearPatent()
       await refresh()
-      setSubmitSuccessMessage('Submitted for approval. Refreshing…')
-
-      try {
-        if (window.opener && !window.opener.closed) window.opener.location.reload()
-      } catch { /* cross-origin opener */ }
-
-      window.setTimeout(() => window.location.reload(), 600)
+      setSubmitSuccessMessage('Submitted for approval! Returning to Forge skill tree…')
+      window.setTimeout(() => navigate('/tree/forge'), 1200)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Submit failed.'
-      console.error('submit for approval:', e)
+      console.error('[PatentContent] submit for approval:', e)
       setSubmitApprovalError(msg)
     } finally {
       setSubmittingPatent(false)
@@ -319,6 +306,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
             <strong>1 inch wide, 1 inch deep, 2 inches tall</strong>.
           </p>
 
+          {/* Field 1 — required before submitting plan */}
           <label className="patent-field">
             <span className="patent-label">
               What are you going to make <span className="patent-required">*</span>
@@ -329,13 +317,18 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               placeholder="One or two sentences — if you give size, use inches (max 1×1×2 inches)."
               disabled={plan.status === 'pending'}
               onChange={(e) => {
-                const next = { ...patent, field1: e.target.value }
-                setPatent(next)
-                persistPatent(next)
+                const val = e.target.value
+                setPatent((p) => ({ ...p, field1: val }))
+                // Draft saved to localStorage until plan is submitted
+                if (!plan.id) {
+                  if (val.trim()) localStorage.setItem(field1DraftKey, val)
+                  else localStorage.removeItem(field1DraftKey)
+                }
               }}
             />
           </label>
 
+          {/* Fields 2-4 — unlocked after plan approved; saved live to DB */}
           <label className="patent-field">
             <span className="patent-label">Who is it for, and why does it matter?</span>
             <textarea
@@ -343,9 +336,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               rows={4}
               disabled={!canStartChecklist}
               onChange={(e) => {
-                const next = { ...patent, field2: e.target.value }
-                setPatent(next)
-                persistPatent(next)
+                const val = e.target.value
+                setPatent((p) => ({ ...p, field2: val }))
+                void saveFieldToDb('field_2', val, plan.id)
               }}
             />
           </label>
@@ -357,9 +350,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               rows={5}
               disabled={!canStartChecklist}
               onChange={(e) => {
-                const next = { ...patent, field3: e.target.value }
-                setPatent(next)
-                persistPatent(next)
+                const val = e.target.value
+                setPatent((p) => ({ ...p, field3: val }))
+                void saveFieldToDb('field_3', val, plan.id)
               }}
             />
           </label>
@@ -371,9 +364,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               value={patent.field4}
               disabled={!canStartChecklist}
               onChange={(e) => {
-                const next = { ...patent, field4: e.target.value }
-                setPatent(next)
-                persistPatent(next)
+                const val = e.target.value
+                setPatent((p) => ({ ...p, field4: val }))
+                void saveFieldToDb('field_4', val, plan.id)
               }}
             />
           </label>
@@ -421,7 +414,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                       const nextArr = [...checks]
                       nextArr[idx] = e.target.checked
                       setChecks(nextArr)
-                      persistChecks(nextArr)
+                      // Save to DB — checklist progress is DB-backed
+                      void saveChecklistToDb(nextArr, plan.id)
                     }}
                   />
                   <span>{label}</span>

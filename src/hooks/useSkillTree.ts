@@ -12,6 +12,13 @@ export type TileCompletionState = {
   completionId: string
 }
 
+/** Latest plan-stage patent for a given tile — used for the checklist badge on the skill tree. */
+export type PatentProgress = {
+  id: string
+  planStatus: string
+  checklistState: boolean[]
+}
+
 function sortGuildKeys(guilds: string[]): string[] {
   const seen = [...new Set(guilds)]
   return seen.sort((a, b) => {
@@ -29,6 +36,9 @@ export function useSkillTree() {
   const [tiles, setTiles] = useState<TileRow[]>([])
   const [completionByTileId, setCompletionByTileId] = useState<
     Map<string, TileCompletionState>
+  >(() => new Map())
+  const [patentProgressByTileId, setPatentProgressByTileId] = useState<
+    Map<string, PatentProgress>
   >(() => new Map())
   const [loading, setLoading] = useState(true)
   const [submittingTileId, setSubmittingTileId] = useState<string | null>(null)
@@ -62,10 +72,43 @@ export function useSkillTree() {
     setCompletionByTileId(next)
   }, [studentId])
 
+  const refreshPatentProgress = useCallback(async () => {
+    if (!studentId || !isSupabaseConfigured) {
+      setPatentProgressByTileId(new Map())
+      return
+    }
+    const { data, error } = await supabase
+      .from('patents')
+      .select('id, tile_id, status, checklist_state')
+      .eq('student_id', studentId)
+      .eq('stage', 'plan')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('patents progress:', error.message)
+      return
+    }
+    const next = new Map<string, PatentProgress>()
+    for (const row of data ?? []) {
+      const tid = row.tile_id as string
+      if (!next.has(tid)) {
+        const rawCs = row.checklist_state as unknown
+        const cs = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
+        next.set(tid, {
+          id: row.id as string,
+          planStatus: row.status as string,
+          checklistState: cs,
+        })
+      }
+    }
+    setPatentProgressByTileId(next)
+  }, [studentId])
+
   const refreshAll = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setTiles([])
       setCompletionByTileId(new Map())
+      setPatentProgressByTileId(new Map())
       setLoading(false)
       return
     }
@@ -84,9 +127,9 @@ export function useSkillTree() {
       setTiles((tileRows ?? []) as TileRow[])
     }
 
-    await refreshCompletions()
+    await Promise.all([refreshCompletions(), refreshPatentProgress()])
     setLoading(false)
-  }, [refreshCompletions])
+  }, [refreshCompletions, refreshPatentProgress])
 
   useEffect(() => {
     void refreshAll()
@@ -160,6 +203,7 @@ export function useSkillTree() {
     tilesByGuild,
     guildHeading,
     completionByTileId,
+    patentProgressByTileId,
     loading,
     submittingTileId,
     markComplete,
