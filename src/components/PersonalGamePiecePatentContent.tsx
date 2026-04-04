@@ -439,19 +439,31 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                 ) : null}
 
                 {idx === 3 ? (
-                  <div style={{ marginTop: '0.5rem' }}>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <button
                       type="button"
                       className="btn-secondary"
                       disabled={!canStartChecklist}
-                      onClick={() => setShowImportNote(true)}
+                      onClick={() => {
+                        const w = window.open('https://www.tinkercad.com/things/1v3brIkBiqu-game-clip2', '_blank', 'noopener,noreferrer')
+                        if (w) w.opener = null
+                      }}
                     >
-                      Read import note
+                      Open locked base in TinkerCAD
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={!canStartChecklist}
+                      onClick={() => setShowImportNote((prev) => !prev)}
+                    >
+                      {showImportNote ? 'Hide import note' : 'Read import note'}
                     </button>
                     {showImportNote ? (
-                      <div className="card" role="note" style={{ marginTop: '0.5rem', padding: '0.75rem' }}>
+                      <div className="card" role="note" style={{ padding: '0.75rem' }}>
                         <p style={{ margin: 0 }}>
-                          You may import a starting shape from <strong>thingiverse.com</strong> or{' '}
+                          Use the <strong>locked base</strong> link above to open the game piece clip in TinkerCAD — copy it into your own design.
+                          You can also import a starting shape from <strong>thingiverse.com</strong> or{' '}
                           <strong>printables.com</strong> and modify it to make it your own. Imported designs must be
                           meaningfully changed — not just printed as-is.
                         </p>
