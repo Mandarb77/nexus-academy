@@ -155,6 +155,7 @@ export function useSkillTree() {
   )
 
   return {
+    tiles,
     guildKeys,
     tilesByGuild,
     guildHeading,

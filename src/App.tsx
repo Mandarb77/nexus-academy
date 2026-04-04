@@ -14,6 +14,7 @@ import { GuildSkillTreePage } from './pages/GuildSkillTreePage'
 import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
 import { TeacherResetPage } from './pages/TeacherResetPage'
+import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import './App.css'
 
 export default function App() {
@@ -67,6 +68,14 @@ export default function App() {
             element={
               <StudentOnlyRoute>
                 <PowerUpsPage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/patent-game-piece/:tileId"
+            element={
+              <StudentOnlyRoute>
+                <PatentGamePiecePage />
               </StudentOnlyRoute>
             }
           />
