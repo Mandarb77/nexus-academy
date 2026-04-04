@@ -15,6 +15,8 @@ type PatentDraft = {
 
 type PlanStatus = 'none' | 'pending' | 'approved' | 'returned'
 
+type PlanState = { id: string; status: PlanStatus }
+
 type Props = {
   tile: TileRow
   refresh: () => Promise<void>
@@ -24,129 +26,163 @@ type Props = {
 const TINKERCAD_TEMPLATE_URL =
   'https://www.tinkercad.com/things/1v3brIkBiqu/edit?returnTo=%2Fclassrooms%2F7CUhdwU3tyT%2Factivities%2FkSIm4lUkPQI&sharecode=DX6LI_t08XwEVWpoDJ2Puk_CeJgr5t7fhARIwRkhF2Q'
 
+const EMPTY_CHECKS = () => Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false) as boolean[]
+const EMPTY_DRAFT: PatentDraft = { field1: '', field2: '', field3: '', field4: '' }
+
 export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus }: Props) {
   const { user } = useAuth()
   const studentId = user?.id ?? 'anonymous'
 
-  const [checks, setChecks] = useState<boolean[]>(() =>
-    Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false),
-  )
-  const [patent, setPatent] = useState<PatentDraft>({
-    field1: '',
-    field2: '',
-    field3: '',
-    field4: '',
-  })
+  // ── local cache helpers ────────────────────────────────────────────────────
+  const checklistKey = `nexus:tile-checklist:${studentId}:${tile.id}`
+  const patentKey = `nexus:tile-patent:${studentId}:${tile.id}`
+
+  const readCachedChecks = (): boolean[] => {
+    try {
+      const raw = localStorage.getItem(checklistKey)
+      if (!raw) return EMPTY_CHECKS()
+      const arr = JSON.parse(raw) as unknown
+      if (
+        Array.isArray(arr) &&
+        arr.length === PERSONAL_GAME_PIECE_STEPS.length &&
+        arr.every((v) => typeof v === 'boolean')
+      ) {
+        return arr as boolean[]
+      }
+    } catch { /* ignore */ }
+    return EMPTY_CHECKS()
+  }
+
+  const readCachedDraft = (): Partial<PatentDraft> => {
+    try {
+      const raw = localStorage.getItem(patentKey)
+      if (!raw) return {}
+      return JSON.parse(raw) as Partial<PatentDraft>
+    } catch { /* ignore */ }
+    return {}
+  }
+
+  const wipeCachedState = () => {
+    localStorage.removeItem(checklistKey)
+    localStorage.removeItem(patentKey)
+  }
+
+  // ── component state ────────────────────────────────────────────────────────
+  const [initialised, setInitialised] = useState(false)
+  const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
+  const [checks, setChecks] = useState<boolean[]>(EMPTY_CHECKS())
+  const [patent, setPatent] = useState<PatentDraft>(EMPTY_DRAFT)
   const [submittingPatent, setSubmittingPatent] = useState(false)
   const [planSubmitError, setPlanSubmitError] = useState<string | null>(null)
   const [submitApprovalError, setSubmitApprovalError] = useState<string | null>(null)
   const [submitSuccessMessage, setSubmitSuccessMessage] = useState<string | null>(null)
   const [showImportNote, setShowImportNote] = useState(false)
-  const [planByTileId, setPlanByTileId] = useState<
-    Map<string, { id: string; status: PlanStatus }>
-  >(() => new Map())
 
   const canUseDb = Boolean(user?.id)
 
-  const loadPlan = useCallback(async () => {
+  // ── load from DB (authoritative source of truth) ───────────────────────────
+  // Rules:
+  //   • No DB patent row  → wipe local cache, show blank form.
+  //   • Plan pending      → field_1 from DB; clear checklist cache (not yet unlocked).
+  //   • Plan approved     → field_1 from DB; restore field2-4 and checklist from cache.
+  const loadFromDatabase = useCallback(async () => {
     if (!user?.id) return
+
     const { data, error } = await supabase
       .from('patents')
-      .select('id, status, stage, created_at')
+      .select('id, status, stage, field_1, created_at')
       .eq('student_id', user.id)
       .eq('tile_id', tile.id)
       .eq('stage', 'plan')
       .order('created_at', { ascending: false })
       .limit(1)
+
     if (error) {
-      console.error('load plan:', error.message)
+      console.error('load plan from db:', error.message)
+      setInitialised(true)
       return
     }
-    const row = (data ?? [])[0] as { id: string; status: string } | undefined
-    setPlanByTileId((prev) => {
-      const next = new Map(prev)
-      if (!row) next.set(tile.id, { id: '', status: 'none' })
-      else next.set(tile.id, { id: row.id, status: (row.status as PlanStatus) ?? 'pending' })
-      return next
-    })
-  }, [user?.id, tile.id])
+
+    const row = (data ?? [])[0] as { id: string; status: string; field_1: string } | undefined
+
+    if (!row) {
+      // ── No patent row exists (fresh start or after a reset) ────────────────
+      wipeCachedState()
+      setChecks(EMPTY_CHECKS())
+      setPatent(EMPTY_DRAFT)
+      setPlan({ id: '', status: 'none' })
+      setInitialised(true)
+      return
+    }
+
+    // ── Patent row found ───────────────────────────────────────────────────
+    const planStatus = (row.status as PlanStatus) ?? 'pending'
+    setPlan({ id: row.id, status: planStatus })
+
+    const dbField1 = row.field_1 ?? ''
+
+    if (planStatus === 'approved') {
+      // Restore checklist and draft fields 2-4 from cache (they live only client-side).
+      const restoredChecks = readCachedChecks()
+      const draft = readCachedDraft()
+      setChecks(restoredChecks)
+      setPatent({
+        field1: dbField1,
+        field2: typeof draft.field2 === 'string' ? draft.field2 : '',
+        field3: typeof draft.field3 === 'string' ? draft.field3 : '',
+        field4: typeof draft.field4 === 'string' ? draft.field4 : '',
+      })
+    } else {
+      // Plan is pending or returned — checklist is still locked, clear it.
+      localStorage.removeItem(checklistKey)
+      setChecks(EMPTY_CHECKS())
+
+      // Restore only field1 (try cache first in case student was still editing).
+      const draft = readCachedDraft()
+      const draftField1 = typeof draft.field1 === 'string' && draft.field1.trim()
+        ? draft.field1
+        : dbField1
+      setPatent({ field1: draftField1, field2: '', field3: '', field4: '' })
+    }
+
+    setInitialised(true)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, tile.id, studentId])
 
   useEffect(() => {
-    void loadPlan()
-  }, [loadPlan])
+    void loadFromDatabase()
+  }, [loadFromDatabase])
 
-  useEffect(() => {
-    const key = `nexus:tile-checklist:${studentId}:${tile.id}`
-    const raw = localStorage.getItem(key)
-    if (raw) {
-      try {
-        const arr = JSON.parse(raw) as unknown
-        if (
-          Array.isArray(arr) &&
-          arr.length === PERSONAL_GAME_PIECE_STEPS.length &&
-          arr.every((v) => typeof v === 'boolean')
-        ) {
-          setChecks(arr)
-        }
-      } catch {
-        // ignore
-      }
-    }
-    const pKey = `nexus:tile-patent:${studentId}:${tile.id}`
-    const pRaw = localStorage.getItem(pKey)
-    if (pRaw) {
-      try {
-        const d = JSON.parse(pRaw) as Partial<PatentDraft>
-        if (
-          typeof d?.field1 === 'string' &&
-          typeof d?.field2 === 'string' &&
-          typeof d?.field3 === 'string' &&
-          typeof d?.field4 === 'string'
-        ) {
-          setPatent({ field1: d.field1, field2: d.field2, field3: d.field3, field4: d.field4 })
-        }
-      } catch {
-        // ignore
-      }
-    }
-  }, [studentId, tile.id])
-
+  // ── cache write helpers ────────────────────────────────────────────────────
   const persistChecks = (next: boolean[]) => {
-    localStorage.setItem(`nexus:tile-checklist:${studentId}:${tile.id}`, JSON.stringify(next))
+    localStorage.setItem(checklistKey, JSON.stringify(next))
   }
 
   const persistPatent = (draft: PatentDraft) => {
-    localStorage.setItem(`nexus:tile-patent:${studentId}:${tile.id}`, JSON.stringify(draft))
+    localStorage.setItem(patentKey, JSON.stringify(draft))
   }
 
   const clearChecks = () => {
-    localStorage.removeItem(`nexus:tile-checklist:${studentId}:${tile.id}`)
-    setChecks(Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false))
+    localStorage.removeItem(checklistKey)
+    setChecks(EMPTY_CHECKS())
   }
 
   const clearPatent = () => {
-    localStorage.removeItem(`nexus:tile-patent:${studentId}:${tile.id}`)
-    setPatent({ field1: '', field2: '', field3: '', field4: '' })
+    localStorage.removeItem(patentKey)
+    setPatent(EMPTY_DRAFT)
   }
 
-  const canStartChecklist = planByTileId.get(tile.id)?.status === 'approved'
-
+  // ── derived state ─────────────────────────────────────────────────────────
+  const canStartChecklist = plan.status === 'approved'
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === PERSONAL_GAME_PIECE_STEPS.length
 
-  const planState = planByTileId.get(tile.id)?.status ?? 'none'
-  const planId = planByTileId.get(tile.id)?.id ?? ''
-
+  // ── actions ───────────────────────────────────────────────────────────────
   const onSubmitPlan = async () => {
     setPlanSubmitError(null)
-    if (!user?.id) {
-      setPlanSubmitError('Not signed in.')
-      return
-    }
-    if (!patent.field1.trim()) {
-      setPlanSubmitError('Fill in what you are going to make first.')
-      return
-    }
+    if (!user?.id) { setPlanSubmitError('Not signed in.'); return }
+    if (!patent.field1.trim()) { setPlanSubmitError('Fill in what you are going to make first.'); return }
+
     try {
       const { error } = await supabase.from('patents').insert({
         student_id: user.id,
@@ -163,7 +199,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         }
         return
       }
-      await loadPlan()
+      await loadFromDatabase()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Could not submit plan.'
       console.error('submit plan:', e)
@@ -174,12 +210,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const onSubmitForApproval = async () => {
     setSubmitApprovalError(null)
     setSubmitSuccessMessage(null)
-    if (!user?.id) {
-      setSubmitApprovalError('Not signed in.')
-      return
-    }
+    if (!user?.id) { setSubmitApprovalError('Not signed in.'); return }
 
-    let pid = planId
+    // Re-fetch plan id in case state hasn't resolved yet.
+    let pid = plan.id
     if (!pid) {
       const { data: rows, error: fetchErr } = await supabase
         .from('patents')
@@ -189,10 +223,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         .eq('stage', 'plan')
         .order('created_at', { ascending: false })
         .limit(1)
-      if (fetchErr) {
-        setSubmitApprovalError(fetchErr.message)
-        return
-      }
+      if (fetchErr) { setSubmitApprovalError(fetchErr.message); return }
       const row = (rows ?? [])[0] as { id: string } | undefined
       pid = row?.id ?? ''
     }
@@ -201,12 +232,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setSubmitApprovalError('No approved plan found. Submit your plan first and wait for teacher approval.')
       return
     }
-
     if (!patent.field1.trim() || !patent.field2.trim() || !patent.field3.trim() || !patent.field4.trim()) {
       setSubmitApprovalError('Fill in all patent fields before submitting.')
       return
     }
-
     if (!canStartChecklist || !allDone) {
       setSubmitApprovalError('Complete the checklist and wait for plan approval first.')
       return
@@ -216,12 +245,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     try {
       const { error: updErr } = await supabase
         .from('patents')
-        .update({
-          stage: 'packet',
-          field_2: patent.field2,
-          field_3: patent.field3,
-          field_4: patent.field4,
-        })
+        .update({ stage: 'packet', field_2: patent.field2, field_3: patent.field3, field_4: patent.field4 })
         .eq('id', pid)
       if (updErr) throw updErr
 
@@ -240,16 +264,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setSubmitSuccessMessage('Submitted for approval. Refreshing…')
 
       try {
-        if (window.opener && !window.opener.closed) {
-          window.opener.location.reload()
-        }
-      } catch {
-        // cross-origin opener — ignore
-      }
+        if (window.opener && !window.opener.closed) window.opener.location.reload()
+      } catch { /* cross-origin opener */ }
 
-      window.setTimeout(() => {
-        window.location.reload()
-      }, 600)
+      window.setTimeout(() => window.location.reload(), 600)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Submit failed.'
       console.error('submit for approval:', e)
@@ -259,8 +277,13 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     }
   }
 
+  // ── guard renders ─────────────────────────────────────────────────────────
   if (!isPersonalGamePieceTile(tile)) {
     return <p className="error">This page is only for the Design Your Personal Game Piece tile.</p>
+  }
+
+  if (!initialised) {
+    return <p className="muted">Loading…</p>
   }
 
   if (completionStatus === 'approved') {
@@ -275,23 +298,20 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   if (completionStatus === 'pending') {
     return (
       <p className="muted" role="status">
-        Your completion is pending teacher approval. You’ll see updates here after your teacher reviews it.
+        Your completion is pending teacher approval. You'll see updates here after your teacher reviews it.
       </p>
     )
   }
 
+  // ── main form ─────────────────────────────────────────────────────────────
   return (
-    <form
-      className="patent-game-piece-form"
-      onSubmit={(e) => {
-        e.preventDefault()
-      }}
-    >
+    <form className="patent-game-piece-form" onSubmit={(e) => e.preventDefault()}>
       <p className="muted modal-subtitle">
         {doneCount} of {PERSONAL_GAME_PIECE_STEPS.length} checklist steps complete
       </p>
 
       <div className="design3d-two-col">
+        {/* ── Patent packet column ── */}
         <div className="design3d-patent-col">
           <h3 className="design3d-col-title">Patent packet</h3>
           <p className="muted" style={{ marginTop: 0, marginBottom: '0.85rem' }}>
@@ -307,7 +327,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               type="text"
               value={patent.field1}
               placeholder="One or two sentences — if you give size, use inches (max 1×1×2 inches)."
-              disabled={planState === 'pending'}
+              disabled={plan.status === 'pending'}
               onChange={(e) => {
                 const next = { ...patent, field1: e.target.value }
                 setPatent(next)
@@ -359,7 +379,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           </label>
 
           <div className="design3d-plan-actions">
-            {planState === 'pending' ? (
+            {plan.status === 'pending' ? (
               <p className="muted" style={{ margin: 0 }}>
                 Plan submitted — waiting for teacher approval.
               </p>
@@ -386,6 +406,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           </div>
         </div>
 
+        {/* ── Checklist column ── */}
         <div className="design3d-checklist-col">
           <h3 className="design3d-col-title">Checklist</h3>
           <ol className="checklist">
@@ -405,6 +426,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                   />
                   <span>{label}</span>
                 </label>
+
                 {idx === 2 ? (
                   <div style={{ marginTop: '0.5rem' }}>
                     <button
@@ -420,6 +442,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                     </button>
                   </div>
                 ) : null}
+
                 {idx === 3 ? (
                   <div style={{ marginTop: '0.5rem' }}>
                     <button
@@ -431,11 +454,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                       Read import note
                     </button>
                     {showImportNote ? (
-                      <div
-                        className="card"
-                        role="note"
-                        style={{ marginTop: '0.5rem', padding: '0.75rem' }}
-                      >
+                      <div className="card" role="note" style={{ marginTop: '0.5rem', padding: '0.75rem' }}>
                         <p style={{ margin: 0 }}>
                           You may import a starting shape from <strong>thingiverse.com</strong> or{' '}
                           <strong>printables.com</strong> and modify it to make it your own. Imported designs must be
@@ -448,6 +467,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               </li>
             ))}
           </ol>
+
           <div
             className="card"
             style={{
@@ -463,6 +483,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               show clear improvement over the last. Document the differences in your patent packet.
             </p>
           </div>
+
           {!canStartChecklist ? (
             <p className="muted" style={{ margin: '0.75rem 0 0' }}>
               Checklist unlocks after your teacher approves your plan.
@@ -471,6 +492,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         </div>
       </div>
 
+      {/* ── Submit for approval ── */}
       <div className="modal-actions patent-game-piece-actions">
         <button
           type="button"
@@ -493,14 +515,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       </div>
 
       {submitApprovalError ? (
-        <p className="error" role="alert">
-          {submitApprovalError}
-        </p>
+        <p className="error" role="alert">{submitApprovalError}</p>
       ) : null}
       {submitSuccessMessage ? (
-        <p className="muted" role="status">
-          {submitSuccessMessage}
-        </p>
+        <p className="muted" role="status">{submitSuccessMessage}</p>
       ) : null}
     </form>
   )
