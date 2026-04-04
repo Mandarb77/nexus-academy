@@ -581,10 +581,6 @@ a.btn-primary {
   object-position: center;
   display: block;
 }
-  .student-home-guild-banner-img--side {
-    min-height: 100%;
-  }
-}
 
 .student-nav {
   display: flex;
