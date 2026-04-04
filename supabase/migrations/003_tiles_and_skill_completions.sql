@@ -9,6 +9,11 @@ create table if not exists public.tiles (
   unique (guild, skill_name)
 );
 
+-- Idempotent: ensures the unique index exists even when CREATE TABLE was skipped
+-- because the table already existed without the inline unique constraint.
+create unique index if not exists tiles_guild_skill_name_key
+  on public.tiles (guild, skill_name);
+
 alter table public.tiles enable row level security;
 
 drop policy if exists "Authenticated users can read tiles" on public.tiles;
@@ -40,6 +45,10 @@ create table if not exists public.skill_completions (
   unique (student_id, tile_id)
 );
 
+-- Idempotent: same guard for skill_completions unique constraint.
+create unique index if not exists skill_completions_student_id_tile_id_key
+  on public.skill_completions (student_id, tile_id);
+
 create index if not exists skill_completions_student_id_idx on public.skill_completions (student_id);
 create index if not exists skill_completions_tile_id_idx on public.skill_completions (tile_id);
 
@@ -49,6 +58,7 @@ drop policy if exists "Users read own skill completions" on public.skill_complet
 drop policy if exists "Users insert own skill completions" on public.skill_completions;
 drop policy if exists "Students read own skill completions" on public.skill_completions;
 drop policy if exists "Students insert own skill completions" on public.skill_completions;
+drop policy if exists "Students update returned to pending" on public.skill_completions;
 drop policy if exists "Teachers read skill completions" on public.skill_completions;
 drop policy if exists "Teachers update skill completions" on public.skill_completions;
 
