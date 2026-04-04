@@ -67,6 +67,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       .order('created_at', { ascending: false })
       .limit(1)
 
+    console.log('[PatentContent] DB fetch for tile', tile.id, '— rows:', data?.length ?? 0, error ? 'ERR:' + error.message : '')
     if (error) {
       console.error('[PatentContent] load from db:', error.message)
       setInitialised(true)

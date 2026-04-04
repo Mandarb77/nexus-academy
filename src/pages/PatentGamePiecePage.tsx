@@ -4,7 +4,6 @@ import { MainNav } from '../components/MainNav'
 import { PersonalGamePiecePatentContent } from '../components/PersonalGamePiecePatentContent'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
-import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 
 export function PatentGamePiecePage() {
   const { tileId } = useParams<{ tileId: string }>()
@@ -13,17 +12,13 @@ export function PatentGamePiecePage() {
 
   const tile = useMemo(() => {
     if (!tileId) return null
-    return tiles.find((t) => t.id === tileId) ?? null
+    return tiles.find((t) => String(t.id) === String(tileId)) ?? null
   }, [tiles, tileId])
 
-  const valid = tile && isPersonalGamePieceTile(tile)
   const completion = tile ? completionByTileId.get(tile.id) : undefined
 
+  // No tileId in the URL at all — go home.
   if (!tileId) {
-    return <Navigate to="/tree/forge" replace />
-  }
-
-  if (!loading && !valid) {
     return <Navigate to="/tree/forge" replace />
   }
 
@@ -49,7 +44,7 @@ export function PatentGamePiecePage() {
           Design Your Personal Game Piece
         </h1>
         <p className="muted page-subtitle">
-          Plan, checklist, and final submission open in this window. Keep it open while you work.
+          Plan, checklist, and final submission for this quest.
         </p>
 
         {!canUseDb ? (
@@ -58,8 +53,12 @@ export function PatentGamePiecePage() {
           </p>
         ) : null}
 
-        {loading || !tile ? (
+        {loading ? (
           <p className="muted">Loading…</p>
+        ) : !tile ? (
+          <p className="error" role="alert">
+            Quest tile not found. <Link to="/tree/forge">← Back to Forge</Link>
+          </p>
         ) : (
           <PersonalGamePiecePatentContent
             tile={tile}
