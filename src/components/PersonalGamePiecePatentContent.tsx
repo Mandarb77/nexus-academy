@@ -424,33 +424,33 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
                 {idx === 2 ? (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      disabled={!canStartChecklist}
-                      onClick={() => {
-                        const w = window.open(TINKERCAD_TEMPLATE_URL, '_blank', 'noopener,noreferrer')
-                        if (w) w.opener = null
-                      }}
+                    <a
+                      href={TINKERCAD_TEMPLATE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`btn-secondary${!canStartChecklist ? ' btn-disabled' : ''}`}
+                      aria-disabled={!canStartChecklist}
+                      onClick={!canStartChecklist ? (e) => e.preventDefault() : undefined}
+                      style={{ display: 'inline-block', textDecoration: 'none' }}
                     >
                       Open TinkerCAD Template
-                    </button>
+                    </a>
                   </div>
                 ) : null}
 
                 {idx === 3 ? (
                   <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      disabled={!canStartChecklist}
-                      onClick={() => {
-                        const w = window.open('https://www.tinkercad.com/things/1v3brIkBiqu-game-clip2', '_blank', 'noopener,noreferrer')
-                        if (w) w.opener = null
-                      }}
+                    <a
+                      href="https://www.tinkercad.com/things/1v3brIkBiqu-game-clip2"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`btn-secondary${!canStartChecklist ? ' btn-disabled' : ''}`}
+                      aria-disabled={!canStartChecklist}
+                      onClick={!canStartChecklist ? (e) => e.preventDefault() : undefined}
+                      style={{ display: 'inline-block', textDecoration: 'none' }}
                     >
                       Open locked base in TinkerCAD
-                    </button>
+                    </a>
                     <button
                       type="button"
                       className="btn-secondary"
