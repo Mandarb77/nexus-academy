@@ -756,6 +756,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                   </li>
                 ))}
               </ol>
+
+              <div
                 className="card"
                 style={{
                   marginTop: '1rem',
