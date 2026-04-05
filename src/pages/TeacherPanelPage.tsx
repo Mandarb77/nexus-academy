@@ -132,6 +132,7 @@ export function TeacherPanelPage() {
   const [adminMessage, setAdminMessage] = useState<string | null>(null)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [generatingInvite, setGeneratingInvite] = useState(false)
+  const [inviteCopied, setInviteCopied] = useState(false)
   const inviteLinkRef = useRef<HTMLInputElement>(null)
   const [acting, setActing] = useState<Acting>(null)
   const [actingPlanId, setActingPlanId] = useState<string | null>(null)
@@ -1280,33 +1281,72 @@ export function TeacherPanelPage() {
         </button>
 
         {inviteLink ? (
-          <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.88rem', fontWeight: 600 }}>
-              Copy this link and send it to the new teacher:
-            </label>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <input
-                ref={inviteLinkRef}
-                type="text"
-                readOnly
-                value={inviteLink}
-                style={{ flex: 1, fontSize: '0.85rem', padding: '0.45rem 0.7rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.2)', fontFamily: 'monospace' }}
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', padding: '1rem', background: 'rgba(99,102,241,0.07)', border: '1.5px solid rgba(99,102,241,0.25)', borderRadius: '10px' }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+              ✅ Link ready — copy it and send to the new teacher:
+            </p>
+
+            {/* Readable link text (wrap-safe) */}
+            <p style={{ margin: 0, wordBreak: 'break-all', fontSize: '0.88rem', fontFamily: 'monospace', background: 'rgba(0,0,0,0.05)', padding: '0.5rem 0.7rem', borderRadius: '6px', userSelect: 'all' }}>
+              {inviteLink}
+            </p>
+
+            {/* Hidden input for clipboard fallback */}
+            <input
+              ref={inviteLinkRef}
+              type="text"
+              readOnly
+              value={inviteLink}
+              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }}
+              aria-hidden="true"
+            />
+
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  const el = inviteLinkRef.current
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(inviteLink).then(() => {
+                      setInviteCopied(true)
+                      setTimeout(() => setInviteCopied(false), 3000)
+                    }).catch(() => {
+                      if (el) { el.select(); document.execCommand('copy') }
+                      setInviteCopied(true)
+                      setTimeout(() => setInviteCopied(false), 3000)
+                    })
+                  } else if (el) {
+                    el.select()
+                    document.execCommand('copy')
+                    setInviteCopied(true)
+                    setTimeout(() => setInviteCopied(false), 3000)
+                  }
+                }}
+              >
+                {inviteCopied ? '✓ Copied!' : '📋 Copy link'}
+              </button>
+
+              <a
+                href={`mailto:?subject=You're invited to Nexus Academy&body=You have been invited as a teacher on Nexus Academy. Click this link to activate your account:%0A%0A${encodeURIComponent(inviteLink)}`}
+                className="btn-secondary"
+                style={{ textDecoration: 'none' }}
+              >
+                ✉️ Send via email
+              </a>
+
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => {
-                  void navigator.clipboard.writeText(inviteLink)
-                  setAdminMessage('Invite link copied to clipboard.')
-                  setTimeout(() => setAdminMessage(null), 3000)
-                }}
+                onClick={() => { setInviteLink(null); setInviteCopied(false) }}
+                style={{ marginLeft: 'auto', opacity: 0.6 }}
               >
-                Copy
+                Dismiss
               </button>
             </div>
-            <p className="muted" style={{ fontSize: '0.82rem' }}>
-              This link expires after it is used once. Generate a new one for each person you invite.
+
+            <p className="muted" style={{ fontSize: '0.82rem', margin: 0 }}>
+              This link can only be used once. Generate a new one for each person you invite.
             </p>
           </div>
         ) : null}
