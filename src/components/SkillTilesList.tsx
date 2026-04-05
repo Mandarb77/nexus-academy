@@ -40,17 +40,12 @@ export function SkillTilesList({
 }: Props) {
   const navigate = useNavigate()
 
-  // Game piece goes first in any list that contains it
+  // Game piece and sticker go first; then builder quests; then coming-soon tiles last
   const sortedTiles = [...tiles].sort((a, b) => {
-    if (isPersonalGamePieceTile(a)) return -1
-    if (isPersonalGamePieceTile(b)) return 1
-    return 0
+    const rankA = isPersonalGamePieceTile(a) ? 0 : isStickerTile(a) ? 1 : isCustomTile(a) ? 2 : 3
+    const rankB = isPersonalGamePieceTile(b) ? 0 : isStickerTile(b) ? 1 : isCustomTile(b) ? 2 : 3
+    return rankA - rankB
   })
-
-  const gamePieceTile = sortedTiles.find(isPersonalGamePieceTile)
-  const gamePieceApproved =
-    gamePieceTile !== undefined &&
-    completionByTileId.get(gamePieceTile.id)?.status === 'approved'
 
   return (
     <>
@@ -69,30 +64,29 @@ export function SkillTilesList({
           const patentProgress = isPatentTile ? patentProgressByTileId.get(tile.id) : undefined
           const doneCount = patentProgress?.checklistState.filter(Boolean).length ?? 0
 
-          // Lock non-game-piece Forge tiles until game piece is approved
-          const isForge = tile.guild?.trim().toLowerCase() === 'forge'
-          const isLocked = isForge && !isPersonalGamePieceTile(tile) && !gamePieceApproved
+          // Only game piece, sticker, and builder-created quests are live; everything else is coming soon
+          const isComingSoon = !isPersonalGamePieceTile(tile) && !isStickerTile(tile) && !isCustomTile(tile)
 
           return (
-            <li key={tile.id} className={`skill-tile card${isLocked ? ' skill-tile--locked' : ''}`}>
+            <li key={tile.id} className={`skill-tile card${isComingSoon ? ' skill-tile--locked' : ''}`}>
               <div className="skill-tile-row">
                 <div className="skill-tile-main">
                   <h3 className="skill-tile-name">{tile.skill_name}</h3>
                   <p className="skill-tile-wp">{tile.wp_value} WP</p>
-                  {isPatentTile && !isApproved && !isPending && !isLocked ? (
+                  {isPatentTile && !isApproved && !isPending && !isComingSoon ? (
                     <p className="muted skill-tile-checklist-progress">
                       {doneCount} of {totalSteps} steps complete
                     </p>
                   ) : null}
-                  {isLocked ? (
+                  {isComingSoon ? (
                     <p className="skill-tile-locked-hint muted">
-                      🔒 Complete <em>Design Your Personal Game Piece</em> first
+                      🔒 Coming soon
                     </p>
                   ) : null}
                 </div>
                 <div className="skill-tile-action">
-                  {isLocked ? (
-                    <span className="skill-tile-badge skill-tile-badge--locked">Locked</span>
+                  {isComingSoon ? (
+                    <span className="skill-tile-badge skill-tile-badge--locked">Coming soon</span>
                   ) : isApproved ? (
                     <span className="skill-tile-badge skill-tile-badge--approved">Approved</span>
                   ) : isPending ? (
@@ -123,7 +117,7 @@ export function SkillTilesList({
                   )}
                 </div>
               </div>
-              {isReturned && !isLocked ? (
+              {isReturned && !isComingSoon ? (
                 <p className="skill-tile-returned-hint muted">
                   Returned by your teacher — submit again when you are ready.
                 </p>
