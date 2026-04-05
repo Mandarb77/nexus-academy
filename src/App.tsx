@@ -14,8 +14,10 @@ import { GuildSkillTreePage } from './pages/GuildSkillTreePage'
 import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
 import { TeacherResetPage } from './pages/TeacherResetPage'
+import { TeacherQuestsPage } from './pages/TeacherQuestsPage'
 import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
+import { PatentCustomPage } from './pages/PatentCustomPage'
 import './App.css'
 
 export default function App() {
@@ -88,6 +90,14 @@ export default function App() {
               </StudentOnlyRoute>
             }
           />
+          <Route
+            path="/patent-custom/:tileId"
+            element={
+              <StudentOnlyRoute>
+                <PatentCustomPage />
+              </StudentOnlyRoute>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route
@@ -111,6 +121,14 @@ export default function App() {
             element={
               <TeacherDashboardRoute>
                 <TeacherResetPage />
+              </TeacherDashboardRoute>
+            }
+          />
+          <Route
+            path="/teacher/quests"
+            element={
+              <TeacherDashboardRoute>
+                <TeacherQuestsPage />
               </TeacherDashboardRoute>
             }
           />

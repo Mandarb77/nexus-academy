@@ -116,7 +116,7 @@ export function useSkillTree() {
 
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
-      .select('id, guild, skill_name, wp_value')
+      .select('id, guild, skill_name, wp_value, gold_value, steps')
       .order('guild', { ascending: true })
       .order('skill_name', { ascending: true })
 
