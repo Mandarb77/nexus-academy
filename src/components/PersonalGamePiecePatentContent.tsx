@@ -524,13 +524,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     )
   }
 
-  if (completionStatus === 'pending') {
-    return (
-      <p className="muted" role="status">
-        Your completion is pending teacher approval. You&apos;ll see updates here after your teacher reviews it.
-      </p>
-    )
-  }
+  // 'pending' no longer causes an early return — the form stays visible with a waiting notice
+  // so realtime updates push through and the approval banner fires in-place.
+  const isFinalPending = completionStatus === 'pending'
 
   return (
     <form
@@ -927,7 +923,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           Step 3 — Final patent questions
         </h2>
 
-        {completionStatus === 'pending' ? (
+        {isFinalPending ? (
           <p
             className="patent-waiting-note"
             role="status"
@@ -981,6 +977,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                     !canUseDb ||
                     !user?.id ||
                     submittingPatent ||
+                    isFinalPending ||
                     !patent.field3.trim() ||
                     !patent.field4.trim()
                   }
