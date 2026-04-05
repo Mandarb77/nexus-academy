@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -116,7 +116,7 @@ function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
 }
 
 export function TeacherPanelPage() {
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
   const [skillRows, setSkillRows] = useState<PendingSkillRow[]>([])
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
   const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
@@ -130,10 +130,6 @@ export function TeacherPanelPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [adminMessage, setAdminMessage] = useState<string | null>(null)
-  const [inviteLink, setInviteLink] = useState<string | null>(null)
-  const [generatingInvite, setGeneratingInvite] = useState(false)
-  const [inviteCopied, setInviteCopied] = useState(false)
-  const inviteLinkRef = useRef<HTMLInputElement>(null)
   const [acting, setActing] = useState<Acting>(null)
   const [actingPlanId, setActingPlanId] = useState<string | null>(null)
   const [actingPlanKind, setActingPlanKind] = useState<'approve' | 'return' | null>(null)
@@ -423,28 +419,6 @@ export function TeacherPanelPage() {
   }, [loadPending])
 
   const clearActing = () => setActing(null)
-
-  const generateInvite = async () => {
-    if (!isSupabaseConfigured || !user?.id) return
-    setGeneratingInvite(true)
-    setInviteLink(null)
-    try {
-      const { data, error } = await supabase
-        .from('teacher_invites')
-        .insert({ created_by: user.id })
-        .select('token')
-        .single()
-      if (error) throw error
-      const token = (data as { token: string }).token
-      const link = `${window.location.origin}/join/${token}`
-      setInviteLink(link)
-      setTimeout(() => inviteLinkRef.current?.select(), 50)
-    } catch (e: unknown) {
-      console.error('generateInvite:', e)
-    } finally {
-      setGeneratingInvite(false)
-    }
-  }
 
   const approveSkill = async (id: string) => {
     if (!isSupabaseConfigured) return
@@ -1261,96 +1235,6 @@ export function TeacherPanelPage() {
         </>
       )}
 
-      {/* ── Invite a teacher ── */}
-      <section className="teacher-panel-section" aria-labelledby="teacher-panel-invite-heading" style={{ marginTop: '2rem' }}>
-        <h2 id="teacher-panel-invite-heading" className="teacher-panel-section-title">
-          Invite a teacher
-        </h2>
-        <p className="muted" style={{ marginBottom: '0.9rem', fontSize: '0.9rem' }}>
-          Generate a one-time link and send it to the person you want to give teacher access.
-          Once they sign in with Google through the link their account is automatically upgraded to teacher.
-          Each link can only be used once.
-        </p>
-        <button
-          type="button"
-          className="btn-secondary"
-          disabled={generatingInvite}
-          onClick={() => void generateInvite()}
-        >
-          {generatingInvite ? 'Generating…' : 'Generate invite link'}
-        </button>
-
-        {inviteLink ? (
-          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', padding: '1rem', background: 'rgba(99,102,241,0.07)', border: '1.5px solid rgba(99,102,241,0.25)', borderRadius: '10px' }}>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
-              ✅ Link ready — copy it and send to the new teacher:
-            </p>
-
-            {/* Readable link text (wrap-safe) */}
-            <p style={{ margin: 0, wordBreak: 'break-all', fontSize: '0.88rem', fontFamily: 'monospace', background: 'rgba(0,0,0,0.05)', padding: '0.5rem 0.7rem', borderRadius: '6px', userSelect: 'all' }}>
-              {inviteLink}
-            </p>
-
-            {/* Hidden input for clipboard fallback */}
-            <input
-              ref={inviteLinkRef}
-              type="text"
-              readOnly
-              value={inviteLink}
-              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }}
-              aria-hidden="true"
-            />
-
-            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => {
-                  const el = inviteLinkRef.current
-                  if (navigator.clipboard) {
-                    navigator.clipboard.writeText(inviteLink).then(() => {
-                      setInviteCopied(true)
-                      setTimeout(() => setInviteCopied(false), 3000)
-                    }).catch(() => {
-                      if (el) { el.select(); document.execCommand('copy') }
-                      setInviteCopied(true)
-                      setTimeout(() => setInviteCopied(false), 3000)
-                    })
-                  } else if (el) {
-                    el.select()
-                    document.execCommand('copy')
-                    setInviteCopied(true)
-                    setTimeout(() => setInviteCopied(false), 3000)
-                  }
-                }}
-              >
-                {inviteCopied ? '✓ Copied!' : '📋 Copy link'}
-              </button>
-
-              <a
-                href={`mailto:?subject=You're invited to Nexus Academy&body=You have been invited as a teacher on Nexus Academy. Click this link to activate your account:%0A%0A${encodeURIComponent(inviteLink)}`}
-                className="btn-secondary"
-                style={{ textDecoration: 'none' }}
-              >
-                ✉️ Send via email
-              </a>
-
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => { setInviteLink(null); setInviteCopied(false) }}
-                style={{ marginLeft: 'auto', opacity: 0.6 }}
-              >
-                Dismiss
-              </button>
-            </div>
-
-            <p className="muted" style={{ fontSize: '0.82rem', margin: 0 }}>
-              This link can only be used once. Generate a new one for each person you invite.
-            </p>
-          </div>
-        ) : null}
-      </section>
     </div>
   )
 }
