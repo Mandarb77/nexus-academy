@@ -2,9 +2,11 @@
 -- A teacher generates a link; the recipient visits /join/<token>, signs in,
 -- and their profile.role is updated to 'teacher'. Each token can only be used once.
 
+create extension if not exists pgcrypto with schema extensions;
+
 create table if not exists public.teacher_invites (
   id          uuid primary key default gen_random_uuid(),
-  token       text unique not null default encode(gen_random_bytes(24), 'hex'),
+  token       text unique not null default encode(extensions.gen_random_bytes(24), 'hex'),
   created_by  uuid references public.profiles(id) on delete set null,
   used_by     uuid references public.profiles(id) on delete set null,
   used_at     timestamptz,
