@@ -59,6 +59,13 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const [submitApprovalError, setSubmitApprovalError] = useState<string | null>(null)
   const [submitSuccessMessage, setSubmitSuccessMessage] = useState<string | null>(null)
   const [flowBanner, setFlowBanner] = useState<string | null>(null)
+  const [approvalNotice, setApprovalNotice] = useState<{ message: string; tone: 'success' | 'returned' } | null>(null)
+  const approvalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showApprovalNotice = (message: string, tone: 'success' | 'returned') => {
+    setApprovalNotice({ message, tone })
+    if (approvalTimerRef.current) clearTimeout(approvalTimerRef.current)
+    approvalTimerRef.current = setTimeout(() => setApprovalNotice(null), 8000)
+  }
   const [showImportNote, setShowImportNote] = useState(false)
   const [checklistSubmitted, setChecklistSubmitted] = useState(false)
   const [checklistApproved, setChecklistApproved] = useState(false)
@@ -161,6 +168,55 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   useEffect(() => {
     void loadFromDatabase()
   }, [loadFromDatabase])
+
+  /** Realtime: auto-refresh when teacher approves/returns this student's patent or completion. */
+  useEffect(() => {
+    if (!user?.id) return
+    const uid = user.id
+    const tid = String(tile.id)
+
+    const channel = supabase
+      .channel(`patent-watch-gp-${tid}-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'patents', filter: `student_id=eq.${uid}` },
+        (payload) => {
+          const prev = payload.old as Record<string, unknown>
+          const next = payload.new as Record<string, unknown>
+          if (String(next.tile_id) !== tid) return
+          void loadFromDatabase()
+          if (prev.status !== 'approved' && next.status === 'approved') {
+            showApprovalNotice('✓ Plan approved — your checklist is now unlocked!', 'success')
+          } else if (!prev.checklist_approved && next.checklist_approved) {
+            showApprovalNotice('✓ Checklist approved — final questions are now unlocked!', 'success')
+          } else if (next.status === 'returned') {
+            showApprovalNotice('↩ Step returned — check with your teacher and try again.', 'returned')
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'skill_completions', filter: `student_id=eq.${uid}` },
+        (payload) => {
+          const prev = payload.old as Record<string, unknown>
+          const next = payload.new as Record<string, unknown>
+          if (String(next.tile_id) !== tid) return
+          void loadFromDatabase()
+          void refresh()
+          if (prev.status !== 'approved' && next.status === 'approved') {
+            showApprovalNotice('🎉 Quest approved! WP and gold have been awarded!', 'success')
+          } else if (next.status === 'returned') {
+            showApprovalNotice('↩ Final application returned — check with your teacher and resubmit.', 'returned')
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+      if (approvalTimerRef.current) clearTimeout(approvalTimerRef.current)
+    }
+  }, [user?.id, tile.id, loadFromDatabase, refresh])
 
   const canStartChecklist = plan.status === 'approved'
   const doneCount = checks.filter(Boolean).length
@@ -487,6 +543,37 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         tone="success"
         onClear={() => setFlowBanner(null)}
       />
+
+      {approvalNotice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.75rem',
+            padding: '0.65rem 1rem',
+            marginBottom: '1rem',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontSize: '1rem',
+            background: approvalNotice.tone === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(234,179,8,0.15)',
+            border: `2px solid ${approvalNotice.tone === 'success' ? '#16a34a' : '#ca8a04'}`,
+            color: approvalNotice.tone === 'success' ? '#15803d' : '#92400e',
+          }}
+        >
+          <span>{approvalNotice.message}</span>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setApprovalNotice(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1, padding: '0 0.25rem', color: 'inherit', opacity: 0.7 }}
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
 
       <div className="patent-step-tabs" role="tablist" aria-label="Patent steps">
         {(
