@@ -929,6 +929,37 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
           {submitSuccessMessage}
         </p>
       ) : null}
+
+      {approvalNotice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.75rem',
+            padding: '0.65rem 1rem',
+            marginTop: '1.25rem',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontSize: '1rem',
+            background: approvalNotice.tone === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(234,179,8,0.15)',
+            border: `2px solid ${approvalNotice.tone === 'success' ? '#16a34a' : '#ca8a04'}`,
+            color: approvalNotice.tone === 'success' ? '#15803d' : '#92400e',
+          }}
+        >
+          <span>{approvalNotice.message}</span>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setApprovalNotice(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1, padding: '0 0.25rem', color: 'inherit', opacity: 0.7 }}
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
     </form>
   )
 }

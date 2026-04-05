@@ -389,6 +389,35 @@ export function TeacherPanelPage() {
     void loadPending()
   }, [loadPending])
 
+  /** Realtime: re-fetch pending items whenever a student submits a plan, checklist, or final packet. */
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    const channel = supabase
+      .channel('teacher-panel-student-submissions')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'patents' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'patents' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'skill_completions' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'skill_completions' },
+        () => { void loadPending() },
+      )
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [loadPending])
+
   const clearActing = () => setActing(null)
 
   const approveSkill = async (id: string) => {
