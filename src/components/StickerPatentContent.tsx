@@ -101,7 +101,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     setPlan({ id: row.id, status: planStatus })
 
     const rawSubmitted = Boolean(row.checklist_submitted)
-    if (planStatus === 'pending' || planStatus === 'returned') {
+    if (planStatus === 'returned') {
       setChecklistSubmitted(false)
       if (rawSubmitted) {
         void supabase
@@ -113,29 +113,21 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       setChecklistSubmitted(rawSubmitted)
     }
 
-    if (planStatus === 'approved') {
-      const rawCs = row.checklist_state
-      const cs =
-        Array.isArray(rawCs) && rawCs.length === STICKER_STEPS.length
-          ? (rawCs as boolean[])
-          : EMPTY_CHECKS()
-      setChecks(cs)
-      setPatent({
-        field1: row.field_1 ?? '',
-        field2: row.field_2 ?? '',
-        field3: row.field_3 ?? '',
-        field4: row.field_4 ?? '',
-      })
-    } else {
-      const draftField1 = localStorage.getItem(field1DraftKey)
-      setChecks(EMPTY_CHECKS())
-      setPatent({
-        field1: draftField1 ?? row.field_1 ?? '',
-        field2: row.field_2 ?? '',
-        field3: '',
-        field4: '',
-      })
-    }
+    const rawCs = row.checklist_state
+    const cs =
+      Array.isArray(rawCs) && rawCs.length === STICKER_STEPS.length
+        ? (rawCs as boolean[])
+        : EMPTY_CHECKS()
+    setChecks(cs)
+
+    const draftField1 = planStatus !== 'approved' ? (localStorage.getItem(field1DraftKey) ?? null) : null
+    if (planStatus === 'approved') localStorage.removeItem(field1DraftKey)
+    setPatent({
+      field1: draftField1 ?? row.field_1 ?? '',
+      field2: row.field_2 ?? '',
+      field3: row.field_3 ?? '',
+      field4: row.field_4 ?? '',
+    })
 
     setInitialised(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,7 +137,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     void loadFromDatabase()
   }, [loadFromDatabase])
 
-  const canStartChecklist = plan.status === 'approved'
+  const canStartChecklist = Boolean(plan.id)
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === STICKER_STEPS.length
 
@@ -272,7 +264,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   }
 
   const onSubmitChecklist = async () => {
-    if (!plan.id || !canStartChecklist || !allDone || checklistSubmitted) return
+    if (!plan.id || !allDone || checklistSubmitted) return
     setSubmittingChecklist(true)
     setFlowBanner(null)
     try {
@@ -327,8 +319,8 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       setSubmitApprovalError('Fill in all patent fields before submitting.')
       return
     }
-    if (!canStartChecklist || !allDone) {
-      setSubmitApprovalError('Complete the checklist and wait for plan approval first.')
+    if (!allDone) {
+      setSubmitApprovalError('Complete all checklist steps first.')
       return
     }
     if (!checklistSubmitted) {
@@ -486,16 +478,15 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
                   ? 'Resubmit plan to teacher'
                   : plan.id
                     ? 'Save answers'
-                    : 'Submit plan for teacher approval'}
+                    : 'Save and start checklist'}
             </button>
             {plan.status === 'pending' && plan.id ? (
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                Plan is with your teacher. You can still update the second answer above. Step 2 (checklist) appears
-                after you submit — open it anytime; checkboxes stay off until the plan is approved.
+                Plan saved. You can still update your answers here. Your teacher will also see them.
               </p>
             ) : !plan.id ? (
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                This saves your plan to your teacher. It is not your final quest submission.
+                Saves your plan and immediately unlocks the checklist. Also visible to your teacher.
               </p>
             ) : null}
             {planSubmitError ? (
@@ -616,7 +607,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
 
               {!canStartChecklist ? (
                 <p className="muted" style={{ margin: '0.75rem 0 0' }}>
-                  Checklist unlocks after your teacher approves your plan.
+                  Answer both questions in step 1 and save to unlock the checklist.
                 </p>
               ) : null}
             </div>
@@ -664,7 +655,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
           <>
             <div className="design3d-patent-col" style={{ maxWidth: '40rem' }}>
               <label className="patent-field">
-                <span className="patent-label">How did you make it an original work?</span>
+                <span className="patent-label">How did you make it an original work? <span className="patent-required">*</span></span>
                 <textarea
                   value={patent.field3}
                   rows={5}
@@ -677,7 +668,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
               </label>
 
               <label className="patent-field">
-                <span className="patent-label">What do you have to iterate?</span>
+                <span className="patent-label">What do you have to iterate? <span className="patent-required">*</span></span>
                 <input
                   type="text"
                   value={patent.field4}
