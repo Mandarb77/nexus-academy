@@ -49,6 +49,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
   const [checks, setChecks] = useState<boolean[]>(EMPTY_CHECKS())
   const [patent, setPatent] = useState<PatentDraft>(EMPTY_DRAFT)
+  const [uploadUrl, setUploadUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [phase, setPhase] = useState<1 | 2 | 3>(1)
   const [submittingPatent, setSubmittingPatent] = useState(false)
   const [submittingStep1, setSubmittingStep1] = useState(false)
@@ -71,7 +74,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     const { data, error } = await supabase
       .from('patents')
       .select(
-        'id, status, stage, field_1, field_2, field_3, field_4, checklist_state, checklist_submitted, created_at',
+        'id, status, stage, field_1, field_2, field_3, field_4, checklist_state, checklist_submitted, upload_url, created_at',
       )
       .eq('student_id', user.id)
       .eq('tile_id', tile.id)
@@ -94,6 +97,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       field_4: string | null
       checklist_state: unknown
       checklist_submitted?: boolean | null
+      upload_url?: string | null
     } | undefined
 
     if (!row) {
@@ -103,6 +107,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setChecks(EMPTY_CHECKS())
       setPatent(EMPTY_DRAFT)
       setPlan({ id: '', status: 'none' })
+      setUploadUrl(null)
       setChecklistSubmitted(false)
       setInitialised(true)
       return
@@ -125,13 +130,15 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setChecklistSubmitted(rawSubmitted)
     }
 
-    // Always load checklist state and all four patent fields regardless of plan status.
+    // Migration-safe: extend shorter stored arrays with false for any newly added steps.
     const rawCs = row.checklist_state
-    const cs =
-      Array.isArray(rawCs) && rawCs.length === PERSONAL_GAME_PIECE_STEPS.length
-        ? (rawCs as boolean[])
-        : EMPTY_CHECKS()
+    const rawCsArr = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
+    const cs: boolean[] = [
+      ...rawCsArr.slice(0, PERSONAL_GAME_PIECE_STEPS.length),
+      ...Array(Math.max(0, PERSONAL_GAME_PIECE_STEPS.length - rawCsArr.length)).fill(false),
+    ]
     setChecks(cs)
+    setUploadUrl(row.upload_url ?? null)
 
     const draftField1 = planStatus !== 'approved' ? (localStorage.getItem(field1DraftKey) ?? null) : null
     if (planStatus === 'approved') localStorage.removeItem(field1DraftKey)
@@ -221,6 +228,38 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       .update({ [fieldName]: value })
       .eq('id', pid)
     if (error) console.error(`[PatentContent] ${fieldName} save:`, error.message)
+  }
+
+  const handleFileUpload = async (file: File) => {
+    if (!user?.id || !plan.id) return
+    setUploading(true)
+    setUploadError(null)
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin'
+      const path = `${user.id}/${plan.id}/submission.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('patent-uploads')
+        .upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+
+      const { data: urlData } = supabase.storage.from('patent-uploads').getPublicUrl(path)
+      const publicUrl = urlData.publicUrl
+
+      const { error: dbErr } = await supabase.from('patents').update({ upload_url: publicUrl }).eq('id', plan.id)
+      if (dbErr) throw dbErr
+
+      setUploadUrl(publicUrl)
+      // Auto-check the upload step checkbox
+      const nextArr = [...checks]
+      nextArr[PERSONAL_GAME_PIECE_STEPS.length - 1] = true
+      setChecks(nextArr)
+      void saveChecklistToDb(nextArr, plan.id)
+    } catch (e: unknown) {
+      setUploadError(e instanceof Error ? e.message : 'Upload failed.')
+      console.error('[PatentContent] upload:', e)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const field1Locked = plan.status === 'pending'
@@ -666,11 +705,57 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                         ) : null}
                       </div>
                     ) : null}
+
+                    {/* Step 8 — upload photo/video */}
+                    {idx === PERSONAL_GAME_PIECE_STEPS.length - 1 ? (
+                      <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {uploadUrl ? (
+                          <div>
+                            {/\.(mp4|webm|mov|avi|m4v)$/i.test(uploadUrl) ? (
+                              <video
+                                src={uploadUrl}
+                                controls
+                                style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', display: 'block' }}
+                              />
+                            ) : (
+                              <img
+                                src={uploadUrl}
+                                alt="Uploaded work"
+                                style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', objectFit: 'contain', display: 'block' }}
+                              />
+                            )}
+                            <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
+                              File uploaded — choose a new file to replace it.
+                            </p>
+                          </div>
+                        ) : null}
+                        <label style={{ display: 'inline-flex', cursor: !canStartChecklist || checklistSubmitted ? 'not-allowed' : 'pointer' }}>
+                          <span
+                            className={`btn-secondary${!canStartChecklist || checklistSubmitted || uploading ? ' btn-disabled' : ''}`}
+                            style={{ pointerEvents: 'none' }}
+                          >
+                            {uploading ? 'Uploading…' : uploadUrl ? 'Replace file' : 'Choose photo or video'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            disabled={!canStartChecklist || checklistSubmitted || uploading}
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) void handleFileUpload(file)
+                              e.target.value = ''
+                            }}
+                          />
+                        </label>
+                        {uploadError ? (
+                          <p className="error" role="alert" style={{ margin: 0, fontSize: '0.85rem' }}>{uploadError}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </li>
                 ))}
               </ol>
-
-              <div
                 className="card"
                 style={{
                   marginTop: '1rem',

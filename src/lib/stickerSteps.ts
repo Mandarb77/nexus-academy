@@ -7,6 +7,7 @@ export const STICKER_STEPS = [
   'Step 5 — Set up Print Then Cut. Select your design and choose Print Then Cut as the operation. This tells the Cricut to first print the sticker and then cut around it precisely.',
   'Step 6 — Print on sticker paper. Send the design to the classroom printer with sticker paper loaded. Check that the registration marks print clearly — these are the black marks in the corners that the Cricut uses to find the edges.',
   'Step 7 — Cut on the Cricut. Load the printed sticker paper onto the Cricut mat and run the cut. Watch it carefully on the first cut to make sure the registration marks are being read correctly.',
+  'Step 8 — Upload a photo or video of your finished sticker.',
 ] as const
 
 export const STICKER_STEP_COUNT = STICKER_STEPS.length
