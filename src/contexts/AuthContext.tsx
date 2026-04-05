@@ -47,6 +47,9 @@ type AuthContextValue = {
   authReady: boolean
   /** True until session is ready and, when logged in, profile has been loaded or skipped. */
   loading: boolean
+  /** Teachers can flip this to browse the app from a student's perspective. */
+  studentPreviewMode: boolean
+  toggleStudentPreview: () => void
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -85,6 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [profileReady, setProfileReady] = useState(false)
+  const [studentPreviewMode, setStudentPreviewMode] = useState(false)
+
+  const toggleStudentPreview = useCallback(() => {
+    setStudentPreviewMode((prev) => !prev)
+  }, [])
 
   const refreshProfile = useCallback(async () => {
     const uid = user?.id
@@ -242,6 +250,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       authReady,
       loading,
+      studentPreviewMode,
+      toggleStudentPreview,
       signInWithGoogle,
       signOut,
       refreshProfile,
@@ -252,6 +262,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       authReady,
       loading,
+      studentPreviewMode,
+      toggleStudentPreview,
       signInWithGoogle,
       signOut,
       refreshProfile,

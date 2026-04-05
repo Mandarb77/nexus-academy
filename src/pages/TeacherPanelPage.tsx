@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -116,7 +116,7 @@ function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
 }
 
 export function TeacherPanelPage() {
-  const { signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const [skillRows, setSkillRows] = useState<PendingSkillRow[]>([])
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
   const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
@@ -130,6 +130,9 @@ export function TeacherPanelPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [adminMessage, setAdminMessage] = useState<string | null>(null)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [generatingInvite, setGeneratingInvite] = useState(false)
+  const inviteLinkRef = useRef<HTMLInputElement>(null)
   const [acting, setActing] = useState<Acting>(null)
   const [actingPlanId, setActingPlanId] = useState<string | null>(null)
   const [actingPlanKind, setActingPlanKind] = useState<'approve' | 'return' | null>(null)
@@ -419,6 +422,28 @@ export function TeacherPanelPage() {
   }, [loadPending])
 
   const clearActing = () => setActing(null)
+
+  const generateInvite = async () => {
+    if (!isSupabaseConfigured || !user?.id) return
+    setGeneratingInvite(true)
+    setInviteLink(null)
+    try {
+      const { data, error } = await supabase
+        .from('teacher_invites')
+        .insert({ created_by: user.id })
+        .select('token')
+        .single()
+      if (error) throw error
+      const token = (data as { token: string }).token
+      const link = `${window.location.origin}/join/${token}`
+      setInviteLink(link)
+      setTimeout(() => inviteLinkRef.current?.select(), 50)
+    } catch (e: unknown) {
+      console.error('generateInvite:', e)
+    } finally {
+      setGeneratingInvite(false)
+    }
+  }
 
   const approveSkill = async (id: string) => {
     if (!isSupabaseConfigured) return
@@ -1234,6 +1259,58 @@ export function TeacherPanelPage() {
           </section>
         </>
       )}
+
+      {/* ── Invite a teacher ── */}
+      <section className="teacher-panel-section" aria-labelledby="teacher-panel-invite-heading" style={{ marginTop: '2rem' }}>
+        <h2 id="teacher-panel-invite-heading" className="teacher-panel-section-title">
+          Invite a teacher
+        </h2>
+        <p className="muted" style={{ marginBottom: '0.9rem', fontSize: '0.9rem' }}>
+          Generate a one-time link and send it to the person you want to give teacher access.
+          Once they sign in with Google through the link their account is automatically upgraded to teacher.
+          Each link can only be used once.
+        </p>
+        <button
+          type="button"
+          className="btn-secondary"
+          disabled={generatingInvite}
+          onClick={() => void generateInvite()}
+        >
+          {generatingInvite ? 'Generating…' : 'Generate invite link'}
+        </button>
+
+        {inviteLink ? (
+          <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+              Copy this link and send it to the new teacher:
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                ref={inviteLinkRef}
+                type="text"
+                readOnly
+                value={inviteLink}
+                style={{ flex: 1, fontSize: '0.85rem', padding: '0.45rem 0.7rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.2)', fontFamily: 'monospace' }}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  void navigator.clipboard.writeText(inviteLink)
+                  setAdminMessage('Invite link copied to clipboard.')
+                  setTimeout(() => setAdminMessage(null), 3000)
+                }}
+              >
+                Copy
+              </button>
+            </div>
+            <p className="muted" style={{ fontSize: '0.82rem' }}>
+              This link expires after it is used once. Generate a new one for each person you invite.
+            </p>
+          </div>
+        ) : null}
+      </section>
     </div>
   )
 }

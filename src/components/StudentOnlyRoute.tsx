@@ -5,7 +5,7 @@ import { isTeacherProfile } from '../lib/teacher'
 
 /** Auth gate for student-only pages (e.g. `/tree`). Unauthenticated users go home to sign in. */
 export function StudentOnlyRoute({ children }: { children: ReactNode }) {
-  const { user, profile, authReady, loading } = useAuth()
+  const { user, profile, authReady, loading, studentPreviewMode } = useAuth()
 
   if (!authReady) {
     return (
@@ -27,7 +27,8 @@ export function StudentOnlyRoute({ children }: { children: ReactNode }) {
     )
   }
 
-  if (isTeacherProfile(profile)) {
+  // Teachers in preview mode are allowed through student routes.
+  if (isTeacherProfile(profile) && !studentPreviewMode) {
     return <Navigate to="/dashboard" replace />
   }
 

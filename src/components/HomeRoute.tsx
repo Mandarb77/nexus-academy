@@ -6,7 +6,7 @@ import { StudentHomePage } from '../pages/StudentHomePage'
 
 /** `/` — sign-in when logged out; student home when logged in as a student; teachers go to `/dashboard`. */
 export function HomeRoute() {
-  const { user, profile, authReady, loading } = useAuth()
+  const { user, profile, authReady, loading, studentPreviewMode } = useAuth()
 
   if (!authReady) {
     return (
@@ -28,7 +28,8 @@ export function HomeRoute() {
     )
   }
 
-  if (isTeacherProfile(profile)) {
+  // Teachers in preview mode see the student home instead of being redirected to /dashboard.
+  if (isTeacherProfile(profile) && !studentPreviewMode) {
     return <Navigate to="/dashboard" replace />
   }
 

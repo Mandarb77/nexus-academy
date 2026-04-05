@@ -18,6 +18,7 @@ import { TeacherQuestsPage } from './pages/TeacherQuestsPage'
 import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
+import { JoinPage } from './pages/JoinPage'
 import './App.css'
 
 export default function App() {
@@ -100,6 +101,7 @@ export default function App() {
           />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/join/:token" element={<JoinPage />} />
           <Route
             path="/dashboard"
             element={

@@ -5,7 +5,7 @@ import { isTeacherProfile } from '../lib/teacher'
 
 /** Like ProtectedRoute, but only teachers see the dashboard; students use `/`. */
 export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
-  const { user, profile, authReady, loading } = useAuth()
+  const { user, profile, authReady, loading, studentPreviewMode } = useAuth()
   const location = useLocation()
 
   if (!authReady) {
@@ -29,6 +29,11 @@ export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
   }
 
   if (!isTeacherProfile(profile)) {
+    return <Navigate to="/" replace />
+  }
+
+  // Teachers in student preview mode cannot access teacher routes — send them to student home.
+  if (studentPreviewMode) {
     return <Navigate to="/" replace />
   }
 
