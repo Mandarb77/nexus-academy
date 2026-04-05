@@ -36,9 +36,12 @@ export function PatentStickerPage() {
         </div>
       </header>
 
-      <main className="page patent-game-piece-main">
+      <main className="page patent-game-piece-main" data-patent-page="sticker-stepped">
         <h1 className="page-title" style={{ marginTop: 0 }}>Design Your Personal Sticker</h1>
-        <p className="muted page-subtitle">Plan, checklist, and final submission for this quest.</p>
+        <p className="muted page-subtitle">
+          Step 1: answer both plan questions and submit for teacher approval. Step 2: after approval, complete and
+          submit the checklist. Step 3: final two questions, then submit the quest.
+        </p>
 
         {!canUseDb ? (
           <p className="muted" role="alert">

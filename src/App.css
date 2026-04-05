@@ -1158,6 +1158,115 @@ a.btn-primary {
   gap: 0.6rem;
 }
 
+.patent-flow-banner {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  border: 1px solid var(--border);
+}
+
+.patent-flow-banner--success {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: var(--text-h);
+}
+
+.patent-flow-banner--neutral {
+  background: var(--code-bg);
+  color: var(--text);
+}
+
+.patent-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.patent-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.patent-steps li:not(:last-child)::after {
+  content: '→';
+  opacity: 0.45;
+  font-weight: 400;
+  margin-left: 0.35rem;
+}
+
+.patent-steps__step--current {
+  color: var(--text-h);
+}
+
+.patent-steps__step--done {
+  color: var(--muted);
+}
+
+/* Ensure phased patent UI never shows inactive steps (some resets break [hidden]). */
+.patent-phase-panel {
+  margin-top: 0.25rem;
+}
+
+.patent-step-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+}
+
+.patent-step-tabs__btn {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.patent-step-tabs__btn:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
+
+.patent-step-tabs__btn--active {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.patent-step-tabs__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.patent-phase-section {
+  margin-bottom: 1.35rem;
+}
+
+.patent-phase-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.patent-phase-back {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
 .inline-code {
   font-size: 0.88em;
   padding: 0.1em 0.35em;

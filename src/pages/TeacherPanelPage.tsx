@@ -44,7 +44,7 @@ type PendingPlanRow = {
   created_at: string
   display_name: string | null
   tile: { guild: string; skill_name: string } | null
-  patent: { field_1: string } | null
+  patent: { field_1: string; field_2: string } | null
 }
 
 type StudentSummary = {
@@ -134,7 +134,7 @@ export function TeacherPanelPage() {
         .order('created_at', { ascending: true }),
       supabase
         .from('patents')
-        .select('id, student_id, tile_id, field_1, created_at, stage, status')
+        .select('id, student_id, tile_id, field_1, field_2, created_at, stage, status')
         .eq('stage', 'plan')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
@@ -312,7 +312,10 @@ export function TeacherPanelPage() {
         created_at: r.created_at as string,
         display_name: nameById.get(r.student_id as string) ?? null,
         tile: planTileById.get(r.tile_id as string) ?? null,
-        patent: { field_1: (r.field_1 as string) ?? '' },
+        patent: {
+          field_1: (r.field_1 as string) ?? '',
+          field_2: (r.field_2 as string) ?? '',
+        },
       })),
     )
 
@@ -395,7 +398,10 @@ export function TeacherPanelPage() {
   const returnPlan = async (id: string) => {
     if (!isSupabaseConfigured) return
     setActingPlan(id, 'return')
-    const { error } = await supabase.from('patents').update({ status: 'returned' }).eq('id', id)
+    const { error } = await supabase
+      .from('patents')
+      .update({ status: 'returned', checklist_submitted: false })
+      .eq('id', id)
     clearActingPlan()
     if (error) {
       console.error('return plan:', error.message)
@@ -668,6 +674,12 @@ export function TeacherPanelPage() {
                           </p>
                           <p className="muted" style={{ margin: 0 }}>
                             {row.patent?.field_1}
+                          </p>
+                          <p className="teacher-panel-patent-title" style={{ marginTop: '0.65rem' }}>
+                            <strong>Who is it for, and why does it matter?</strong>
+                          </p>
+                          <p className="muted" style={{ margin: 0 }}>
+                            {row.patent?.field_2}
                           </p>
                         </div>
                       </div>

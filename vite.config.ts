@@ -9,7 +9,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   /** Load `.env` from the project root (same folder as this file). */
   envDir: __dirname,
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'html-cache-bust',
+      transformIndexHtml(html) {
+        const t = Date.now()
+        return html.replace(
+          '</head>',
+          `  <meta name="nexus-build" content="${t}" />\n  </head>`,
+        )
+      },
+    },
+  ],
   server: {
     port: 5173,
     strictPort: true,
