@@ -54,6 +54,7 @@ export function EmpathyForm({ value, onChange, disabled = false }: Props) {
           rows={3}
           value={value.why}
           disabled={disabled}
+          placeholder="Your answer here"
           onChange={(e) => onChange({ ...value, why: e.target.value })}
         />
       </label>

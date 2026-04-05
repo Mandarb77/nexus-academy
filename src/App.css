@@ -1121,6 +1121,20 @@ a.btn-primary {
   color: var(--text-h);
 }
 
+/* Student answer fields — light blue typed text and placeholder */
+.patent-game-piece-form input[type="text"],
+.patent-game-piece-form input:not([type]),
+.patent-game-piece-form textarea {
+  color: #60a5fa;
+}
+
+.patent-game-piece-form input[type="text"]::placeholder,
+.patent-game-piece-form input:not([type])::placeholder,
+.patent-game-piece-form textarea::placeholder {
+  color: #93c5fd;
+  opacity: 1;
+}
+
 .patent-field textarea {
   resize: vertical;
 }

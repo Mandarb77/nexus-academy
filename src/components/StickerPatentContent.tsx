@@ -872,6 +872,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
                 <textarea
                   value={patent.field3}
                   rows={5}
+                  placeholder="Your answer here"
                   onChange={(e) => {
                     const val = e.target.value
                     setPatent((p) => ({ ...p, field3: val }))
@@ -885,6 +886,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
                 <input
                   type="text"
                   value={patent.field4}
+                  placeholder="Your answer here"
                   onChange={(e) => {
                     const val = e.target.value
                     setPatent((p) => ({ ...p, field4: val }))

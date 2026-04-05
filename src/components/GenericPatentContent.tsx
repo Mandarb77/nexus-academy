@@ -476,6 +476,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
               <label className="patent-field">
                 <span className="patent-label">Describe what you are going to make. <span className="patent-required">*</span></span>
                 <textarea rows={3} value={patent.field1}
+                  placeholder="Your answer here"
                   onChange={(e) => {
                     const val = e.target.value
                     setPatent((p) => ({ ...p, field1: val }))
@@ -656,6 +657,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                   <label className="patent-field">
                     <span className="patent-label">What makes this work yours — where did you go beyond the example? <span className="patent-required">*</span></span>
                     <textarea rows={5} value={patent.field3}
+                      placeholder="Your answer here"
                       onChange={(e) => {
                         const val = e.target.value
                         setPatent((p) => ({ ...p, field3: val }))
@@ -667,6 +669,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                   <label className="patent-field">
                     <span className="patent-label">What failed and what did you change? <span className="patent-required">*</span></span>
                     <textarea rows={5} value={patent.field4}
+                      placeholder="Your answer here"
                       onChange={(e) => {
                         const val = e.target.value
                         setPatent((p) => ({ ...p, field4: val }))
