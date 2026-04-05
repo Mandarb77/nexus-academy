@@ -40,10 +40,22 @@ export function SkillTilesList({
 }: Props) {
   const navigate = useNavigate()
 
+  // Game piece goes first in any list that contains it
+  const sortedTiles = [...tiles].sort((a, b) => {
+    if (isPersonalGamePieceTile(a)) return -1
+    if (isPersonalGamePieceTile(b)) return 1
+    return 0
+  })
+
+  const gamePieceTile = sortedTiles.find(isPersonalGamePieceTile)
+  const gamePieceApproved =
+    gamePieceTile !== undefined &&
+    completionByTileId.get(gamePieceTile.id)?.status === 'approved'
+
   return (
     <>
       <ul className="skill-tile-list">
-        {tiles.map((tile) => {
+        {sortedTiles.map((tile) => {
           const completion = completionByTileId.get(tile.id)
           const status = completion?.status
           const isPending = status === 'pending'
@@ -57,20 +69,31 @@ export function SkillTilesList({
           const patentProgress = isPatentTile ? patentProgressByTileId.get(tile.id) : undefined
           const doneCount = patentProgress?.checklistState.filter(Boolean).length ?? 0
 
+          // Lock non-game-piece Forge tiles until game piece is approved
+          const isForge = tile.guild?.trim().toLowerCase() === 'forge'
+          const isLocked = isForge && !isPersonalGamePieceTile(tile) && !gamePieceApproved
+
           return (
-            <li key={tile.id} className="skill-tile card">
+            <li key={tile.id} className={`skill-tile card${isLocked ? ' skill-tile--locked' : ''}`}>
               <div className="skill-tile-row">
                 <div className="skill-tile-main">
                   <h3 className="skill-tile-name">{tile.skill_name}</h3>
                   <p className="skill-tile-wp">{tile.wp_value} WP</p>
-                  {isPatentTile && !isApproved && !isPending ? (
+                  {isPatentTile && !isApproved && !isPending && !isLocked ? (
                     <p className="muted skill-tile-checklist-progress">
                       {doneCount} of {totalSteps} steps complete
                     </p>
                   ) : null}
+                  {isLocked ? (
+                    <p className="skill-tile-locked-hint muted">
+                      🔒 Complete <em>Design Your Personal Game Piece</em> first
+                    </p>
+                  ) : null}
                 </div>
                 <div className="skill-tile-action">
-                  {isApproved ? (
+                  {isLocked ? (
+                    <span className="skill-tile-badge skill-tile-badge--locked">Locked</span>
+                  ) : isApproved ? (
                     <span className="skill-tile-badge skill-tile-badge--approved">Approved</span>
                   ) : isPending ? (
                     <button type="button" className="btn-skill btn-skill--pending" disabled aria-disabled="true">
@@ -100,7 +123,7 @@ export function SkillTilesList({
                   )}
                 </div>
               </div>
-              {isReturned ? (
+              {isReturned && !isLocked ? (
                 <p className="skill-tile-returned-hint muted">
                   Returned by your teacher — submit again when you are ready.
                 </p>

@@ -22,7 +22,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { PatentFlowBanner } from './PatentFlowBanner'
+import { EmpathyForm } from './EmpathyForm'
 import { supabase } from '../lib/supabase'
+import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
+import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 import { skillTreeGuildModifier } from '../lib/guildTree'
@@ -33,11 +36,11 @@ type Props = {
   completionStatus: SkillCompletionStatus | undefined
 }
 
-type PatentDraft = { field1: string; field2: string; field3: string; field4: string }
+type PatentDraft = { field1: string; field3: string; field4: string }
 type PlanStatus = 'none' | 'pending' | 'approved' | 'returned'
 type PlanState = { id: string; status: PlanStatus }
 
-const EMPTY_DRAFT: PatentDraft = { field1: '', field2: '', field3: '', field4: '' }
+const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
 
 function emptyChecks(steps: StepConfig[]): boolean[] {
   return Array(steps.length).fill(false)
@@ -72,6 +75,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
   const [checks, setChecks] = useState<boolean[]>(() => emptyChecks(steps))
   const [patent, setPatent] = useState<PatentDraft>(EMPTY_DRAFT)
+  const [empathy, setEmpathy] = useState<EmpathyDraft>(EMPTY_EMPATHY)
   const [uploadUrl, setUploadUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -169,10 +173,10 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
     setPatent({
       field1: draftField1 ?? row.field_1 ?? '',
-      field2: row.field_2 ?? '',
       field3: row.field_3 ?? '',
       field4: row.field_4 ?? '',
     })
+    setEmpathy(parseEmpathy(row.field_2 ?? null))
 
     setInitialised(true)
   }, [user?.id, tile.id, steps.length, field1DraftKey]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -291,24 +295,27 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   }
 
   const onStep1Continue = async () => {
-    if (!patent.field1.trim() || !patent.field2.trim()) {
+    if (!patent.field1.trim()) {
       setPlanSubmitError('Fill in both opening questions before continuing.')
+      return
+    }
+    if (!isEmpathyValid(empathy)) {
+      setPlanSubmitError('Fill in "What is one thing you know about this person…" before continuing.')
       return
     }
     if (!user?.id) return
     setPlanSubmitError(null)
     setSubmittingStep1(true)
+    const empathyJson = serializeEmpathy(empathy)
     try {
       if (plan.id && plan.status !== 'none') {
-        const { error } = await supabase.from('patents').update({ field_1: patent.field1, field_4: patent.field2 }).eq('id', plan.id)
+        const { error } = await supabase.from('patents').update({ field_1: patent.field1, field_2: empathyJson }).eq('id', plan.id)
         if (error) throw error
-        // Re-persist local draft so it survives if plan stays pending
         if (plan.status !== 'approved') localStorage.setItem(field1DraftKey, patent.field1)
       } else {
-        // Insert new plan row — field_1 = Q1, field_4 = Q2 (opening labels)
         const { data, error } = await supabase
           .from('patents')
-          .insert({ student_id: user.id, tile_id: tile.id, field_1: patent.field1, field_4: patent.field2, stage: 'plan', status: 'pending' })
+          .insert({ student_id: user.id, tile_id: tile.id, field_1: patent.field1, field_2: empathyJson, stage: 'plan', status: 'pending' })
           .select('id')
           .single()
         if (error) throw error
@@ -352,6 +359,10 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       setSubmitApprovalError('Fill in both closing questions before submitting.')
       return
     }
+    if (!isEmpathyValid(empathy)) {
+      setSubmitApprovalError('Fill in "What is one thing you know about this person…" before submitting.')
+      return
+    }
     if (!allDone) {
       setSubmitApprovalError('Complete all checklist steps first.')
       return
@@ -365,6 +376,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     try {
       const { error: updErr } = await supabase.from('patents').update({
         stage: 'packet',
+        field_2: serializeEmpathy(empathy),
         field_3: patent.field3,
         field_4: patent.field4,
       }).eq('id', pid)
@@ -472,23 +484,21 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                 />
               </label>
 
-              <label className="patent-field">
-                <span className="patent-label">Who are you making this for and why does it matter? <span className="patent-required">*</span></span>
-                <textarea rows={3} value={patent.field2}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setPatent((p) => ({ ...p, field2: val }))
-                    if (plan.id) void saveFieldToDb('field_4', val, plan.id)
-                  }}
-                />
-              </label>
+              <EmpathyForm
+                value={empathy}
+                disabled={!canUseDb}
+                onChange={(next) => {
+                  setEmpathy(next)
+                  if (plan.id) void saveFieldToDb('field_2', serializeEmpathy(next), plan.id)
+                }}
+              />
             </div>
 
             {planSubmitError ? <p className="error" role="alert">{planSubmitError}</p> : null}
 
             <div className="design3d-plan-actions">
               <button type="button" className="btn-primary"
-                disabled={!canUseDb || !user?.id || submittingStep1 || !patent.field1.trim() || !patent.field2.trim()}
+                disabled={!canUseDb || !user?.id || submittingStep1 || !patent.field1.trim() || !isEmpathyValid(empathy)}
                 onClick={() => void onStep1Continue()}>
                 {submittingStep1 ? 'Saving…' : plan.status === 'returned' ? 'Resubmit to teacher' : plan.id ? 'Save answers' : 'Save and submit to teacher'}
               </button>
@@ -550,6 +560,14 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                             />
                             <span className="checklist-text">{step.description}</span>
                           </label>
+                          {step.resourceUrl ? (
+                            <p style={{ margin: '0.3rem 0 0 1.75rem' }}>
+                              <a href={step.resourceUrl} target="_blank" rel="noopener noreferrer"
+                                className="btn-secondary" style={{ fontSize: '0.85rem', display: 'inline-block', padding: '0.25rem 0.7rem' }}>
+                                Open resource →
+                              </a>
+                            </p>
+                          ) : null}
                           {isApprovalGate ? (
                             <p className="muted" style={{ margin: '0.25rem 0 0 1.75rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                               🔒 Approval checkpoint — your teacher reviews progress here.

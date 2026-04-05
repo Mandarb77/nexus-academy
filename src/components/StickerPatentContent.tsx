@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { PatentFlowBanner } from './PatentFlowBanner'
+import { EmpathyForm } from './EmpathyForm'
 import { isStickerTile } from '../lib/stickerTile'
 import { STICKER_STEPS } from '../lib/stickerSteps'
 import { supabase } from '../lib/supabase'
+import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
+import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
-type PatentDraft = { field1: string; field2: string; field3: string; field4: string }
+type PatentDraft = { field1: string; field3: string; field4: string }
 type PlanStatus = 'none' | 'pending' | 'approved' | 'returned'
 type PlanState = { id: string; status: PlanStatus }
 
@@ -19,7 +22,7 @@ type Props = {
 }
 
 const EMPTY_CHECKS = (): boolean[] => Array(STICKER_STEPS.length).fill(false)
-const EMPTY_DRAFT: PatentDraft = { field1: '', field2: '', field3: '', field4: '' }
+const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
 
 function readStoredPhase(key: string): 1 | 2 | 3 {
   const raw = sessionStorage.getItem(key)
@@ -40,6 +43,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
   const [checks, setChecks] = useState<boolean[]>(EMPTY_CHECKS())
   const [patent, setPatent] = useState<PatentDraft>(EMPTY_DRAFT)
+  const [empathy, setEmpathy] = useState<EmpathyDraft>(EMPTY_EMPATHY)
   const [uploadUrl, setUploadUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -144,10 +148,10 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     if (planStatus === 'approved') localStorage.removeItem(field1DraftKey)
     setPatent({
       field1: draftField1 ?? row.field_1 ?? '',
-      field2: row.field_2 ?? '',
       field3: row.field_3 ?? '',
       field4: row.field_4 ?? '',
     })
+    setEmpathy(parseEmpathy(row.field_2 ?? null))
 
     setInitialised(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -308,19 +312,24 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       setPlanSubmitError('Not signed in.')
       return
     }
-    if (!patent.field1.trim() || !patent.field2.trim()) {
+    if (!patent.field1.trim()) {
       setPlanSubmitError('Answer both questions before continuing.')
+      return
+    }
+    if (!isEmpathyValid(empathy)) {
+      setPlanSubmitError('Fill in "What is one thing you know about this person…" before continuing.')
       return
     }
 
     setSubmittingStep1(true)
+    const empathyJson = serializeEmpathy(empathy)
     try {
       if (!plan.id) {
         const { error } = await supabase.from('patents').insert({
           student_id: user.id,
           tile_id: tile.id,
           field_1: patent.field1,
-          field_2: patent.field2,
+          field_2: empathyJson,
           stage: 'plan',
           status: 'pending',
         })
@@ -341,7 +350,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
           .from('patents')
           .update({
             field_1: patent.field1,
-            field_2: patent.field2,
+            field_2: empathyJson,
             status: 'pending',
             checklist_submitted: false,
           })
@@ -349,7 +358,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         if (error) throw error
         setFlowBanner('Updated plan resubmitted to your teacher.')
       } else {
-        const { error } = await supabase.from('patents').update({ field_2: patent.field2 }).eq('id', plan.id)
+        const { error } = await supabase.from('patents').update({ field_2: empathyJson }).eq('id', plan.id)
         if (error) throw error
         setFlowBanner('Your answers are saved. Continue to the checklist when you are ready.')
       }
@@ -414,8 +423,12 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       setSubmitApprovalError('No approved plan found. Submit your plan first and wait for teacher approval.')
       return
     }
-    if (!patent.field1.trim() || !patent.field2.trim() || !patent.field3.trim() || !patent.field4.trim()) {
+    if (!patent.field1.trim() || !patent.field3.trim() || !patent.field4.trim()) {
       setSubmitApprovalError('Fill in all patent fields before submitting.')
+      return
+    }
+    if (!isEmpathyValid(empathy)) {
+      setSubmitApprovalError('Fill in "What is one thing you know about this person…" before submitting.')
       return
     }
     if (!allDone) {
@@ -433,7 +446,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         .from('patents')
         .update({
           stage: 'packet',
-          field_2: patent.field2,
+          field_2: serializeEmpathy(empathy),
           field_3: patent.field3,
           field_4: patent.field4,
         })
@@ -587,30 +600,23 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
             />
           </label>
 
-          <label className="patent-field">
-            <span className="patent-label">
-              Who is it for, and why does it matter? <span className="patent-required">*</span>
-            </span>
-            <textarea
-              value={patent.field2}
-              rows={4}
-              disabled={!user?.id}
-              onChange={(e) => {
-                const val = e.target.value
-                setPatent((p) => ({ ...p, field2: val }))
-                if (plan.id && plan.status === 'pending') {
-                  void saveFieldToDb('field_2', val, plan.id)
-                }
-              }}
-            />
-          </label>
+          <EmpathyForm
+            value={empathy}
+            disabled={!user?.id}
+            onChange={(next) => {
+              setEmpathy(next)
+              if (plan.id && plan.status === 'pending') {
+                void saveFieldToDb('field_2', serializeEmpathy(next), plan.id)
+              }
+            }}
+          />
 
           <div className="design3d-plan-actions">
             <button
               type="button"
               className="btn-primary"
               disabled={
-                !canUseDb || !user?.id || submittingStep1 || !patent.field1.trim() || !patent.field2.trim()
+                !canUseDb || !user?.id || submittingStep1 || !patent.field1.trim() || !isEmpathyValid(empathy)
               }
               onClick={() => void onStep1Continue()}
             >

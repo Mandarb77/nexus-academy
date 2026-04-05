@@ -1,6 +1,7 @@
 export type StepConfig = {
   description: string
   requiresApproval: boolean
+  resourceUrl?: string
 }
 
 export type TileRow = {

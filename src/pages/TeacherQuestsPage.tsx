@@ -100,7 +100,7 @@ export function TeacherQuestsPage() {
   }
 
   const addStep = () => {
-    setSteps((prev) => [...prev, { description: '', requiresApproval: false, tempId: makeId() }])
+    setSteps((prev) => [...prev, { description: '', requiresApproval: false, resourceUrl: '', tempId: makeId() }])
   }
 
   const updateStep = (idx: number, patch: Partial<BuilderStep>) => {
@@ -134,7 +134,11 @@ export function TeacherQuestsPage() {
       skill_name: title.trim(),
       wp_value: wpValue,
       gold_value: goldValue,
-      steps: steps.map(({ description, requiresApproval }) => ({ description, requiresApproval })),
+      steps: steps.map(({ description, requiresApproval, resourceUrl }) => ({
+        description,
+        requiresApproval,
+        ...(resourceUrl?.trim() ? { resourceUrl: resourceUrl.trim() } : {}),
+      })),
     }
 
     setSaving(true)
@@ -229,7 +233,7 @@ export function TeacherQuestsPage() {
           <p style={{ margin: '0 0 0.35rem', fontWeight: 600, fontSize: '0.9rem' }}>📋 Opening questions (fixed — cannot be removed)</p>
           <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.88rem', color: 'var(--muted-text,#666)' }}>
             <li>Describe what you are going to make.</li>
-            <li>Who are you making this for and why does it matter?</li>
+            <li>Who are you making this for, why does it matter to them, what you know about them that changed a design decision, and how you learned it <span style={{ fontSize: '0.8rem', opacity: 0.65 }}>(structured empathy form)</span></li>
           </ol>
         </div>
 
@@ -268,7 +272,7 @@ export function TeacherQuestsPage() {
                   {/* Drag handle */}
                   <span style={{ paddingTop: '0.35rem', color: '#aaa', fontSize: '1.1rem', cursor: 'grab' }} title="Drag to reorder">⠿</span>
 
-                  {/* Description */}
+                  {/* Description + link */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                     <input
                       type="text"
@@ -276,6 +280,13 @@ export function TeacherQuestsPage() {
                       placeholder={`Step ${idx + 1} description`}
                       onChange={(e) => updateStep(idx, { description: e.target.value })}
                       style={{ width: '100%' }}
+                    />
+                    <input
+                      type="url"
+                      value={step.resourceUrl ?? ''}
+                      placeholder="Resource link (optional) — e.g. https://tinkercad.com/…"
+                      onChange={(e) => updateStep(idx, { resourceUrl: e.target.value })}
+                      style={{ width: '100%', fontSize: '0.85rem' }}
                     />
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', cursor: 'pointer' }}>
                       <input
@@ -353,9 +364,15 @@ export function TeacherQuestsPage() {
                     <summary style={{ fontSize: '0.85rem', cursor: 'pointer', color: 'var(--muted-text,#666)' }}>View steps</summary>
                     <ol style={{ marginTop: '0.35rem', paddingLeft: '1.25rem', fontSize: '0.84rem' }}>
                       {q.steps.map((s, i) => (
-                        <li key={i} style={{ marginBottom: '0.2rem' }}>
+                        <li key={i} style={{ marginBottom: '0.3rem' }}>
                           {s.description}
                           {s.requiresApproval ? <span style={{ marginLeft: '0.4rem', fontSize: '0.78rem', color: '#ca8a04' }}>🔒 approval gate</span> : null}
+                          {s.resourceUrl ? (
+                            <a href={s.resourceUrl} target="_blank" rel="noopener noreferrer"
+                              style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: 'var(--accent,#6366f1)' }}>
+                              🔗 resource link
+                            </a>
+                          ) : null}
                         </li>
                       ))}
                     </ol>

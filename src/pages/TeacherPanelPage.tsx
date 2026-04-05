@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { parseEmpathy } from '../lib/empathy'
 
 type TileInfo = {
   guild: string
@@ -96,6 +97,23 @@ type Acting =
   | { scope: 'skill'; id: string; action: 'approve' | 'return' }
   | { scope: 'redemption'; id: string; action: 'approve' | 'return' }
   | null
+
+function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
+  const e = parseEmpathy(raw)
+  const hasContent = e.who || e.why || e.what_changed || e.how_learned.length > 0
+  if (!hasContent) return null
+  return (
+    <div style={{ margin: '0.65rem 0', padding: '0.65rem 0.85rem', background: 'rgba(99,102,241,0.06)', borderLeft: '3px solid rgba(99,102,241,0.4)', borderRadius: '4px', fontSize: '0.88rem' }}>
+      <p style={{ margin: '0 0 0.2rem', fontWeight: 700, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7 }}>Empathy</p>
+      {e.who ? <p style={{ margin: '0.15rem 0' }}><strong>Who:</strong> {e.who}</p> : null}
+      {e.why ? <p style={{ margin: '0.15rem 0' }}><strong>Why it matters:</strong> {e.why}</p> : null}
+      {e.what_changed ? <p style={{ margin: '0.15rem 0' }}><strong>Changed their design because:</strong> {e.what_changed}</p> : null}
+      {e.how_learned.length > 0 ? (
+        <p style={{ margin: '0.15rem 0' }}><strong>How they learned:</strong> {e.how_learned.join(' · ')}</p>
+      ) : null}
+    </div>
+  )
+}
 
 export function TeacherPanelPage() {
   const { signOut } = useAuth()
@@ -750,17 +768,12 @@ export function TeacherPanelPage() {
                         </p>
                         <div className="teacher-panel-patent">
                           <p className="teacher-panel-patent-title">
-                            <strong>What are you going to make?</strong>
+                            <strong>What are they going to make?</strong>
                           </p>
                           <p className="muted" style={{ margin: 0 }}>
                             {row.patent?.field_1}
                           </p>
-                          <p className="teacher-panel-patent-title" style={{ marginTop: '0.65rem' }}>
-                            <strong>Who is it for, and why does it matter?</strong>
-                          </p>
-                          <p className="muted" style={{ margin: 0 }}>
-                            {row.patent?.field_2}
-                          </p>
+                          <EmpathyDisplay raw={row.patent?.field_2 ?? null} />
                         </div>
                       </div>
                       <div className="teacher-panel-actions">
@@ -908,19 +921,18 @@ export function TeacherPanelPage() {
                             </p>
                             <dl className="teacher-panel-patent-dl">
                               <div>
-                                <dt>What did you make?</dt>
+                                <dt>What did they make?</dt>
                                 <dd>{row.patent.field_1}</dd>
                               </div>
+                            </dl>
+                            <EmpathyDisplay raw={row.patent.field_2} />
+                            <dl className="teacher-panel-patent-dl">
                               <div>
-                                <dt>Who is it for, and why does it matter?</dt>
-                                <dd>{row.patent.field_2}</dd>
-                              </div>
-                              <div>
-                                <dt>How did you make it an original work?</dt>
+                                <dt>How did they make it an original work?</dt>
                                 <dd>{row.patent.field_3}</dd>
                               </div>
                               <div>
-                                <dt>What do you have to iterate?</dt>
+                                <dt>What do they have to iterate?</dt>
                                 <dd>{row.patent.field_4}</dd>
                               </div>
                             </dl>
