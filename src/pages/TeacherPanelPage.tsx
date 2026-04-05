@@ -37,6 +37,16 @@ type PendingRedemptionRow = {
   display_name: string | null
 }
 
+type PendingChecklistRow = {
+  id: string
+  student_id: string
+  tile_id: string
+  created_at: string
+  display_name: string | null
+  tile: { guild: string; skill_name: string } | null
+  upload_url: string | null
+}
+
 type PendingPlanRow = {
   id: string
   student_id: string
@@ -92,6 +102,7 @@ export function TeacherPanelPage() {
   const [skillRows, setSkillRows] = useState<PendingSkillRow[]>([])
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
   const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
+  const [checklistRows, setChecklistRows] = useState<PendingChecklistRow[]>([])
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [studentProfile, setStudentProfile] = useState<StudentSummary | null>(null)
@@ -104,6 +115,8 @@ export function TeacherPanelPage() {
   const [acting, setActing] = useState<Acting>(null)
   const [actingPlanId, setActingPlanId] = useState<string | null>(null)
   const [actingPlanKind, setActingPlanKind] = useState<'approve' | 'return' | null>(null)
+  const [actingChecklistId, setActingChecklistId] = useState<string | null>(null)
+  const [actingChecklistKind, setActingChecklistKind] = useState<'approve' | 'return' | null>(null)
   const [studentsBusy, setStudentsBusy] = useState(false)
   const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
     () => new Map(),
@@ -121,7 +134,7 @@ export function TeacherPanelPage() {
     setLoading(true)
     setLoadError(null)
 
-    const [compRes, redRes, planRes] = await Promise.all([
+    const [compRes, redRes, planRes, checklistRes] = await Promise.all([
       supabase
         .from('skill_completions')
         .select('id, student_id, tile_id, patent_id, created_at, status')
@@ -137,6 +150,14 @@ export function TeacherPanelPage() {
         .select('id, student_id, tile_id, field_1, field_2, created_at, stage, status')
         .eq('stage', 'plan')
         .eq('status', 'pending')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('patents')
+        .select('id, student_id, tile_id, upload_url, created_at, stage, status, checklist_approved')
+        .eq('stage', 'plan')
+        .eq('status', 'approved')
+        .eq('checklist_submitted', true)
+        .eq('checklist_approved', false)
         .order('created_at', { ascending: true }),
     ])
 
@@ -165,16 +186,25 @@ export function TeacherPanelPage() {
       setLoading(false)
       return
     }
+    if (checklistRes.error) {
+      console.error('teacher panel checklist approvals:', checklistRes.error.message)
+      setChecklistRows([])
+      setLoadError(checklistRes.error.message)
+      setLoading(false)
+      return
+    }
 
     const completions = compRes.data ?? []
     const redemptions = redRes.data ?? []
     const plans = planRes.data ?? []
+    const checklists = checklistRes.data ?? []
 
     const studentIds = [
       ...new Set([
         ...completions.map((r) => r.student_id as string),
         ...redemptions.map((r) => r.student_id as string),
         ...plans.map((r) => r.student_id as string),
+        ...checklists.map((r) => r.student_id as string),
       ]),
     ]
 
@@ -221,7 +251,10 @@ export function TeacherPanelPage() {
       }
     }
 
-    const planTileIds = [...new Set(plans.map((r) => r.tile_id as string))]
+    const planTileIds = [...new Set([
+      ...plans.map((r) => r.tile_id as string),
+      ...checklists.map((r) => r.tile_id as string),
+    ])]
     const planTileById = new Map<string, { guild: string; skill_name: string }>()
     if (planTileIds.length > 0) {
       const { data: tiles, error: ptErr } = await supabase
@@ -319,6 +352,18 @@ export function TeacherPanelPage() {
       })),
     )
 
+    setChecklistRows(
+      checklists.map((r) => ({
+        id: r.id as string,
+        student_id: r.student_id as string,
+        tile_id: r.tile_id as string,
+        created_at: r.created_at as string,
+        display_name: nameById.get(r.student_id as string) ?? null,
+        tile: planTileById.get(r.tile_id as string) ?? null,
+        upload_url: (r.upload_url as string | null) ?? null,
+      })),
+    )
+
     setLoading(false)
   }, [])
 
@@ -405,6 +450,40 @@ export function TeacherPanelPage() {
     clearActingPlan()
     if (error) {
       console.error('return plan:', error.message)
+      return
+    }
+    void loadPending()
+  }
+
+  const approveChecklist = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActingChecklistId(id)
+    setActingChecklistKind('approve')
+    const { error } = await supabase
+      .from('patents')
+      .update({ checklist_approved: true })
+      .eq('id', id)
+    setActingChecklistId(null)
+    setActingChecklistKind(null)
+    if (error) {
+      console.error('approve checklist:', error.message)
+      return
+    }
+    void loadPending()
+  }
+
+  const returnChecklist = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActingChecklistId(id)
+    setActingChecklistKind('return')
+    const { error } = await supabase
+      .from('patents')
+      .update({ checklist_submitted: false, checklist_approved: false })
+      .eq('id', id)
+    setActingChecklistId(null)
+    setActingChecklistKind(null)
+    if (error) {
+      console.error('return checklist:', error.message)
       return
     }
     void loadPending()
@@ -697,6 +776,85 @@ export function TeacherPanelPage() {
                           className="btn-secondary"
                           disabled={busy}
                           onClick={() => void returnPlan(row.id)}
+                        >
+                          {busyReturn ? 'Returning…' : 'Return'}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section className="teacher-panel-section" aria-labelledby="teacher-panel-checklists-heading">
+            <h2 id="teacher-panel-checklists-heading" className="teacher-panel-section-title">
+              Checklist approvals
+            </h2>
+            {checklistRows.length === 0 ? (
+              <p className="muted teacher-panel-section-empty">No pending checklist reviews.</p>
+            ) : (
+              <ul className="teacher-panel-list">
+                {checklistRows.map((row) => {
+                  const studentName =
+                    row.display_name?.trim() || `Student (${row.student_id.slice(0, 8)}…)`
+                  const busyApprove = actingChecklistId === row.id && actingChecklistKind === 'approve'
+                  const busyReturn = actingChecklistId === row.id && actingChecklistKind === 'return'
+                  const busy = busyApprove || busyReturn
+                  const uploadUrl = row.upload_url
+                  const isVideo = uploadUrl
+                    ? /\.(mp4|webm|mov|avi|m4v)$/i.test(uploadUrl)
+                    : false
+
+                  return (
+                    <li key={row.id} className="card teacher-panel-item">
+                      <div className="teacher-panel-item-main">
+                        <p className="teacher-panel-student">{studentName}</p>
+                        <p className="teacher-panel-skill">
+                          <strong>{row.tile?.skill_name ?? 'Checklist'}</strong>
+                        </p>
+                        <p className="muted teacher-panel-guild">
+                          Checklist review · {row.tile?.guild ? <strong>{row.tile.guild}</strong> : null}
+                        </p>
+                        {uploadUrl ? (
+                          <div style={{ marginTop: '0.65rem' }}>
+                            <p style={{ margin: '0 0 0.35rem', fontSize: '0.9rem' }}>
+                              <strong>Submitted photo / video:</strong>
+                            </p>
+                            {isVideo ? (
+                              <video
+                                src={uploadUrl}
+                                controls
+                                style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', display: 'block' }}
+                              />
+                            ) : (
+                              <img
+                                src={uploadUrl}
+                                alt="Student's uploaded work"
+                                style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', objectFit: 'contain', display: 'block' }}
+                              />
+                            )}
+                          </div>
+                        ) : (
+                          <p className="muted" style={{ marginTop: '0.35rem', fontSize: '0.9rem' }}>
+                            No photo or video uploaded yet.
+                          </p>
+                        )}
+                      </div>
+                      <div className="teacher-panel-actions">
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={busy}
+                          onClick={() => void approveChecklist(row.id)}
+                        >
+                          {busyApprove ? 'Approving…' : 'Approve checklist'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={busy}
+                          onClick={() => void returnChecklist(row.id)}
                         >
                           {busyReturn ? 'Returning…' : 'Return'}
                         </button>

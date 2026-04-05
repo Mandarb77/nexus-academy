@@ -61,6 +61,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const [flowBanner, setFlowBanner] = useState<string | null>(null)
   const [showImportNote, setShowImportNote] = useState(false)
   const [checklistSubmitted, setChecklistSubmitted] = useState(false)
+  const [checklistApproved, setChecklistApproved] = useState(false)
   const [submittingChecklist, setSubmittingChecklist] = useState(false)
 
   /** Pick initial phase once per tile+user after load; avoid resetting from sessionStorage every render. */
@@ -74,7 +75,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     const { data, error } = await supabase
       .from('patents')
       .select(
-        'id, status, stage, field_1, field_2, field_3, field_4, checklist_state, checklist_submitted, upload_url, created_at',
+        'id, status, stage, field_1, field_2, field_3, field_4, checklist_state, checklist_submitted, checklist_approved, upload_url, created_at',
       )
       .eq('student_id', user.id)
       .eq('tile_id', tile.id)
@@ -97,6 +98,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       field_4: string | null
       checklist_state: unknown
       checklist_submitted?: boolean | null
+      checklist_approved?: boolean | null
       upload_url?: string | null
     } | undefined
 
@@ -109,6 +111,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setPlan({ id: '', status: 'none' })
       setUploadUrl(null)
       setChecklistSubmitted(false)
+      setChecklistApproved(false)
       setInitialised(true)
       return
     }
@@ -120,14 +123,16 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     const rawSubmitted = Boolean(row.checklist_submitted)
     if (planStatus === 'returned') {
       setChecklistSubmitted(false)
+      setChecklistApproved(false)
       if (rawSubmitted) {
         void supabase
           .from('patents')
-          .update({ checklist_submitted: false })
+          .update({ checklist_submitted: false, checklist_approved: false })
           .eq('id', row.id)
       }
     } else {
       setChecklistSubmitted(rawSubmitted)
+      setChecklistApproved(row.checklist_approved ?? false)
     }
 
     // Migration-safe: extend shorter stored arrays with false for any newly added steps.
@@ -157,25 +162,25 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     void loadFromDatabase()
   }, [loadFromDatabase])
 
-  const canStartChecklist = Boolean(plan.id)
+  const canStartChecklist = plan.status === 'approved'
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === PERSONAL_GAME_PIECE_STEPS.length
 
   const planSubmitted = Boolean(plan.id)
 
-  /** Step 2 exists only after plan is submitted; step 3 only after checklist is submitted. */
+  /** Phase 2 unlocks when plan exists; phase 3 only when teacher approves the checklist. */
   const maxPhase = useMemo((): 1 | 2 | 3 => {
     if (!planSubmitted) return 1
-    if (!checklistSubmitted) return 2
+    if (!checklistApproved) return 2
     return 3
-  }, [planSubmitted, checklistSubmitted])
+  }, [planSubmitted, checklistApproved])
 
   useEffect(() => {
     if (!initialised) return
     const marker = `${tile.id}:${user?.id ?? ''}`
     if (bootstrappedForTileRef.current !== marker) {
       bootstrappedForTileRef.current = marker
-      const suggested: 1 | 2 | 3 = !planSubmitted ? 1 : !checklistSubmitted ? 2 : 3
+      const suggested: 1 | 2 | 3 = !planSubmitted ? 1 : !checklistApproved ? 2 : 3
       const stored = readStoredPhase(phaseKey)
       let next: 1 | 2 | 3
       if (stored >= 1 && stored <= maxPhase) {
@@ -198,7 +203,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     user?.id,
     maxPhase,
     planSubmitted,
-    checklistSubmitted,
+    checklistApproved,
     phaseKey,
   ])
 
@@ -342,8 +347,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         .eq('id', plan.id)
       if (error) throw error
       setChecklistSubmitted(true)
-      setFlowBanner('Checklist submitted. Step 3 — answer the final two questions.')
-      goPhase(3)
+      setFlowBanner('Checklist submitted for teacher review. Step 3 unlocks once your teacher approves.')
       await loadFromDatabase()
     } catch (e: unknown) {
       console.error('[PatentContent] submit checklist:', e)
@@ -391,8 +395,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setSubmitApprovalError('Complete all checklist steps first.')
       return
     }
-    if (!checklistSubmitted) {
-      setSubmitApprovalError('Submit your checklist in step 2 before the final questions.')
+    if (!checklistApproved) {
+      setSubmitApprovalError('Wait for your teacher to approve the checklist before submitting.')
       return
     }
 
@@ -409,18 +413,34 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         .eq('id', pid)
       if (updErr) throw updErr
 
-      const { error: scErr } = await supabase.from('skill_completions').insert({
-        student_id: user.id,
-        tile_id: tile.id,
-        skill_key: tile.id,
-        status: 'pending',
-        patent_id: pid,
-      })
-      if (scErr) throw scErr
+      // Handle resubmission: update existing returned row rather than inserting a duplicate.
+      const { data: existing } = await supabase
+        .from('skill_completions')
+        .select('id, status')
+        .eq('student_id', user.id)
+        .eq('tile_id', tile.id)
+        .maybeSingle()
+
+      if (existing) {
+        const { error: scErr } = await supabase
+          .from('skill_completions')
+          .update({ status: 'pending', patent_id: pid, wp_awarded: null, gold_awarded: null })
+          .eq('id', existing.id)
+        if (scErr) throw scErr
+      } else {
+        const { error: scErr } = await supabase.from('skill_completions').insert({
+          student_id: user.id,
+          tile_id: tile.id,
+          skill_key: tile.id,
+          status: 'pending',
+          patent_id: pid,
+        })
+        if (scErr) throw scErr
+      }
 
       await refresh()
-      setSubmitSuccessMessage('Quest submitted for teacher approval! Returning to Forge…')
-      setFlowBanner('Patent packet submitted successfully.')
+      setSubmitSuccessMessage('Final application submitted! Returning to Forge…')
+      setFlowBanner('Final application submitted — awaiting teacher approval.')
       window.setTimeout(() => navigate('/tree/forge'), 1400)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Submit failed.'
@@ -473,7 +493,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           [
             { n: 1 as const, label: 'Plan questions' },
             ...(planSubmitted ? [{ n: 2 as const, label: 'Checklist' }] : []),
-            ...(checklistSubmitted ? [{ n: 3 as const, label: 'Final questions' }] : []),
+            ...(checklistApproved ? [{ n: 3 as const, label: 'Final questions' }] : []),
           ] as { n: 1 | 2 | 3; label: string }[]
         ).map(({ n, label }) => (
           <button
@@ -570,11 +590,11 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
             </button>
             {plan.status === 'pending' && plan.id ? (
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                Plan saved. You can still update your answers here. Your teacher will also see them.
+                Plan submitted — waiting for teacher approval. The checklist unlocks after your teacher approves.
               </p>
             ) : !plan.id ? (
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                Saves your plan and immediately unlocks the checklist. Also visible to your teacher.
+                Saves your plan to your teacher. After they approve, you can start the checklist.
               </p>
             ) : null}
             {planSubmitError ? (
@@ -603,9 +623,14 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           <p className="muted">Submit step 1 to your teacher first.</p>
         ) : (
           <>
-            {checklistSubmitted ? (
+            {checklistSubmitted && !checklistApproved ? (
+              <p className="muted" role="status" style={{ fontWeight: 500 }}>
+                ✓ Checklist submitted — waiting for teacher approval. Step 3 will unlock once your teacher reviews your work.
+              </p>
+            ) : null}
+            {checklistSubmitted && checklistApproved ? (
               <p className="muted" role="status">
-                Checklist submitted. Use step 3 for the final questions, or go back to review (read-only).
+                Checklist approved. Go to step 3 to submit your final application.
               </p>
             ) : null}
             <div className="design3d-checklist-col" style={{ maxWidth: '42rem' }}>
@@ -775,7 +800,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
               {!canStartChecklist ? (
                 <p className="muted" style={{ margin: '0.75rem 0 0' }}>
-                  Answer both questions in step 1 and save to unlock the checklist.
+                  Checklist unlocks after your teacher approves your plan.
                 </p>
               ) : null}
             </div>
@@ -789,10 +814,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                 }
                 onClick={() => void onSubmitChecklist()}
               >
-                {submittingChecklist ? 'Submitting…' : 'Submit checklist'}
+                {submittingChecklist ? 'Submitting…' : 'Submit checklist for teacher review'}
               </button>
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                After you submit, the checklist locks and step 3 (final two questions) unlocks.
+                After you submit, your teacher reviews your checklist and uploaded photo/video. Step 3 unlocks when they approve.
               </p>
             </div>
           </>
@@ -817,8 +842,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           Your answers save as you type. Submit when both are complete.
         </p>
 
-        {!checklistSubmitted ? (
-          <p className="muted">Submit your checklist in step 2 to unlock this section.</p>
+        {!checklistApproved ? (
+          <p className="muted">Your teacher must approve the checklist in step 2 before this section unlocks.</p>
         ) : (
           <>
             <div className="design3d-patent-col" style={{ maxWidth: '40rem' }}>
@@ -853,16 +878,16 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               <button
                 type="button"
                 className="btn-primary"
-                disabled={
-                  !canUseDb ||
-                  !user?.id ||
-                  submittingPatent ||
-                  !patent.field3.trim() ||
-                  !patent.field4.trim()
-                }
-                onClick={() => void onSubmitForApproval()}
-              >
-                {submittingPatent ? 'Submitting…' : 'Submit quest for approval'}
+                  disabled={
+                    !canUseDb ||
+                    !user?.id ||
+                    submittingPatent ||
+                    !patent.field3.trim() ||
+                    !patent.field4.trim()
+                  }
+                  onClick={() => void onSubmitForApproval()}
+                >
+                  {submittingPatent ? 'Submitting…' : 'Submit final application'}
               </button>
             </div>
           </>
