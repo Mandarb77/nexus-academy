@@ -615,6 +615,17 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         <h2 id="patent-phase-2-title" className="patent-phase-title">
           Step 2 — Workshop checklist
         </h2>
+
+        {checklistSubmitted && !checklistApproved ? (
+          <p
+            className="patent-waiting-note"
+            role="status"
+            style={{ fontWeight: 600, margin: '0 0 0.75rem', padding: '0.55rem 0.85rem', background: 'rgba(234,179,8,0.12)', borderLeft: '4px solid #ca8a04', borderRadius: '6px' }}
+          >
+            ⏳ Submitted — waiting for teacher approval
+          </p>
+        ) : null}
+
         <p className="muted" style={{ marginTop: 0 }}>
           {doneCount} of {PERSONAL_GAME_PIECE_STEPS.length} steps complete. Checkboxes save as you go.
         </p>
@@ -623,16 +634,6 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           <p className="muted">Submit step 1 to your teacher first.</p>
         ) : (
           <>
-            {checklistSubmitted && !checklistApproved ? (
-              <p className="muted" role="status" style={{ fontWeight: 500 }}>
-                ✓ Checklist submitted — waiting for teacher approval. Step 3 will unlock once your teacher reviews your work.
-              </p>
-            ) : null}
-            {checklistSubmitted && checklistApproved ? (
-              <p className="muted" role="status">
-                Checklist approved. Go to step 3 to submit your final application.
-              </p>
-            ) : null}
             <div className="design3d-checklist-col" style={{ maxWidth: '42rem' }}>
               <ol className="checklist">
                 {PERSONAL_GAME_PIECE_STEPS.map((label, idx) => (
@@ -838,6 +839,17 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         <h2 id="patent-phase-3-title" className="patent-phase-title">
           Step 3 — Final patent questions
         </h2>
+
+        {completionStatus === 'pending' ? (
+          <p
+            className="patent-waiting-note"
+            role="status"
+            style={{ fontWeight: 600, margin: '0 0 0.75rem', padding: '0.55rem 0.85rem', background: 'rgba(234,179,8,0.12)', borderLeft: '4px solid #ca8a04', borderRadius: '6px' }}
+          >
+            ⏳ Final application submitted — waiting for teacher approval
+          </p>
+        ) : null}
+
         <p className="muted" style={{ marginTop: 0 }}>
           Your answers save as you type. Submit when both are complete.
         </p>
