@@ -1,3 +1,7 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "alias": [
+    "nexus-academy-one.vercel.app",
+    "mandarb77-nexus-academy.vercel.app"
+  ]
 }

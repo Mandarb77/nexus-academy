@@ -723,7 +723,8 @@ export function TeacherPanelPage() {
         <p className="muted">Loading pending requests…</p>
       ) : loadError ? null : (
         <>
-          <section className="teacher-panel-section" aria-labelledby="teacher-panel-plans-heading">
+          <div className="teacher-panel-approvals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-plans-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
             <h2 id="teacher-panel-plans-heading" className="teacher-panel-section-title">
               Plan approvals
             </h2>
@@ -787,7 +788,7 @@ export function TeacherPanelPage() {
             )}
           </section>
 
-          <section className="teacher-panel-section" aria-labelledby="teacher-panel-checklists-heading">
+          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-checklists-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
             <h2 id="teacher-panel-checklists-heading" className="teacher-panel-section-title">
               Checklist approvals
             </h2>
@@ -865,6 +866,145 @@ export function TeacherPanelPage() {
               </ul>
             )}
           </section>
+          </div>{/* end approval grid */}
+
+          <div className="teacher-panel-approvals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-skills-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
+            <h2 id="teacher-panel-skills-heading" className="teacher-panel-section-title">
+              Skill completions
+            </h2>
+            {skillRows.length === 0 ? (
+              <p className="muted teacher-panel-section-empty">No pending skill completions.</p>
+            ) : (
+              <ul className="teacher-panel-list">
+                {skillRows.map((row) => {
+                  const t = row.tile
+                  const studentName =
+                    row.display_name?.trim() ||
+                    `Student (${row.student_id.slice(0, 8)}…)`
+                  const b = busySkill(row.id)
+                  const busy = Boolean(b)
+
+                  return (
+                    <li key={row.id} className="card teacher-panel-item">
+                      <div className="teacher-panel-item-main">
+                        <p className="teacher-panel-student">{studentName}</p>
+                        <p className="teacher-panel-skill">
+                          <strong>{t?.skill_name ?? 'Unknown skill'}</strong>
+                        </p>
+                        <p className="muted teacher-panel-guild">
+                          Guild: <strong>{t?.guild ?? '—'}</strong>
+                          {t?.wp_value != null ? (
+                            <>
+                              {' '}
+                              · {t.wp_value} WP and 10 gold on approval
+                            </>
+                          ) : null}
+                        </p>
+                        {row.patent ? (
+                          <div className="teacher-panel-patent">
+                            <p className="teacher-panel-patent-title">
+                              <strong>Patent packet</strong>
+                            </p>
+                            <dl className="teacher-panel-patent-dl">
+                              <div>
+                                <dt>What did you make?</dt>
+                                <dd>{row.patent.field_1}</dd>
+                              </div>
+                              <div>
+                                <dt>Who is it for, and why does it matter?</dt>
+                                <dd>{row.patent.field_2}</dd>
+                              </div>
+                              <div>
+                                <dt>How did you make it an original work?</dt>
+                                <dd>{row.patent.field_3}</dd>
+                              </div>
+                              <div>
+                                <dt>What do you have to iterate?</dt>
+                                <dd>{row.patent.field_4}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="teacher-panel-actions">
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={busy}
+                          onClick={() => void approveSkill(row.id)}
+                        >
+                          {isActing('skill', row.id, 'approve') ? 'Approving…' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={busy}
+                          onClick={() => void returnSkill(row.id)}
+                        >
+                          {isActing('skill', row.id, 'return') ? 'Returning…' : 'Return'}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section
+            className="teacher-panel-approval-box"
+            aria-labelledby="teacher-panel-redemptions-heading"
+            style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}
+          >
+            <h2 id="teacher-panel-redemptions-heading" className="teacher-panel-section-title">
+              Pending redemptions
+            </h2>
+            {redemptionRows.length === 0 ? (
+              <p className="muted teacher-panel-section-empty">No pending redemptions.</p>
+            ) : (
+              <ul className="teacher-panel-list">
+                {redemptionRows.map((row) => {
+                  const studentName =
+                    row.display_name?.trim() ||
+                    `Student (${row.student_id.slice(0, 8)}…)`
+                  const b = busyRedemption(row.id)
+                  const busy = Boolean(b)
+
+                  return (
+                    <li key={row.id} className="card teacher-panel-item">
+                      <div className="teacher-panel-item-main">
+                        <p className="teacher-panel-student">{studentName}</p>
+                        <p className="teacher-panel-skill">
+                          <strong>{row.item_name}</strong>
+                        </p>
+                        <p className="muted teacher-panel-guild">Inventory redemption</p>
+                      </div>
+                      <div className="teacher-panel-actions">
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={busy}
+                          onClick={() => void approveRedemption(row.id)}
+                        >
+                          {isActing('redemption', row.id, 'approve') ? 'Approving…' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={busy}
+                          onClick={() => void returnRedemption(row.id)}
+                        >
+                          {isActing('redemption', row.id, 'return') ? 'Returning…' : 'Return'}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+          </div>{/* end approvals grid row 2 */}
 
           <section className="teacher-panel-section" aria-labelledby="teacher-panel-progress-heading">
             <h2 id="teacher-panel-progress-heading" className="teacher-panel-section-title">
@@ -1045,141 +1185,6 @@ export function TeacherPanelPage() {
                           {s.wp} WP · {s.gold} gold · {s.rank ?? 'Initiate'}
                         </span>
                       </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section className="teacher-panel-section" aria-labelledby="teacher-panel-skills-heading">
-            <h2 id="teacher-panel-skills-heading" className="teacher-panel-section-title">
-              Skill completions
-            </h2>
-            {skillRows.length === 0 ? (
-              <p className="muted teacher-panel-section-empty">No pending skill completions.</p>
-            ) : (
-              <ul className="teacher-panel-list">
-                {skillRows.map((row) => {
-                  const t = row.tile
-                  const studentName =
-                    row.display_name?.trim() ||
-                    `Student (${row.student_id.slice(0, 8)}…)`
-                  const b = busySkill(row.id)
-                  const busy = Boolean(b)
-
-                  return (
-                    <li key={row.id} className="card teacher-panel-item">
-                      <div className="teacher-panel-item-main">
-                        <p className="teacher-panel-student">{studentName}</p>
-                        <p className="teacher-panel-skill">
-                          <strong>{t?.skill_name ?? 'Unknown skill'}</strong>
-                        </p>
-                        <p className="muted teacher-panel-guild">
-                          Guild: <strong>{t?.guild ?? '—'}</strong>
-                          {t?.wp_value != null ? (
-                            <>
-                              {' '}
-                              · {t.wp_value} WP and 10 gold on approval
-                            </>
-                          ) : null}
-                        </p>
-                        {row.patent ? (
-                          <div className="teacher-panel-patent">
-                            <p className="teacher-panel-patent-title">
-                              <strong>Patent packet</strong>
-                            </p>
-                            <dl className="teacher-panel-patent-dl">
-                              <div>
-                                <dt>What did you make?</dt>
-                                <dd>{row.patent.field_1}</dd>
-                              </div>
-                              <div>
-                                <dt>Who is it for, and why does it matter?</dt>
-                                <dd>{row.patent.field_2}</dd>
-                              </div>
-                              <div>
-                                <dt>How did you make it an original work?</dt>
-                                <dd>{row.patent.field_3}</dd>
-                              </div>
-                              <div>
-                                <dt>What do you have to iterate?</dt>
-                                <dd>{row.patent.field_4}</dd>
-                              </div>
-                            </dl>
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="teacher-panel-actions">
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          disabled={busy}
-                          onClick={() => void approveSkill(row.id)}
-                        >
-                          {isActing('skill', row.id, 'approve') ? 'Approving…' : 'Approve'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          disabled={busy}
-                          onClick={() => void returnSkill(row.id)}
-                        >
-                          {isActing('skill', row.id, 'return') ? 'Returning…' : 'Return'}
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section
-            className="teacher-panel-section"
-            aria-labelledby="teacher-panel-redemptions-heading"
-          >
-            <h2 id="teacher-panel-redemptions-heading" className="teacher-panel-section-title">
-              Pending redemptions
-            </h2>
-            {redemptionRows.length === 0 ? (
-              <p className="muted teacher-panel-section-empty">No pending redemptions.</p>
-            ) : (
-              <ul className="teacher-panel-list">
-                {redemptionRows.map((row) => {
-                  const studentName =
-                    row.display_name?.trim() ||
-                    `Student (${row.student_id.slice(0, 8)}…)`
-                  const b = busyRedemption(row.id)
-                  const busy = Boolean(b)
-
-                  return (
-                    <li key={row.id} className="card teacher-panel-item">
-                      <div className="teacher-panel-item-main">
-                        <p className="teacher-panel-student">{studentName}</p>
-                        <p className="teacher-panel-skill">
-                          <strong>{row.item_name}</strong>
-                        </p>
-                        <p className="muted teacher-panel-guild">Inventory redemption</p>
-                      </div>
-                      <div className="teacher-panel-actions">
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          disabled={busy}
-                          onClick={() => void approveRedemption(row.id)}
-                        >
-                          {isActing('redemption', row.id, 'approve') ? 'Approving…' : 'Approve'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          disabled={busy}
-                          onClick={() => void returnRedemption(row.id)}
-                        >
-                          {isActing('redemption', row.id, 'return') ? 'Returning…' : 'Return'}
-                        </button>
-                      </div>
                     </li>
                   )
                 })}
