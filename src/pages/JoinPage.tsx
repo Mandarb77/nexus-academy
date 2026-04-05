@@ -71,7 +71,7 @@ export function JoinPage() {
   return (
     <div className="app-shell auth-panel">
       <header className="brand">
-        <h1>Nexus Academy</h1>
+        <h1>Nexus Academy at Kents Hill</h1>
         <p className="tagline">Teacher invite</p>
       </header>
 
@@ -102,7 +102,7 @@ export function JoinPage() {
             <h2 style={{ margin: '0 0 0.5rem' }}>You've been invited as a teacher</h2>
             <p className="muted" style={{ marginBottom: '1.25rem' }}>
               Sign in with Google to activate your teacher account. Use the Google account
-              you want to use with Nexus Academy.
+              you want to use with Nexus Academy at Kents Hill.
             </p>
             <button
               type="button"

@@ -68,7 +68,7 @@ export function DashboardPage() {
       <MainNav variant="teacher" />
       <header className="dash-header teacher-dash-header">
         <div>
-          <h1>Nexus Academy</h1>
+          <h1>Nexus Academy at Kents Hill</h1>
           <p className="muted">
             Signed in as <strong>{displayName}</strong>
             <span className="role-pill role-teacher">Teacher</span>
@@ -165,7 +165,7 @@ export function DashboardPage() {
               </button>
 
               <a
-                href={`mailto:?subject=You're invited to Nexus Academy as a teacher&body=You have been invited as a teacher on Nexus Academy.%0A%0AClick this link to activate your account:%0A${encodeURIComponent(inviteLink)}`}
+                href={`mailto:?subject=You're invited to Nexus Academy at Kents Hill as a teacher&body=You have been invited as a teacher on Nexus Academy at Kents Hill.%0A%0AClick this link to activate your account:%0A${encodeURIComponent(inviteLink)}`}
                 className="btn-secondary"
                 style={{ textDecoration: 'none' }}
               >

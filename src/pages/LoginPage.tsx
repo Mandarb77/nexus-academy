@@ -22,7 +22,7 @@ export function LoginPage() {
     return (
       <div className="app-shell auth-panel">
         <header className="brand">
-          <h1>Nexus Academy</h1>
+          <h1>Nexus Academy at Kents Hill</h1>
           <p className="tagline">You're already signed in</p>
         </header>
         <div className="card">
@@ -62,7 +62,7 @@ export function LoginPage() {
   return (
     <div className="app-shell auth-panel">
       <header className="brand">
-        <h1>Nexus Academy</h1>
+        <h1>Nexus Academy at Kents Hill</h1>
         <p className="tagline">Maker class — use your school Google account</p>
       </header>
 
