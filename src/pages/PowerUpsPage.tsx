@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
+import { PowerUpsTabsNav } from '../components/PowerUpsTabsNav'
 
 type PowerUpSection = {
   title: string
@@ -50,6 +51,7 @@ export function PowerUpsPage() {
   return (
     <div className="app-shell">
       <MainNav />
+      <PowerUpsTabsNav />
       <main className="page">
         <header className="page-header">
           <h1 className="page-title">Power Ups</h1>

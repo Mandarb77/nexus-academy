@@ -2,7 +2,6 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isTeacherProfile } from '../lib/teacher'
 import { StudentPreviewBanner } from './StudentPreviewBanner'
-import { PowerUpsTabsNav } from './PowerUpsTabsNav'
 
 type MainNavProps = {
   /** Teacher-facing pages use Dashboard + Teacher panel; student pages use Home + Skill tree. */
@@ -85,8 +84,8 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             color: '#fcd34d',
           }}
         >
-          <strong>Dev check:</strong> You should see <strong>Codex</strong> and <strong>Journey</strong> in the nav below,
-          then a &quot;POWER UPS&quot; pill row. If not, you are on the <strong>wrong port or an old Vite process</strong>{' '}
+          <strong>Dev check:</strong> You should see <strong>Codex</strong> and <strong>Journey</strong> in the nav below.
+          If not, you are on the <strong>wrong port or an old Vite process</strong>{' '}
           — open the exact <code style={{ opacity: 0.95 }}>Local:</code> URL from the terminal (often{' '}
           <code style={{ opacity: 0.95 }}>:5174</code> if <code style={{ opacity: 0.95 }}>:5173</code> is busy). Clearing
           cookies does not update JS.
@@ -170,7 +169,6 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
           </NavLink>
         ) : null}
       </nav>
-      <PowerUpsTabsNav />
     </div>
   )
 }

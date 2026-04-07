@@ -677,7 +677,7 @@ a.btn-primary {
   display: block;
 }
 
-/* Full-width column: preview banner + primary nav + Power Ups tabs (always stacked) */
+/* Full-width column: preview banner + primary nav */
 .student-chrome {
   display: flex;
   flex-direction: column;
@@ -721,7 +721,7 @@ a.btn-primary {
   border-color: var(--accent-border);
 }
 
-/* Power Ups section tabs — under main nav on every student page */
+/* Power Ups section tabs — only on /powerups, below main nav */
 .powerups-tabs-nav {
   display: flex;
   flex-direction: column;

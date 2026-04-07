@@ -7,10 +7,7 @@ export const POWER_UP_SECTION_HASHES = [
   { id: 'backstory', label: 'The Backstory' },
 ] as const
 
-/**
- * Quick links to Power Ups sections. Shown under the main nav on every student page
- * so students can jump to lore from anywhere.
- */
+/** Quick links to Power Ups sections — only rendered on the Power Ups page. */
 export function PowerUpsTabsNav() {
   const { pathname, hash } = useLocation()
   const onPowerUpsPage = pathname === '/powerups'
