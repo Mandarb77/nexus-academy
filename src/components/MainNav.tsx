@@ -4,7 +4,7 @@ import { isTeacherProfile } from '../lib/teacher'
 import { StudentPreviewBanner } from './StudentPreviewBanner'
 
 type MainNavProps = {
-  /** Teacher-facing pages use Dashboard + Teacher panel; student pages use Home + Skill tree. */
+  /** Teacher-facing pages use Dashboard + Teacher; student pages use Home + Skills. */
   variant?: 'student' | 'teacher'
 }
 
@@ -32,7 +32,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
               `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
             }
           >
-            Teacher panel
+            Teacher
           </NavLink>
           <NavLink
             to="/teacher/reset"
@@ -84,7 +84,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             color: '#fcd34d',
           }}
         >
-          <strong>Dev check:</strong> You should see <strong>Journey</strong> and <strong>Skill tree</strong> in the nav below.
+          <strong>Dev check:</strong> You should see <strong>Journey</strong> and <strong>Skills</strong> in the nav below.
           If not, you are on the <strong>wrong port or an old Vite process</strong>{' '}
           — open the exact <code style={{ opacity: 0.95 }}>Local:</code> URL from the terminal (often{' '}
           <code style={{ opacity: 0.95 }}>:5174</code> if <code style={{ opacity: 0.95 }}>:5173</code> is busy). Clearing
@@ -116,7 +116,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Skill tree
+          Skills
         </NavLink>
         <NavLink
           to="/shop"
@@ -132,7 +132,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Inventory
+          Items
         </NavLink>
         <NavLink
           to="/resources"
@@ -140,7 +140,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Resources
+          Library
         </NavLink>
         <NavLink
           to="/powerups"
@@ -148,7 +148,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Power Ups
+          Bonuses
         </NavLink>
         {teacher && !studentPreviewMode ? (
           <NavLink
@@ -157,7 +157,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
               `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
             }
           >
-            Teacher panel
+            Teacher
           </NavLink>
         ) : null}
       </nav>
