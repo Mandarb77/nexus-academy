@@ -55,8 +55,7 @@ export function GuildSkillTreePage() {
   }
   const bannerSrc = BANNER_MAP[slug]
   const guildTitle = guildKey ? `${guildHeading(guildKey)} guild` : `${guildHeading(slug)} guild`
-  const showComingSoon =
-    Boolean(guildKey) && tiles.length === 0 && isComingSoonGuildSection(guildKey ?? '')
+  const showComingSoon = Boolean(guildKey) && isComingSoonGuildSection(guildKey ?? '')
 
   const header = (
     <header className="skill-tree-top">

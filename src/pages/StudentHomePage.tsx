@@ -97,9 +97,10 @@ export function StudentHomePage() {
               <img src={forgeBanner} alt="Forge guild — view skills and mark complete"
                 className="student-home-guild-banner-img" decoding="async" />
             </Link>
-            <Link to="/tree/prism" className="student-home-guild-banner-link student-home-guild-banner-link--prism">
-              <img src={prismBanner} alt="Prism guild — view skills and mark complete"
+            <Link to="/tree/prism" className="student-home-guild-banner-link student-home-guild-banner-link--prism student-home-guild-banner-link--coming-soon">
+              <img src={prismBanner} alt="Prism guild — coming soon"
                 className="student-home-guild-banner-img" decoding="async" />
+              <span className="student-home-guild-coming-soon-badge">Coming soon</span>
             </Link>
             <Link to="/tree/folded" className="student-home-guild-banner-link student-home-guild-banner-link--folded">
               <img src={foldedBanner} alt="Folded Path guild — view skills and mark complete"

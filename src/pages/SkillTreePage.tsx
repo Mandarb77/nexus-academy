@@ -144,7 +144,7 @@ export function SkillTreePage() {
                     aria-labelledby={`guild-trigger-${slug}`}
                     className="skill-tree-guild-panel"
                   >
-                    {(tilesByGuild.get(guildKey) ?? []).length === 0 && isComingSoonGuildSection(guildKey) ? (
+                    {isComingSoonGuildSection(guildKey) ? (
                       <div className="guild-coming-soon-box guild-coming-soon-box--inline">
                         <p className="guild-coming-soon-box__icon">🔒</p>
                         <p className="guild-coming-soon-box__heading">Coming soon</p>
