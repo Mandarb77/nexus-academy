@@ -7,10 +7,10 @@ export const POWER_UP_SECTION_HASHES = [
   { id: 'backstory', label: 'The Backstory' },
 ] as const
 
-/** Quick links to Power Ups sections — only rendered on the Power Ups page. */
+/** Quick links to Power Ups sections — only shown on `/powerups` (never on Home, Skill tree, etc.). */
 export function PowerUpsTabsNav() {
   const { pathname, hash } = useLocation()
-  const onPowerUpsPage = pathname === '/powerups'
+  if (pathname !== '/powerups') return null
 
   return (
     <nav className="powerups-tabs-nav" aria-label="Power Ups sections">
@@ -18,7 +18,7 @@ export function PowerUpsTabsNav() {
       <div className="powerups-tabs-nav__scroll">
         {POWER_UP_SECTION_HASHES.map(({ id, label }) => {
           const targetHash = `#${id}`
-          const isActive = onPowerUpsPage && hash === targetHash
+          const isActive = hash === targetHash
           return (
             <NavLink
               key={id}
