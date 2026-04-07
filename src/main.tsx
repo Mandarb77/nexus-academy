@@ -9,7 +9,7 @@ declare global {
     __NEXUS_NAV_LAYOUT_VERSION?: string
   }
 }
-window.__NEXUS_NAV_LAYOUT_VERSION = '2-codex-journey-powerups'
+window.__NEXUS_NAV_LAYOUT_VERSION = '2-journey-powerups'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

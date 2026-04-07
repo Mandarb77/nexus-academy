@@ -9,9 +9,9 @@ export function CodexPage() {
       <MainNav />
       <main className="page">
         <header className="page-header">
-          <h1 className="page-title">Codex</h1>
+          <h1 className="page-title">Quest archive</h1>
           <p className="muted page-subtitle">
-            Your quest archive and patent work. Use Journey for your approved completion timeline.
+            Use Journey for your approved completion timeline and workshop history.
           </p>
           <button type="button" className="btn-secondary" style={{ marginTop: '0.75rem' }} onClick={() => signOut()}>
             Sign out

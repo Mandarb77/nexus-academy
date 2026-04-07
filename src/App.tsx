@@ -33,7 +33,7 @@ export default function App() {
           <a href="/nexus-dev-verify.txt" target="_blank" rel="noopener noreferrer">
             Open /nexus-dev-verify.txt
           </a>{' '}
-          (first line must be <code>nexus-academy-repo-ok</code>). Student nav includes Codex and Journey; Power Ups has its own tab.
+          (first line must be <code>nexus-academy-repo-ok</code>). Power Ups section pills only appear on the Power Ups tab.
         </div>
       )}
       <AuthProvider>

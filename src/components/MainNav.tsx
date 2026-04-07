@@ -84,7 +84,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             color: '#fcd34d',
           }}
         >
-          <strong>Dev check:</strong> You should see <strong>Codex</strong> and <strong>Journey</strong> in the nav below.
+          <strong>Dev check:</strong> You should see <strong>Journey</strong> and <strong>Skill tree</strong> in the nav below.
           If not, you are on the <strong>wrong port or an old Vite process</strong>{' '}
           — open the exact <code style={{ opacity: 0.95 }}>Local:</code> URL from the terminal (often{' '}
           <code style={{ opacity: 0.95 }}>:5174</code> if <code style={{ opacity: 0.95 }}>:5173</code> is busy). Clearing
@@ -101,14 +101,6 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
           }
         >
           Home
-        </NavLink>
-        <NavLink
-          to="/codex"
-          className={({ isActive }) =>
-            `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
-          }
-        >
-          Codex
         </NavLink>
         <NavLink
           to="/journey"
