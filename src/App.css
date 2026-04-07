@@ -1,5 +1,5 @@
 .app-shell {
-  max-width: 42rem;
+  max-width: var(--app-shell-max-width);
   margin: 0 auto;
   padding: 2rem 1.25rem 3rem;
   min-height: 100svh;
@@ -403,16 +403,6 @@ a.btn-primary {
   border: 0;
 }
 
-.student-home {
-  max-width: 28rem;
-}
-
-@media (min-width: 720px) {
-  .student-home {
-    max-width: 48rem;
-  }
-}
-
 .student-home-header {
   display: flex;
   flex-wrap: wrap;
@@ -782,10 +772,6 @@ a.btn-primary {
 }
 
 /* ── Journey page (/journey) ── */
-.journey-page {
-  max-width: 40rem;
-}
-
 .journey-header {
   display: flex;
   flex-wrap: wrap;
@@ -991,10 +977,6 @@ a.btn-primary {
   }
 }
 
-.skill-tree-page {
-  max-width: 56rem;
-}
-
 .skill-tree-top {
   margin-bottom: 1.5rem;
 }
@@ -1031,8 +1013,6 @@ a.btn-primary {
 /* Main skill tree: one column so all five guilds stack and stay easy to scan */
 .skill-tree-guilds--accordion {
   grid-template-columns: 1fr;
-  max-width: 42rem;
-  margin-inline: auto;
   gap: 1rem;
 }
 
@@ -2046,10 +2026,6 @@ a.btn-primary {
   }
 }
 
-.teacher-panel-page {
-  max-width: 62rem;
-}
-
 /* ── 2×2 approval boxes grid ── */
 .teacher-panel-approvals-grid {
   display: grid;
@@ -2437,10 +2413,6 @@ a.btn-primary {
   font-size: 0.9rem;
 }
 
-.inventory-page {
-  max-width: 40rem;
-}
-
 .inventory-header {
   margin-bottom: 1.5rem;
 }
@@ -2537,10 +2509,6 @@ a.btn-primary {
   font-size: 0.85rem;
   line-height: 1.4;
   width: 100%;
-}
-
-.gold-shop-page {
-  max-width: 48rem;
 }
 
 .gold-shop-header {

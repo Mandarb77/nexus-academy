@@ -1,4 +1,7 @@
 :root {
+  /** Single column width for all main app pages — keeps headings aligned when switching tabs */
+  --app-shell-max-width: 42rem;
+
   --text: #5c5668;
   --text-h: #0c0a12;
   --bg: #faf8ff;
