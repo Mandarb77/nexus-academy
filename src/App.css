@@ -90,6 +90,34 @@
   margin: 0;
 }
 
+.dashboard-teacher-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-teacher-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  background: var(--card-bg, #fff);
+}
+
+.dashboard-teacher-list__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.dashboard-teacher-list__email {
+  font-size: 0.82rem;
+}
+
 .session-hint {
   margin: 0 0 0.75rem;
   font-size: 0.9rem;
@@ -539,11 +567,17 @@ a.btn-primary {
 
 .student-home-guild-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
   gap: 0.85rem;
 }
 
-@media (max-width: 480px) {
+@media (min-width: 720px) {
+  .student-home-guild-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 400px) {
   .student-home-guild-grid {
     grid-template-columns: 1fr;
   }
@@ -574,12 +608,82 @@ a.btn-primary {
   outline-offset: 3px;
 }
 
+/* Coming-soon banner overlay */
+.student-home-guild-banner-link--coming-soon {
+  position: relative;
+  opacity: 0.72;
+  filter: grayscale(30%);
+  cursor: default;
+  pointer-events: auto;
+}
+
+.student-home-guild-coming-soon-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Guild page coming-soon box */
+.guild-coming-soon-box {
+  margin: 1.5rem 0;
+  padding: 2rem 1.5rem;
+  border-radius: 14px;
+  border: 2px dashed var(--border, rgba(0,0,0,0.15));
+  text-align: center;
+  background: var(--card-bg, #fff);
+}
+
+.guild-coming-soon-box__icon {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.guild-coming-soon-box__heading {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.guild-coming-soon-box__body {
+  margin: 0;
+  font-size: 0.92rem;
+  opacity: 0.6;
+  max-width: 28rem;
+  margin-inline: auto;
+}
+
+.guild-coming-soon-box--inline {
+  margin: 0.75rem 0 0;
+  padding: 1.25rem 1rem;
+}
+
 .student-home-guild-banner-img {
   width: 100%;
   height: 120px;
   object-fit: cover;
   object-position: center;
   display: block;
+}
+
+/* Full-width column: preview banner + primary nav + Power Ups tabs (always stacked) */
+.student-chrome {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: stretch;
+  flex-shrink: 0;
 }
 
 .student-nav {
@@ -615,6 +719,276 @@ a.btn-primary {
   color: var(--text-h);
   background: var(--accent-bg);
   border-color: var(--accent-border);
+}
+
+/* Power Ups section tabs — under main nav on every student page */
+.powerups-tabs-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.powerups-tabs-nav__label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--text-h);
+  opacity: 0.45;
+}
+
+.powerups-tabs-nav__scroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  align-items: center;
+}
+
+.powerups-tab {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.32rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+}
+
+.powerups-tab:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+  background: var(--accent-bg);
+}
+
+.powerups-tab--active {
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border-color: var(--accent-strong, #6366f1);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.powerups-section {
+  scroll-margin-top: 6.5rem;
+}
+
+/* ── Journey page (/journey) ── */
+.journey-page {
+  max-width: 40rem;
+}
+
+.journey-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.journey-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+}
+
+.journey-intro {
+  margin: 0;
+  max-width: 32rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.journey-summary {
+  margin-bottom: 1.5rem;
+}
+
+.journey-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+@media (max-width: 520px) {
+  .journey-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.journey-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.journey-summary-item--gold {
+  background: rgba(234, 179, 8, 0.08);
+  border-color: rgba(234, 179, 8, 0.22);
+}
+
+.journey-summary-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.65;
+}
+
+.journey-summary-value {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text-h);
+}
+
+.journey-summary-note {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+}
+
+.journey-empty {
+  text-align: center;
+  padding: 2rem 1.25rem;
+}
+
+.journey-empty-lead {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.journey-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.journey-timeline-item {
+  margin: 0;
+  padding: 0;
+}
+
+.journey-guild-heading {
+  margin: 1.35rem 0 0.65rem;
+  padding: 0.35rem 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-h);
+  opacity: 0.45;
+  border-bottom: 1px solid var(--border);
+}
+
+.journey-timeline-item:first-child .journey-guild-heading {
+  margin-top: 0;
+}
+
+.journey-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'main badge'
+    'awards badge';
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+  padding: 1rem 1.15rem;
+  margin-bottom: 0.65rem;
+  border-left: 4px solid rgba(99, 102, 241, 0.35);
+  box-shadow: var(--shadow);
+}
+
+@media (min-width: 480px) {
+  .journey-entry {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas: 'main awards badge';
+    align-items: center;
+  }
+}
+
+.journey-entry-main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.journey-entry-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-h);
+}
+
+.journey-entry-meta {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.journey-entry-awards {
+  grid-area: awards;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.journey-entry-wp {
+  color: #15803d;
+}
+
+.journey-entry-gold {
+  font-weight: 700;
+}
+
+.journey-badge {
+  grid-area: badge;
+  align-self: start;
+  justify-self: end;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.28rem 0.55rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.journey-badge--approved {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  .journey-entry-wp {
+    color: #86efac;
+  }
+
+  .journey-badge--approved {
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.28);
+  }
 }
 
 .skill-tree-page {
@@ -654,8 +1028,131 @@ a.btn-primary {
   align-items: start;
 }
 
+/* Main skill tree: one column so all five guilds stack and stay easy to scan */
+.skill-tree-guilds--accordion {
+  grid-template-columns: 1fr;
+  max-width: 42rem;
+  margin-inline: auto;
+  gap: 1rem;
+}
+
 .skill-tree-guild {
   min-width: 0;
+}
+
+.skill-tree-guild--accordion {
+  border-radius: 14px;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  overflow: hidden;
+  background: var(--card-bg, #fff);
+  box-shadow: var(--shadow);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.skill-tree-guild--accordion:hover,
+.skill-tree-guild--accordion.skill-tree-guild--open {
+  border-color: var(--accent-border, rgba(99, 102, 241, 0.45));
+  box-shadow:
+    rgba(15, 23, 42, 0.08) 0 12px 24px -8px,
+    rgba(15, 23, 42, 0.05) 0 4px 10px -4px;
+}
+
+.skill-tree-guild-toggle {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border-radius: 0;
+}
+
+.skill-tree-guild-toggle:focus-visible {
+  outline: 3px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+}
+
+.skill-tree-guild-banner--accordion {
+  height: 112px;
+  margin: 0;
+  border-radius: 0;
+}
+
+.skill-tree-guild-banner__overlay--accordion {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  padding: 0.65rem 1rem;
+}
+
+.skill-tree-guild-name--accordion-toggle {
+  flex: 1;
+  min-width: 10rem;
+  text-align: left;
+}
+
+.skill-tree-guild-toggle-hint {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+}
+
+.skill-tree-guild-chevron {
+  font-size: 0.85rem;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.skill-tree-guild-toggle-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.skill-tree-guild-toggle-fallback .skill-tree-guild-chevron {
+  color: var(--text-h);
+  text-shadow: none;
+}
+
+.skill-tree-guild-panel {
+  padding: 0 1rem 1.15rem;
+  border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  animation: skill-tree-panel-in 0.22s ease-out;
+}
+
+@keyframes skill-tree-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-tree-guild-panel {
+    animation: none;
+  }
 }
 
 .skill-tree-guild-name {
@@ -881,6 +1378,50 @@ a.btn-primary {
   }
 }
 
+/* Silicon Covenant — cool neutral accent */
+.skill-tree-guild--silicon .skill-tree-guild-name:not(.skill-tree-guild-name--banner),
+.skill-tree-guild--silicon .skill-tree-guild-page-title,
+.skill-tree-guild--silicon .skill-tile-name {
+  color: #1e3a4a;
+}
+
+.skill-tree-guild--silicon .skill-tile-wp {
+  color: #0d9488;
+}
+
+.skill-tree-guild--silicon .skill-tile.card {
+  border-color: rgba(13, 148, 136, 0.28);
+}
+
+/* Void Navigators — deep violet */
+.skill-tree-guild--void .skill-tree-guild-name:not(.skill-tree-guild-name--banner),
+.skill-tree-guild--void .skill-tree-guild-page-title,
+.skill-tree-guild--void .skill-tile-name {
+  color: #312e81;
+}
+
+.skill-tree-guild--void .skill-tile-wp {
+  color: #7c3aed;
+}
+
+.skill-tree-guild--void .skill-tile.card {
+  border-color: rgba(124, 58, 237, 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  .skill-tree-guild--silicon .skill-tree-guild-name:not(.skill-tree-guild-name--banner),
+  .skill-tree-guild--silicon .skill-tree-guild-page-title,
+  .skill-tree-guild--silicon .skill-tile-name {
+    color: #99f6e4;
+  }
+
+  .skill-tree-guild--void .skill-tree-guild-name:not(.skill-tree-guild-name--banner),
+  .skill-tree-guild--void .skill-tree-guild-page-title,
+  .skill-tree-guild--void .skill-tile-name {
+    color: #c4b5fd;
+  }
+}
+
 .skill-tile-list {
   list-style: none;
   margin: 0;
@@ -985,6 +1526,187 @@ a.btn-primary {
   border: 1px solid var(--accent-border);
   background: var(--accent-bg);
   color: var(--text-h);
+}
+
+/* ── Final approval celebration banner ── */
+@keyframes approval-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.7), 0 4px 32px rgba(34,197,94,0.3); }
+  60%  { box-shadow: 0 0 0 18px rgba(34,197,94,0), 0 4px 32px rgba(34,197,94,0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0), 0 4px 32px rgba(34,197,94,0.3); }
+}
+
+@keyframes approval-slide-in {
+  from { transform: translateY(-110%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.final-approval-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  width: min(94vw, 28rem);
+  padding: 1.4rem 1.6rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #052e16 0%, #14532d 100%);
+  border: 2px solid #22c55e;
+  color: #fff;
+  text-align: center;
+  animation: approval-slide-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both,
+             approval-pulse 1.6s ease-out 0.4s 3;
+}
+
+/* In-flow variant: first thing under nav on home / skill tree */
+.final-approval-banner--page-top {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  z-index: 2;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto 1rem;
+  box-sizing: border-box;
+  animation: approval-slide-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both,
+             approval-pulse 1.6s ease-out 0.35s 4;
+}
+
+.final-approval-banner__title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.final-approval-banner__rewards {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 0.6rem 0 1rem;
+}
+
+.final-approval-banner__reward {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.final-approval-banner__reward-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.final-approval-banner__reward-label {
+  font-size: 0.82rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.final-approval-banner__wp   { color: #86efac; }
+.final-approval-banner__gold { color: #fde68a; }
+
+.final-approval-banner__dismiss {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.4rem 1.2rem;
+  cursor: pointer;
+}
+
+.final-approval-banner__dismiss:hover {
+  background: rgba(255,255,255,0.22);
+}
+
+/* ── Approved quest read-only view ── */
+.approved-quest-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.approved-quest-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.25rem;
+  background: rgba(34,197,94,0.1);
+  border: 2px solid rgba(34,197,94,0.5);
+  border-radius: 12px;
+}
+
+.approved-quest-banner__icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.approved-quest-banner__title {
+  margin: 0 0 0.15rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #15803d;
+}
+
+.approved-quest-banner__sub {
+  margin: 0;
+  font-size: 0.87rem;
+  opacity: 0.75;
+}
+
+.approved-quest-section {
+  background: var(--card-bg, #fff);
+  border: 1px solid rgba(0,0,0,0.09);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.approved-quest-section-heading {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.55;
+}
+
+.approved-quest-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.approved-quest-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.approved-quest-answer-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.55;
+}
+
+.approved-quest-answer-value {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .skill-tile-badge--approved {
@@ -2012,5 +2734,35 @@ a.btn-primary {
 
   .gold-shop-item-name--unaffordable {
     color: #f87171;
+  }
+}
+
+.nexus-app-dev-ribbon {
+  background: #1e1b2e;
+  color: #f5e6a3;
+  padding: 0.45rem 1rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  border-bottom: 2px solid #c9a227;
+  position: relative;
+  z-index: 2000;
+}
+
+.nexus-app-dev-ribbon a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.nexus-app-dev-ribbon code {
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+@media print {
+  .nexus-app-dev-ribbon {
+    display: none !important;
   }
 }

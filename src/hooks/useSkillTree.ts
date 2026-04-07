@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { guildHeading } from '../lib/guildTree'
+import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
-const GUILD_ORDER = ['forge', 'prism', 'folded path']
+const GUILD_ORDER = ['forge', 'prism', 'folded path', 'silicon covenant', 'void navigators']
 
 export type TileCompletionState = {
   status: SkillCompletionStatus
@@ -138,17 +138,18 @@ export function useSkillTree() {
   const tilesByGuild = useMemo(() => {
     const map = new Map<string, TileRow[]>()
     for (const t of tiles) {
-      const g = t.guild || 'Other'
+      const g = canonicalSkillTreeGuild(t.guild || 'Other')
       if (!map.has(g)) map.set(g, [])
       map.get(g)!.push(t)
     }
     return map
   }, [tiles])
 
-  const guildKeys = useMemo(
-    () => sortGuildKeys([...tilesByGuild.keys()]),
-    [tilesByGuild],
-  )
+  const guildKeys = useMemo(() => {
+    const fromTiles = [...tilesByGuild.keys()]
+    const merged = [...new Set<string>([...SKILL_TREE_SECTION_GUILDS, ...fromTiles])]
+    return sortGuildKeys(merged)
+  }, [tilesByGuild])
 
   const markComplete = useCallback(
     async (tile: TileRow) => {

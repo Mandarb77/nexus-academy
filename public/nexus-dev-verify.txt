@@ -1,0 +1,3 @@
+nexus-academy-repo-ok
+If you see this in the browser, Vite is serving THIS project’s public/ folder.
+Expected nav includes Portfolio, Journey, and Power Ups pills.

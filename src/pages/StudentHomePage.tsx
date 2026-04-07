@@ -2,7 +2,10 @@ import { Link } from 'react-router-dom'
 import forgeBanner from '../assets/forge-banner.png'
 import prismBanner from '../assets/prism-banner.png'
 import foldedBanner from '../assets/folded-banner.png'
+import siliconBanner from '../assets/silicon-banner.png'
+import voidBanner from '../assets/void-banner.png'
 import { MainNav } from '../components/MainNav'
+import { StudentTopApprovalBanner } from '../components/StudentTopApprovalBanner'
 import { useAuth } from '../contexts/AuthContext'
 import { progressToApprenticeMage } from '../lib/rankProgress'
 
@@ -24,6 +27,7 @@ export function StudentHomePage() {
   return (
     <div className="app-shell student-home">
       <MainNav />
+      <StudentTopApprovalBanner />
       <header className="student-home-header">
         <div>
           <p className="student-home-label">Welcome back</p>
@@ -100,6 +104,16 @@ export function StudentHomePage() {
             <Link to="/tree/folded" className="student-home-guild-banner-link student-home-guild-banner-link--folded">
               <img src={foldedBanner} alt="Folded Path guild — view skills and mark complete"
                 className="student-home-guild-banner-img" decoding="async" />
+            </Link>
+            <Link to="/tree/silicon" className="student-home-guild-banner-link student-home-guild-banner-link--silicon student-home-guild-banner-link--coming-soon">
+              <img src={siliconBanner} alt="Silicon Covenant guild — coming soon"
+                className="student-home-guild-banner-img" decoding="async" />
+              <span className="student-home-guild-coming-soon-badge">Coming soon</span>
+            </Link>
+            <Link to="/tree/void" className="student-home-guild-banner-link student-home-guild-banner-link--void student-home-guild-banner-link--coming-soon">
+              <img src={voidBanner} alt="Void Navigators guild — coming soon"
+                className="student-home-guild-banner-img" decoding="async" />
+              <span className="student-home-guild-coming-soon-badge">Coming soon</span>
             </Link>
           </div>
         </div>

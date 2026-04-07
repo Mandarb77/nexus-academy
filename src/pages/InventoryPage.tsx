@@ -94,8 +94,8 @@ export function InventoryPage() {
 
   return (
     <div className="app-shell inventory-page">
+      <MainNav />
       <header className="inventory-header">
-        <MainNav />
         <div className="inventory-top-row">
           <div>
             <h1 className="inventory-title">Inventory</h1>

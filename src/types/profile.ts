@@ -8,4 +8,6 @@ export interface Profile {
   gold: number
   rank: string
   role: ProfileRole
+  /** Optional profile field (reserved for future use). */
+  portfolio_quote?: string | null
 }

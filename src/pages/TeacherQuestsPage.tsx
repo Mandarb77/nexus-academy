@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
 import type { TileRow, StepConfig } from '../types/tile'
 
-const GUILDS = ['Forge', 'Prism', 'Folded Path'] as const
-type GuildOption = (typeof GUILDS)[number]
+type GuildOption = (typeof SKILL_TREE_SECTION_GUILDS)[number]
 
 type QuestRow = TileRow & { steps: StepConfig[] }
 
@@ -90,7 +90,9 @@ export function TeacherQuestsPage() {
   const loadIntoBuilder = (q: QuestRow) => {
     setEditingId(q.id)
     setTitle(q.skill_name)
-    setGuild(GUILDS.find((g) => g.toLowerCase() === q.guild.toLowerCase()) ?? 'Forge')
+    setGuild(
+      SKILL_TREE_SECTION_GUILDS.find((g) => g.toLowerCase() === q.guild.toLowerCase()) ?? 'Forge',
+    )
     setWpValue(q.wp_value)
     setGoldValue(q.gold_value ?? 10)
     setSteps(q.steps.map((s) => ({ ...s, tempId: makeId() })))
@@ -215,7 +217,11 @@ export function TeacherQuestsPage() {
           <label className="patent-field" style={{ margin: 0 }}>
             <span className="patent-label">Guild</span>
             <select value={guild} onChange={(e) => setGuild(e.target.value as GuildOption)} style={{ minWidth: '120px' }}>
-              {GUILDS.map((g) => <option key={g} value={g}>{g}</option>)}
+              {SKILL_TREE_SECTION_GUILDS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
             </select>
           </label>
           <label className="patent-field" style={{ margin: 0 }}>

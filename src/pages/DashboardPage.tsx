@@ -1,10 +1,20 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
+type TeacherRow = {
+  id: string
+  display_name: string | null
+  email: string | null
+}
+
 export function DashboardPage() {
   const { profile, user, signOut } = useAuth()
+
+  const [teachers, setTeachers] = useState<TeacherRow[]>([])
+  const [teachersLoading, setTeachersLoading] = useState(true)
+  const [teachersError, setTeachersError] = useState<string | null>(null)
 
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [generatingInvite, setGeneratingInvite] = useState(false)
@@ -18,6 +28,40 @@ export function DashboardPage() {
     user?.user_metadata?.name ||
     user?.email ||
     'Teacher'
+
+  const loadTeachers = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setTeachers([])
+      setTeachersLoading(false)
+      return
+    }
+    setTeachersLoading(true)
+    setTeachersError(null)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .eq('role', 'teacher')
+        .order('display_name', { ascending: true })
+      if (error) throw error
+      const rows = (data ?? []) as TeacherRow[]
+      rows.sort((a, b) => {
+        const na = (a.display_name?.trim() || a.email || '').toLowerCase()
+        const nb = (b.display_name?.trim() || b.email || '').toLowerCase()
+        return na.localeCompare(nb)
+      })
+      setTeachers(rows)
+    } catch (e: unknown) {
+      setTeachersError(e instanceof Error ? e.message : 'Could not load teachers.')
+      setTeachers([])
+    } finally {
+      setTeachersLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadTeachers()
+  }, [loadTeachers])
 
   const generateInvite = async () => {
     if (!isSupabaseConfigured || !user?.id) return
@@ -98,6 +142,35 @@ export function DashboardPage() {
         <p className="muted dash-blurb">
           Use <strong>Teacher panel</strong> to approve or return student skill completions.
         </p>
+      </section>
+
+      <section className="card" style={{ marginTop: '1.25rem' }}>
+        <h2 style={{ marginTop: 0 }}>Teachers on Nexus Academy</h2>
+        <p className="muted" style={{ marginBottom: '0.85rem', fontSize: '0.92rem' }}>
+          Everyone with the teacher role on this site. The list refreshes when you open the dashboard.
+        </p>
+        {teachersLoading ? (
+          <p className="muted">Loading teachers…</p>
+        ) : teachersError ? (
+          <p className="error">{teachersError}</p>
+        ) : teachers.length === 0 ? (
+          <p className="muted">No teacher profiles found yet.</p>
+        ) : (
+          <ul className="dashboard-teacher-list" aria-label="Teachers">
+            {teachers.map((t) => {
+              const label =
+                t.display_name?.trim() || t.email?.trim() || `Teacher (${t.id.slice(0, 8)}…)`
+              return (
+                <li key={t.id} className="dashboard-teacher-list__item">
+                  <span className="dashboard-teacher-list__name">{label}</span>
+                  {t.email && t.display_name?.trim() ? (
+                    <span className="dashboard-teacher-list__email muted">{t.email}</span>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </section>
 
       {/* ── Invite a teacher ── */}

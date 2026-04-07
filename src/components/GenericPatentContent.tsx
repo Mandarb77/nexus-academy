@@ -23,12 +23,16 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { PatentFlowBanner } from './PatentFlowBanner'
 import { EmpathyForm } from './EmpathyForm'
+import { FinalApprovalBanner } from './FinalApprovalBanner'
+import { ApprovedQuestView } from './ApprovedQuestView'
+import { queueApprovalCelebration } from '../lib/approvalCelebration'
 import { supabase } from '../lib/supabase'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 import { skillTreeGuildModifier } from '../lib/guildTree'
+import { fileForPatentStorage } from '../lib/patentFileUpload'
 
 type Props = {
   tile: TileRow
@@ -77,7 +81,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const [patent, setPatent] = useState<PatentDraft>(EMPTY_DRAFT)
   const [empathy, setEmpathy] = useState<EmpathyDraft>(EMPTY_EMPATHY)
   const [uploadUrl, setUploadUrl] = useState<string | null>(null)
+  const [processUploadUrl, setProcessUploadUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [processUploading, setProcessUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [phase, setPhase] = useState<1 | 2 | 3>(1)
   const [submittingPatent, setSubmittingPatent] = useState(false)
@@ -90,6 +96,8 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const [checklistApproved, setChecklistApproved] = useState(false)
   const [submittingChecklist, setSubmittingChecklist] = useState(false)
   const [approvalNotice, setApprovalNotice] = useState<{ message: string; tone: 'success' | 'returned' } | null>(null)
+  const [finalApproval, setFinalApproval] = useState<{ wp: number; gold: number } | null>(null)
+  const bannerFiredRef = useRef(false)
   const approvalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bootstrappedForTileRef = useRef<string | null>(null)
 
@@ -99,6 +107,14 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     approvalTimerRef.current = setTimeout(() => setApprovalNotice(null), 8000)
   }
 
+  const dismissApprovalBanner = useCallback(() => {
+    const id = String(tile.id)
+    localStorage.setItem(`nexus:approval-seen:${id}`, '1')
+    localStorage.removeItem(`nexus:approval-wp:${id}`)
+    localStorage.removeItem(`nexus:approval-gold:${id}`)
+    setFinalApproval(null)
+  }, [tile.id])
+
   const canUseDb = Boolean(user?.id)
 
   const loadFromDatabase = useCallback(async () => {
@@ -106,7 +122,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
     const { data, error } = await supabase
       .from('patents')
-      .select('id, status, stage, field_1, field_2, field_3, field_4, checklist_state, checklist_submitted, checklist_approved, upload_url, created_at')
+      .select(
+        'id, status, stage, field_1, field_2, field_3, field_4, checklist_state, checklist_submitted, checklist_approved, upload_url, process_upload_url, created_at',
+      )
       .eq('student_id', user.id)
       .eq('tile_id', tile.id)
       .eq('stage', 'plan')
@@ -131,6 +149,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       checklist_submitted?: boolean | null
       checklist_approved?: boolean | null
       upload_url?: string | null
+      process_upload_url?: string | null
     } | undefined
 
     if (!row) {
@@ -138,6 +157,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       setChecks(emptyChecks(steps))
       setPatent(EMPTY_DRAFT)
       setUploadUrl(null)
+      setProcessUploadUrl(null)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
       setInitialised(true)
@@ -167,6 +187,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     ]
     setChecks(cs)
     setUploadUrl(row.upload_url ?? null)
+    setProcessUploadUrl(row.process_upload_url ?? null)
 
     const draftField1 = planStatus !== 'approved' ? (localStorage.getItem(field1DraftKey) ?? null) : null
     if (planStatus === 'approved') localStorage.removeItem(field1DraftKey)
@@ -207,7 +228,16 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
         if (String(next.tile_id) !== tid) return
         void loadFromDatabase()
         void refresh()
-        if (prev.status !== 'approved' && next.status === 'approved') showApprovalNotice('🎉 Quest approved! WP and gold have been awarded!', 'success')
+        if (prev.status !== 'approved' && next.status === 'approved') {
+          const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : 0
+          const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
+          localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
+          localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
+          const cid = next.id != null ? String(next.id) : ''
+          if (cid) queueApprovalCelebration({ wp, gold, completionId: cid })
+          bannerFiredRef.current = true
+          setFinalApproval({ wp, gold })
+        }
         else if (next.status === 'returned') showApprovalNotice('↩ Final application returned — check with your teacher and resubmit.', 'returned')
       })
       .subscribe()
@@ -217,6 +247,32 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       if (approvalTimerRef.current) clearTimeout(approvalTimerRef.current)
     }
   }, [user?.id, tile.id, loadFromDatabase, refresh])
+
+  /** On mount: if this quest was approved while the student was away, show the banner once. */
+  useEffect(() => {
+    if (!initialised || !user?.id) return
+    if (completionStatus !== 'approved') return
+    const id = String(tile.id)
+    if (localStorage.getItem(`nexus:approval-seen:${id}`)) return
+    if (bannerFiredRef.current) return
+    bannerFiredRef.current = true
+    const cachedWp = Number(localStorage.getItem(`nexus:approval-wp:${id}`) ?? '')
+    const cachedGold = Number(localStorage.getItem(`nexus:approval-gold:${id}`) ?? '')
+    if (cachedWp > 0 || cachedGold > 0) {
+      setFinalApproval({ wp: cachedWp, gold: cachedGold })
+      return
+    }
+    void supabase
+      .from('skill_completions')
+      .select('wp_awarded, gold_awarded')
+      .eq('student_id', user.id)
+      .eq('tile_id', tile.id)
+      .eq('status', 'approved')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setFinalApproval({ wp: data.wp_awarded ?? 0, gold: data.gold_awarded ?? 0 })
+      })
+  }, [initialised, completionStatus, tile.id, user?.id])
 
   const canStartChecklist = plan.status === 'approved'
   const doneCount = checks.filter(Boolean).length
@@ -274,9 +330,10 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     setUploading(true)
     setUploadError(null)
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin'
+      const uploadFile = await fileForPatentStorage(file)
+      const ext = uploadFile.type.startsWith('image/') ? 'jpg' : (file.name.split('.').pop()?.toLowerCase() ?? 'bin')
       const path = `${user.id}/${plan.id}/submission.${ext}`
-      const { error: upErr } = await supabase.storage.from('patent-uploads').upload(path, file, { upsert: true })
+      const { error: upErr } = await supabase.storage.from('patent-uploads').upload(path, uploadFile, { upsert: true })
       if (upErr) throw upErr
       const { data: urlData } = supabase.storage.from('patent-uploads').getPublicUrl(path)
       const publicUrl = urlData.publicUrl
@@ -291,6 +348,27 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       setUploadError(e instanceof Error ? e.message : 'Upload failed.')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleProcessFileUpload = async (file: File) => {
+    if (!user?.id || !plan.id || !file.type.startsWith('image/')) return
+    setProcessUploading(true)
+    setUploadError(null)
+    try {
+      const uploadFile = await fileForPatentStorage(file)
+      const path = `${user.id}/${plan.id}/process.jpg`
+      const { error: upErr } = await supabase.storage.from('patent-uploads').upload(path, uploadFile, { upsert: true })
+      if (upErr) throw upErr
+      const { data: urlData } = supabase.storage.from('patent-uploads').getPublicUrl(path)
+      const publicUrl = urlData.publicUrl
+      const { error: dbErr } = await supabase.from('patents').update({ process_upload_url: publicUrl }).eq('id', plan.id)
+      if (dbErr) throw dbErr
+      setProcessUploadUrl(publicUrl)
+    } catch (e: unknown) {
+      setUploadError(e instanceof Error ? e.message : 'Process photo upload failed.')
+    } finally {
+      setProcessUploading(false)
     }
   }
 
@@ -412,9 +490,24 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
   if (completionStatus === 'approved') {
     return (
-      <p className="muted" role="status">
-        This quest is already approved. Talk to your teacher to reset the checklist for a bonus run.
-      </p>
+      <>
+        {finalApproval ? (
+          <FinalApprovalBanner wp={finalApproval.wp} gold={finalApproval.gold} onDismiss={dismissApprovalBanner} />
+        ) : null}
+        <ApprovedQuestView
+          steps={steps.map((s) => s.description)}
+          checks={checks}
+          empathy={empathy}
+          answers={[
+            { label: 'What are you going to make?', value: patent.field1 },
+            { label: '__empathy__', value: '' },
+            { label: 'What makes this work yours — where did you go beyond the example?', value: patent.field3 },
+            { label: 'What failed and what did you change?', value: patent.field4 },
+          ]}
+          uploadUrl={uploadUrl}
+          repeatNote="Talk to your teacher to reset the checklist if you'd like to complete this quest again."
+        />
+      </>
     )
   }
 
@@ -422,6 +515,14 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
   return (
     <form className="patent-game-piece-form" data-patent-flow="generic-checklist-gate" onSubmit={(e) => e.preventDefault()}>
+      {finalApproval ? (
+        <FinalApprovalBanner
+          wp={finalApproval.wp}
+          gold={finalApproval.gold}
+          onDismiss={dismissApprovalBanner}
+        />
+      ) : null}
+
       <PatentFlowBanner message={flowBanner} tone="success" onClear={() => setFlowBanner(null)} />
 
       {approvalNotice ? (
@@ -601,6 +702,37 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                                 />
                               </label>
                               {uploadError ? <p className="error" role="alert" style={{ margin: 0, fontSize: '0.85rem' }}>{uploadError}</p> : null}
+                              {uploadUrl && !/\.(mp4|webm|mov|avi|m4v)$/i.test(uploadUrl) ? (
+                                <div style={{ marginTop: '0.65rem', paddingTop: '0.65rem', borderTop: '1px solid var(--border)' }}>
+                                  <p className="muted" style={{ margin: '0 0 0.35rem', fontSize: '0.85rem' }}>
+                                    Optional: add a <strong>process</strong> photo (work in progress). Shown under your
+                                    finished shot with your patent answers.
+                                  </p>
+                                  {processUploadUrl ? (
+                                    <img
+                                      src={processUploadUrl}
+                                      alt="Process work"
+                                      style={{ maxWidth: '100%', maxHeight: '160px', borderRadius: '8px', objectFit: 'contain', display: 'block', marginBottom: '0.35rem' }}
+                                    />
+                                  ) : null}
+                                  <label style={{ display: 'inline-flex', cursor: !canStartChecklist || checklistSubmitted ? 'not-allowed' : 'pointer' }}>
+                                    <span className={`btn-secondary${!canStartChecklist || checklistSubmitted || processUploading ? ' btn-disabled' : ''}`} style={{ pointerEvents: 'none' }}>
+                                      {processUploading ? 'Uploading…' : processUploadUrl ? 'Replace process photo' : 'Add process photo'}
+                                    </span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      disabled={!canStartChecklist || checklistSubmitted || processUploading}
+                                      style={{ display: 'none' }}
+                                      onChange={(e) => {
+                                        const f = e.target.files?.[0]
+                                        if (f) void handleProcessFileUpload(f)
+                                        e.target.value = ''
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              ) : null}
                             </div>
                           ) : null}
                         </li>

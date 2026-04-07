@@ -10,6 +10,8 @@ import { GoldShopPage } from './pages/GoldShopPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { ResourcesPage } from './pages/ResourcesPage'
 import { PowerUpsPage } from './pages/PowerUpsPage'
+import { JourneyPage } from './pages/JourneyPage'
+import { CodexPage } from './pages/CodexPage'
 import { GuildSkillTreePage } from './pages/GuildSkillTreePage'
 import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
@@ -19,12 +21,23 @@ import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
 import { JoinPage } from './pages/JoinPage'
+import { ApprovalCelebrationSync } from './components/ApprovalCelebrationSync'
 import './App.css'
 
 export default function App() {
   return (
     <BrowserRouter>
+      {import.meta.env.DEV && (
+        <div className="nexus-app-dev-ribbon" role="note">
+          Local dev — if this bar is missing, you are not on this repo’s Vite server.{' '}
+          <a href="/nexus-dev-verify.txt" target="_blank" rel="noopener noreferrer">
+            Open /nexus-dev-verify.txt
+          </a>{' '}
+          (first line must be <code>nexus-academy-repo-ok</code>). Student nav adds Codex, Journey, and Power Ups.
+        </div>
+      )}
       <AuthProvider>
+        <ApprovalCelebrationSync />
         <Routes>
           <Route path="/" element={<HomeRoute />} />
           <Route
@@ -75,6 +88,23 @@ export default function App() {
               </StudentOnlyRoute>
             }
           />
+          <Route
+            path="/journey"
+            element={
+              <StudentOnlyRoute>
+                <JourneyPage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/codex"
+            element={
+              <StudentOnlyRoute>
+                <CodexPage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route path="/portfolio" element={<Navigate to="/codex" replace />} />
           <Route
             path="/patent-game-piece/:tileId"
             element={

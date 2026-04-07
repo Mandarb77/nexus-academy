@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
 
 type PowerUpSection = {
@@ -30,6 +32,21 @@ const SECTIONS: PowerUpSection[] = [
 ]
 
 export function PowerUpsPage() {
+  const { pathname, hash } = useLocation()
+
+  useEffect(() => {
+    if (pathname !== '/powerups') return
+    const id = hash.replace(/^#/, '').trim()
+    if (!id) return
+    const el = document.getElementById(id)
+    if (el) {
+      const t = window.setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+      return () => window.clearTimeout(t)
+    }
+  }, [pathname, hash])
+
   return (
     <div className="app-shell">
       <MainNav />
@@ -40,8 +57,17 @@ export function PowerUpsPage() {
         </header>
 
         <div className="stack">
-          {SECTIONS.map((s) => (
-            <section key={s.title} className="card" aria-label={s.title}>
+          {SECTIONS.map((s) => {
+            const sectionId =
+              s.title === 'Grounded in Maine'
+                ? 'grounded-in-maine'
+                : s.title === 'Maine Inventors and Creators'
+                  ? 'maine-inventors'
+                  : s.title === 'Maine History'
+                    ? 'maine-history'
+                    : undefined
+            return (
+            <section key={s.title} id={sectionId} className="card powerups-section" aria-label={s.title}>
               <h2 style={{ marginTop: 0 }}>{s.title}</h2>
               {s.body.map((p) => (
                 <p key={p} className="muted" style={{ marginTop: '0.5rem' }}>
@@ -65,7 +91,7 @@ export function PowerUpsPage() {
                   </strong>
                   <p style={{ margin: 0 }}>
                     <strong>Important —</strong> Before the Wabanaki Confederacy is formally included
-                    in the game curriculum or used in any student-facing quests or rewards, the
+                    in the game curriculum or used in any student-facing quests or rewards,
                     I must first make contact with Wabanaki community representatives to
                     ensure that any use of their history, knowledge, and cultural identity is done
                     with their full awareness and approval.
@@ -73,9 +99,10 @@ export function PowerUpsPage() {
                 </div>
               ) : null}
             </section>
-          ))}
+            )
+          })}
 
-          <section className="card" aria-label="The Backstory dossier">
+          <section id="backstory" className="card powerups-section" aria-label="The Backstory dossier">
             <h2 style={{ marginTop: 0 }}>The Backstory</h2>
             <p className="muted" style={{ marginTop: '0.35rem' }}>
               A dossier on Lyra Voss — the lost Remembrancer.

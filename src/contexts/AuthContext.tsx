@@ -12,7 +12,8 @@ import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Profile } from '../types/profile'
 
-const PROFILE_COLUMNS = 'id, email, display_name, wp, gold, rank, role' as const
+const PROFILE_COLUMNS =
+  'id, email, display_name, wp, gold, rank, role, portfolio_quote' as const
 
 function displayNameFromUser(user: User): string {
   const meta = user.user_metadata

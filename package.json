@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:fresh": "rm -rf node_modules/.vite && vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "push": "git push",
-    "deploy": "npx vercel --prod && npx vercel alias set nexus-academy-one.vercel.app mandarb77-nexus-academy.vercel.app"
+    "deploy": "npx vercel --prod && npx vercel alias nexus-academy-one.vercel.app mandarb77-nexus-academy.vercel.app"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.1",

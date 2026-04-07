@@ -46,8 +46,8 @@ export function GoldShopPage() {
 
   return (
     <div className="app-shell gold-shop-page">
+      <MainNav />
       <header className="gold-shop-header">
-        <MainNav />
         <div className="gold-shop-top-row">
           <div>
             <h1 className="gold-shop-title">
