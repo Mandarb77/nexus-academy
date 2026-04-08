@@ -4,6 +4,7 @@ import { MainNav } from '../components/MainNav'
 import { StickerPatentContent } from '../components/StickerPatentContent'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
+import { isStickerQuestLocked } from '../lib/stickerTile'
 
 export function PatentStickerPage() {
   const { tileId } = useParams<{ tileId: string }>()
@@ -16,6 +17,7 @@ export function PatentStickerPage() {
   }, [tiles, tileId])
 
   const completion = tile ? completionByTileId.get(tile.id) : undefined
+  const stickerLocked = Boolean(tile && isStickerQuestLocked(tile))
 
   if (!tileId) return <Navigate to="/tree/folded" replace />
 
@@ -38,10 +40,14 @@ export function PatentStickerPage() {
 
       <main className="page patent-game-piece-main" data-patent-page="sticker-stepped">
         <h1 className="page-title" style={{ marginTop: 0 }}>Design Your Personal Sticker</h1>
-        <p className="muted page-subtitle">
-          Step 1: answer both plan questions and submit for teacher approval. Step 2: after approval, complete and
-          submit the checklist. Step 3: final two questions, then submit the quest.
-        </p>
+        {stickerLocked ? (
+          <p className="muted page-subtitle">This quest is not available yet.</p>
+        ) : (
+          <p className="muted page-subtitle">
+            Step 1: answer both plan questions and submit for teacher approval. Step 2: after approval, complete and
+            submit the checklist. Step 3: final two questions, then submit the quest.
+          </p>
+        )}
 
         {!canUseDb ? (
           <p className="muted" role="alert">
@@ -55,6 +61,17 @@ export function PatentStickerPage() {
           <p className="error" role="alert">
             Quest tile not found. <Link to="/tree/folded">← Back to Folded Path</Link>
           </p>
+        ) : stickerLocked ? (
+          <div className="guild-coming-soon-box guild-coming-soon-box--inline">
+            <p className="guild-coming-soon-box__icon">🔒</p>
+            <p className="guild-coming-soon-box__heading">Coming soon</p>
+            <p className="guild-coming-soon-box__body">
+              Design Your Personal Sticker is not open yet. Check back later — the quest will return when it is ready.
+            </p>
+            <p className="muted" style={{ marginTop: '1rem', marginBottom: 0 }}>
+              <Link to="/tree/folded">← Back to Folded Path skill tree</Link>
+            </p>
+          </div>
         ) : (
           <StickerPatentContent tile={tile} refresh={refresh} completionStatus={completion?.status} />
         )}

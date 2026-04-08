@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import type { TileRow } from '../types/tile'
 import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
-import { isStickerTile } from '../lib/stickerTile'
+import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
 import { isCustomTile } from '../lib/customTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
 import { STICKER_STEPS } from '../lib/stickerSteps'
@@ -40,10 +40,22 @@ export function SkillTilesList({
 }: Props) {
   const navigate = useNavigate()
 
-  // Game piece and sticker go first; then builder quests; then coming-soon tiles last
+  // Game piece and (when live) sticker go first; then builder quests; then coming-soon tiles last
   const sortedTiles = [...tiles].sort((a, b) => {
-    const rankA = isPersonalGamePieceTile(a) ? 0 : isStickerTile(a) ? 1 : isCustomTile(a) ? 2 : 3
-    const rankB = isPersonalGamePieceTile(b) ? 0 : isStickerTile(b) ? 1 : isCustomTile(b) ? 2 : 3
+    const rankA = isPersonalGamePieceTile(a)
+      ? 0
+      : isStickerTile(a) && !isStickerQuestLocked(a)
+        ? 1
+        : isCustomTile(a)
+          ? 2
+          : 3
+    const rankB = isPersonalGamePieceTile(b)
+      ? 0
+      : isStickerTile(b) && !isStickerQuestLocked(b)
+        ? 1
+        : isCustomTile(b)
+          ? 2
+          : 3
     return rankA - rankB
   })
 
@@ -64,8 +76,9 @@ export function SkillTilesList({
           const patentProgress = isPatentTile ? patentProgressByTileId.get(tile.id) : undefined
           const doneCount = patentProgress?.checklistState.filter(Boolean).length ?? 0
 
-          // Only game piece, sticker, and builder-created quests are live; everything else is coming soon
-          const isComingSoon = !isPersonalGamePieceTile(tile) && !isStickerTile(tile) && !isCustomTile(tile)
+          // Game piece, live sticker, and builder-created quests are open; sticker can be flagged coming soon
+          const isComingSoon =
+            !isPersonalGamePieceTile(tile) && !isCustomTile(tile) && (!isStickerTile(tile) || isStickerQuestLocked(tile))
 
           return (
             <li key={tile.id} className={`skill-tile card${isComingSoon ? ' skill-tile--locked' : ''}`}>
