@@ -5,6 +5,22 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
+function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
+  if (!rows?.length) return []
+  return rows.map((row) => {
+    const r = row as Record<string, unknown>
+    let steps = r.steps
+    if (typeof steps === 'string') {
+      try {
+        steps = JSON.parse(steps) as unknown
+      } catch {
+        steps = null
+      }
+    }
+    return { ...r, steps } as TileRow
+  })
+}
+
 const GUILD_ORDER = ['forge', 'prism', 'folded path', 'silicon covenant', 'void navigators']
 
 export type TileCompletionState = {
@@ -125,7 +141,7 @@ export function useSkillTree() {
       console.error('tiles:', tileErr.message)
       setTiles([])
     } else {
-      setTiles((tileRows ?? []) as TileRow[])
+      setTiles(normalizeTilesFromApi(tileRows ?? []))
     }
 
     await Promise.all([refreshCompletions(), refreshPatentProgress()])

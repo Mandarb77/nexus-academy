@@ -3,7 +3,7 @@ import type { TileRow } from '../types/tile'
 import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
-import { isCustomTile } from '../lib/customTile'
+import { isCustomTile, resolvedTileSteps } from '../lib/customTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
 import { STICKER_STEPS } from '../lib/stickerSteps'
 
@@ -26,7 +26,7 @@ function getPatentRoute(tile: TileRow): string | null {
 function stepCount(tile: TileRow): number {
   if (isPersonalGamePieceTile(tile)) return PERSONAL_GAME_PIECE_STEPS.length
   if (isStickerTile(tile)) return STICKER_STEPS.length
-  if (isCustomTile(tile)) return (tile.steps ?? []).length
+  if (isCustomTile(tile)) return resolvedTileSteps(tile).length
   return 0
 }
 

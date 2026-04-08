@@ -5,7 +5,7 @@
  *   Q1  "Describe what you are going to make."
  *   Q2  "Who are you making this for and why does it matter?"
  *
- * Checklist steps come from tile.steps (DB-stored StepConfig[]).
+ * Checklist steps from `resolvedTileSteps(tile)` (DB Quest Builder steps, or embedded e.g. T-shirt).
  * Steps marked requiresApproval show a visual checkpoint badge.
  *
  * Fixed closing questions (field_3 / field_4 labels):
@@ -31,8 +31,10 @@ import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '.
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
+import { resolvedTileSteps } from '../lib/customTile'
 import { skillTreeGuildModifier } from '../lib/guildTree'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
+import { T_SHIRT_QUEST_CHECKLIST_FOOTER, T_SHIRT_QUEST_SKILL_NAME } from '../lib/tShirtQuestSteps'
 
 type Props = {
   tile: TileRow
@@ -65,10 +67,6 @@ function guildBackRoute(guild: string): string {
   return '/tree'
 }
 
-const T_SHIRT_QUEST_SKILL_NAME = 'Design a T-Shirt for Someone In the Room'
-const T_SHIRT_QUEST_CHECKLIST_FOOTER =
-  'This quest can be completed again for bonus WP with a different recipient. Each version must show a new interview and a new design — not the same design on a different shirt.'
-
 function checklistFooterNoteForTile(tile: TileRow): string | null {
   const fromDb = tile.checklist_footer_note?.trim()
   if (fromDb) return fromDb
@@ -81,7 +79,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
 
-  const steps: StepConfig[] = Array.isArray(tile.steps) ? tile.steps : []
+  const steps: StepConfig[] = resolvedTileSteps(tile)
   const checklistFooterNote = checklistFooterNoteForTile(tile)
   const backRoute = guildBackRoute(tile.guild)
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
