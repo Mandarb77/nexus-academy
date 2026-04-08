@@ -40,23 +40,18 @@ export function SkillTilesList({
 }: Props) {
   const navigate = useNavigate()
 
-  // Game piece and (when live) sticker go first; then builder quests; then coming-soon tiles last
+  // Game piece first, then live sticker, then other patent/custom quests, then standard skills, locked sticker last
   const sortedTiles = [...tiles].sort((a, b) => {
-    const rankA = isPersonalGamePieceTile(a)
-      ? 0
-      : isStickerTile(a) && !isStickerQuestLocked(a)
-        ? 1
-        : isCustomTile(a)
-          ? 2
-          : 3
-    const rankB = isPersonalGamePieceTile(b)
-      ? 0
-      : isStickerTile(b) && !isStickerQuestLocked(b)
-        ? 1
-        : isCustomTile(b)
-          ? 2
-          : 3
-    return rankA - rankB
+    const rank = (t: TileRow) => {
+      if (isPersonalGamePieceTile(t)) return 0
+      if (isStickerTile(t) && !isStickerQuestLocked(t)) return 1
+      if (isCustomTile(t)) return 2
+      if (isStickerQuestLocked(t)) return 4
+      return 3
+    }
+    const d = rank(a) - rank(b)
+    if (d !== 0) return d
+    return (a.skill_name ?? '').localeCompare(b.skill_name ?? '', undefined, { sensitivity: 'base' })
   })
 
   return (
@@ -76,9 +71,8 @@ export function SkillTilesList({
           const patentProgress = isPatentTile ? patentProgressByTileId.get(tile.id) : undefined
           const doneCount = patentProgress?.checklistState.filter(Boolean).length ?? 0
 
-          // Game piece, live sticker, and builder-created quests are open; sticker can be flagged coming soon
-          const isComingSoon =
-            !isPersonalGamePieceTile(tile) && !isCustomTile(tile) && (!isStickerTile(tile) || isStickerQuestLocked(tile))
+          // Only the personal sticker quest is UI-locked when STICKER_QUEST_COMING_SOON; all other tiles use Mark complete or patent flow
+          const isComingSoon = isStickerQuestLocked(tile)
 
           return (
             <li key={tile.id} className={`skill-tile card${isComingSoon ? ' skill-tile--locked' : ''}`}>
