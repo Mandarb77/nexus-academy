@@ -31,10 +31,10 @@ import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '.
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
-import { resolvedTileSteps } from '../lib/customTile'
+import { isTShirtPatentQuestTile, resolvedTileSteps } from '../lib/customTile'
 import { skillTreeGuildModifier } from '../lib/guildTree'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
-import { T_SHIRT_QUEST_CHECKLIST_FOOTER, T_SHIRT_QUEST_SKILL_NAME } from '../lib/tShirtQuestSteps'
+import { T_SHIRT_QUEST_CHECKLIST_FOOTER } from '../lib/tShirtQuestSteps'
 
 type Props = {
   tile: TileRow
@@ -70,7 +70,7 @@ function guildBackRoute(guild: string): string {
 function checklistFooterNoteForTile(tile: TileRow): string | null {
   const fromDb = tile.checklist_footer_note?.trim()
   if (fromDb) return fromDb
-  if ((tile.skill_name ?? '').trim() === T_SHIRT_QUEST_SKILL_NAME) return T_SHIRT_QUEST_CHECKLIST_FOOTER
+  if (isTShirtPatentQuestTile(tile)) return T_SHIRT_QUEST_CHECKLIST_FOOTER
   return null
 }
 
