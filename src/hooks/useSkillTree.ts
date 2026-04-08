@@ -114,9 +114,10 @@ export function useSkillTree() {
     }
     setLoading(true)
 
+    // Omit checklist_footer_note: requesting it fails on DBs before migration 034 and clears all tiles.
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
-      .select('id, guild, skill_name, wp_value, gold_value, steps, checklist_footer_note')
+      .select('id, guild, skill_name, wp_value, gold_value, steps')
       .order('guild', { ascending: true })
       .order('skill_name', { ascending: true })
 

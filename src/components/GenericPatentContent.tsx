@@ -65,12 +65,24 @@ function guildBackRoute(guild: string): string {
   return '/tree'
 }
 
+const T_SHIRT_QUEST_SKILL_NAME = 'Design a T-Shirt for Someone In the Room'
+const T_SHIRT_QUEST_CHECKLIST_FOOTER =
+  'This quest can be completed again for bonus WP with a different recipient. Each version must show a new interview and a new design — not the same design on a different shirt.'
+
+function checklistFooterNoteForTile(tile: TileRow): string | null {
+  const fromDb = tile.checklist_footer_note?.trim()
+  if (fromDb) return fromDb
+  if ((tile.skill_name ?? '').trim() === T_SHIRT_QUEST_SKILL_NAME) return T_SHIRT_QUEST_CHECKLIST_FOOTER
+  return null
+}
+
 export function GenericPatentContent({ tile, refresh, completionStatus }: Props) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
 
   const steps: StepConfig[] = Array.isArray(tile.steps) ? tile.steps : []
+  const checklistFooterNote = checklistFooterNoteForTile(tile)
   const backRoute = guildBackRoute(tile.guild)
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
@@ -740,7 +752,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                     })}
                   </ol>
 
-                  {tile.checklist_footer_note?.trim() ? (
+                  {checklistFooterNote ? (
                     <div
                       className="card"
                       role="note"
@@ -754,7 +766,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                       }}
                     >
                       <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.5, color: 'var(--text)' }}>
-                        {tile.checklist_footer_note.trim()}
+                        {checklistFooterNote}
                       </p>
                     </div>
                   ) : null}
