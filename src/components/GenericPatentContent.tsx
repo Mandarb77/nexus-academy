@@ -666,7 +666,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                             <p style={{ margin: '0.3rem 0 0 1.75rem' }}>
                               <a href={step.resourceUrl} target="_blank" rel="noopener noreferrer"
                                 className="btn-secondary" style={{ fontSize: '0.85rem', display: 'inline-block', padding: '0.25rem 0.7rem' }}>
-                                Open resource →
+                                {step.resourceLabel?.trim() ? `${step.resourceLabel.trim()} →` : 'Open resource →'}
                               </a>
                             </p>
                           ) : null}
@@ -739,6 +739,25 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                       )
                     })}
                   </ol>
+
+                  {tile.checklist_footer_note?.trim() ? (
+                    <div
+                      className="card"
+                      role="note"
+                      aria-label="Quest note"
+                      style={{
+                        marginTop: '1.1rem',
+                        padding: '0.9rem 1rem',
+                        border: '1px solid rgba(109, 40, 217, 0.35)',
+                        background: 'rgba(109, 40, 217, 0.06)',
+                        maxWidth: '42rem',
+                      }}
+                    >
+                      <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.5, color: 'var(--text)' }}>
+                        {tile.checklist_footer_note.trim()}
+                      </p>
+                    </div>
+                  ) : null}
 
                   {!canStartChecklist ? (
                     <p className="muted" style={{ margin: '0.75rem 0 0' }}>Checklist unlocks after your teacher approves your plan.</p>
@@ -818,7 +837,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                   <button type="button" className="btn-primary"
                     disabled={!canUseDb || !user?.id || submittingPatent || isFinalPending || !patent.field3.trim() || !patent.field4.trim()}
                     onClick={() => void onSubmitForApproval()}>
-                    {submittingPatent ? 'Submitting…' : 'Submit final application'}
+                    {submittingPatent ? 'Submitting…' : 'Submit for approval'}
                   </button>
                 </div>
               </>
