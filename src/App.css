@@ -1710,6 +1710,24 @@ a.btn-primary {
   color: #15803d;
 }
 
+/* Standard workshop tiles (Mark complete only) — de-emphasized vs patent quests */
+.skill-tile--simple-mark {
+  opacity: 0.68;
+  filter: grayscale(0.55);
+  background: rgba(128, 128, 128, 0.07);
+  border-color: rgba(128, 128, 128, 0.22);
+}
+
+.skill-tile--simple-mark .btn-skill--complete {
+  filter: grayscale(0.35);
+  box-shadow: none;
+  opacity: 0.92;
+}
+
+.skill-tile--simple-mark .btn-skill--complete:hover:not(:disabled) {
+  filter: grayscale(0.2);
+}
+
 .skill-tile--locked {
   opacity: 0.45;
   pointer-events: none;

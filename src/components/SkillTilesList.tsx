@@ -78,8 +78,20 @@ export function SkillTilesList({
           // Only the personal sticker quest is UI-locked when STICKER_QUEST_COMING_SOON; all other tiles use Mark complete or patent flow
           const isComingSoon = isStickerQuestLocked(tile)
 
+          const isSimpleMarkCompleteOnly =
+            !isComingSoon &&
+            !isApproved &&
+            !isPending &&
+            !isReturned &&
+            !isPatentTile
+
           return (
-            <li key={tile.id} className={`skill-tile card${isComingSoon ? ' skill-tile--locked' : ''}`}>
+            <li
+              key={tile.id}
+              className={`skill-tile card${isComingSoon ? ' skill-tile--locked' : ''}${
+                isSimpleMarkCompleteOnly ? ' skill-tile--simple-mark' : ''
+              }`}
+            >
               <div className="skill-tile-row">
                 <div className="skill-tile-main">
                   <h3 className="skill-tile-name">{tile.skill_name}</h3>
