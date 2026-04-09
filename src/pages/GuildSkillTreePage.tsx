@@ -10,6 +10,7 @@ import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { guildHeading, isComingSoonGuildSection, skillTreeGuildModifier } from '../lib/guildTree'
+import { GUILD_WELCOME_BY_SLUG, type GuildWelcomeSlug } from '../lib/guildWelcomeCopy'
 
 type GuildSlug = 'forge' | 'prism' | 'folded' | 'silicon' | 'void'
 
@@ -56,6 +57,11 @@ export function GuildSkillTreePage() {
   const bannerSrc = BANNER_MAP[slug]
   const guildTitle = guildKey ? `${guildHeading(guildKey)} guild` : `${guildHeading(slug)} guild`
   const showComingSoon = Boolean(guildKey) && isComingSoonGuildSection(guildKey ?? '')
+  const welcomeSlug = slug as GuildWelcomeSlug
+  const welcomeCopy =
+    welcomeSlug === 'forge' || welcomeSlug === 'prism' || welcomeSlug === 'folded'
+      ? GUILD_WELCOME_BY_SLUG[welcomeSlug]
+      : undefined
 
   const header = (
     <header className="skill-tree-top">
@@ -98,6 +104,17 @@ export function GuildSkillTreePage() {
           {bannerSrc ? (
             <div className="skill-tree-guild-banner skill-tree-guild-banner--below-title">
               <img className="skill-tree-guild-banner__img" src={bannerSrc} alt="" decoding="async" />
+            </div>
+          ) : null}
+          {welcomeCopy && !showComingSoon ? (
+            <div
+              className={`skill-tree-guild-welcome skill-tree-guild-welcome--${mod}`}
+              role="region"
+              aria-label={`About ${welcomeCopy.orderName}`}
+            >
+              <p className="skill-tree-guild-welcome__order">{welcomeCopy.orderName}</p>
+              <p className="skill-tree-guild-welcome__text">{welcomeCopy.sentences[0]}</p>
+              <p className="skill-tree-guild-welcome__text">{welcomeCopy.sentences[1]}</p>
             </div>
           ) : null}
           <h1 id="guild-single-heading" className="skill-tree-guild-page-title">

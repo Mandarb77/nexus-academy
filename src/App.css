@@ -1216,6 +1216,79 @@ a.btn-primary {
   color: var(--text-h);
 }
 
+/* Guild single-page welcome (below banner & title, above skill tiles) */
+.skill-tree-guild-welcome {
+  margin: 0 0 1.35rem;
+  padding: 1.15rem 1.35rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+}
+
+.skill-tree-guild-welcome__order {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-h);
+  opacity: 0.88;
+}
+
+.skill-tree-guild-welcome__text {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.58;
+  color: var(--text);
+}
+
+.skill-tree-guild-welcome__text + .skill-tree-guild-welcome__text {
+  margin-top: 0.65rem;
+}
+
+.skill-tree-guild-welcome--forge {
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.55) 0%, rgba(253, 230, 138, 0.35) 100%);
+  border-color: rgba(217, 119, 6, 0.28);
+  border-left: 4px solid rgba(217, 119, 6, 0.55);
+}
+
+.skill-tree-guild-welcome--prism {
+  background: linear-gradient(135deg, rgba(238, 242, 255, 0.85) 0%, rgba(224, 231, 255, 0.45) 100%);
+  border-color: rgba(99, 102, 241, 0.28);
+  border-left: 4px solid rgba(99, 102, 241, 0.5);
+}
+
+.skill-tree-guild-welcome--folded {
+  background: linear-gradient(135deg, rgba(255, 247, 243, 0.95) 0%, rgba(250, 236, 231, 0.65) 100%);
+  border-color: rgba(216, 90, 48, 0.25);
+  border-left: 4px solid rgba(216, 90, 48, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  .skill-tree-guild-welcome--forge {
+    background: linear-gradient(135deg, rgba(120, 53, 15, 0.35) 0%, rgba(146, 64, 14, 0.22) 100%);
+    border-color: rgba(251, 191, 36, 0.22);
+    border-left-color: rgba(251, 191, 36, 0.45);
+  }
+
+  .skill-tree-guild-welcome--prism {
+    background: linear-gradient(135deg, rgba(49, 46, 129, 0.45) 0%, rgba(67, 56, 202, 0.2) 100%);
+    border-color: rgba(165, 180, 252, 0.22);
+    border-left-color: rgba(165, 180, 252, 0.45);
+  }
+
+  .skill-tree-guild-welcome--folded {
+    background: linear-gradient(135deg, rgba(88, 28, 28, 0.35) 0%, rgba(124, 45, 18, 0.22) 100%);
+    border-color: rgba(244, 160, 122, 0.2);
+    border-left-color: rgba(244, 160, 122, 0.42);
+  }
+
+  .skill-tree-guild-welcome__text {
+    color: var(--text);
+    opacity: 0.95;
+  }
+}
+
 .skill-tree-guild--single {
   max-width: 100%;
 }
