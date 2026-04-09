@@ -69,6 +69,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const checklistLen = stepLabels.length
 
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
+  const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
   const [initialised, setInitialised] = useState(false)
@@ -164,6 +165,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setProcessUploadUrl(null)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
+      const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
+      const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
+      setPatent((p) => ({ ...p, field1: draftF1 }))
+      setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : EMPTY_EMPATHY)
       setInitialised(true)
       return
     }
@@ -199,17 +204,21 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     setProcessUploadUrl(row.process_upload_url ?? null)
 
     const draftField1 = planStatus !== 'approved' ? (localStorage.getItem(field1DraftKey) ?? null) : null
-    if (planStatus === 'approved') localStorage.removeItem(field1DraftKey)
+    const draftEmpathy = planStatus !== 'approved' ? (localStorage.getItem(empathyDraftKey) ?? null) : null
+    if (planStatus === 'approved') {
+      localStorage.removeItem(field1DraftKey)
+      localStorage.removeItem(empathyDraftKey)
+    }
     setPatent({
       field1: draftField1 ?? row.field_1 ?? '',
       field3: row.field_3 ?? '',
       field4: row.field_4 ?? '',
     })
-    setEmpathy(parseEmpathy(row.field_2 ?? null))
+    setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(row.field_2 ?? null))
 
     setInitialised(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, tile, studentId])
+  }, [user?.id, tile, studentId, field1DraftKey, empathyDraftKey])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -804,6 +813,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
             disabled={!user?.id}
             onChange={(next) => {
               setEmpathy(next)
+              localStorage.setItem(empathyDraftKey, serializeEmpathy(next))
               if (plan.id && plan.status === 'pending') {
                 void saveFieldToDb('field_2', serializeEmpathy(next), plan.id)
               }
