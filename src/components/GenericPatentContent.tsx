@@ -48,6 +48,13 @@ type PlanState = { id: string; status: PlanStatus }
 
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
 
+function normalizePlanStatus(input: unknown): PlanStatus {
+  const s = String(input ?? '').trim().toLowerCase()
+  if (s === 'none' || s === 'pending' || s === 'approved' || s === 'returned') return s
+  // Default to pending so we don't accidentally unlock the checklist.
+  return 'pending'
+}
+
 function emptyChecks(steps: StepConfig[]): boolean[] {
   return Array(steps.length).fill(false)
 }
@@ -174,7 +181,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       return
     }
 
-    const planStatus = (row.status ?? 'none') as PlanStatus
+    const planStatus = normalizePlanStatus(row.status ?? 'none')
     setPlan({ id: row.id, status: planStatus })
 
     const rawSubmitted = Boolean(row.checklist_submitted)
@@ -324,7 +331,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   }
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
-    if (!pid || checklistSubmitted) return
+    // While awaiting checklist review, prevent edits that would desync what the teacher is reviewing.
+    // If a teacher has already approved the checklist, allow edits again (final submission is still gated by allDone).
+    if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
     if (error) console.error('[GenericPatent] checklist save:', error.message)
   }
@@ -662,7 +671,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                           <label className="checklist-label">
                             <input type="checkbox"
                               checked={checks[idx] ?? false}
-                              disabled={!canStartChecklist || checklistSubmitted}
+                              disabled={!canStartChecklist || (checklistSubmitted && !checklistApproved)}
                               onChange={(e) => {
                                 const nextArr = [...checks]
                                 nextArr[idx] = e.target.checked

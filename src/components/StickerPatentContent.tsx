@@ -28,6 +28,12 @@ type Props = {
 const EMPTY_CHECKS = (): boolean[] => Array(STICKER_STEPS.length).fill(false)
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
 
+function normalizePlanStatus(input: unknown): PlanStatus {
+  const s = String(input ?? '').trim().toLowerCase()
+  if (s === 'none' || s === 'pending' || s === 'approved' || s === 'returned') return s
+  return 'pending'
+}
+
 function readStoredPhase(key: string): 1 | 2 | 3 {
   const raw = sessionStorage.getItem(key)
   if (raw === '2') return 2
@@ -134,7 +140,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       return
     }
 
-    const planStatus = (row.status as PlanStatus) ?? 'pending'
+    const planStatus = normalizePlanStatus(row.status)
     setPlan({ id: row.id, status: planStatus })
 
     const rawSubmitted = Boolean(row.checklist_submitted)
@@ -313,7 +319,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   }
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
-    if (!pid || checklistSubmitted) return
+    if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
     if (error) console.error('[StickerPatent] checklist save:', error.message)
   }
@@ -780,7 +786,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
                       <input
                         type="checkbox"
                         checked={checks[idx] ?? false}
-                        disabled={!canStartChecklist || checklistSubmitted}
+                        disabled={!canStartChecklist || (checklistSubmitted && !checklistApproved)}
                         onChange={(e) => {
                           const nextArr = [...checks]
                           nextArr[idx] = e.target.checked

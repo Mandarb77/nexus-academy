@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -135,6 +135,9 @@ export function TeacherPanelPage() {
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
   const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
   const [checklistRows, setChecklistRows] = useState<PendingChecklistRow[]>([])
+  const prevPendingSkillIdsRef = useRef<Set<string>>(new Set())
+  const [finalSubmitNotice, setFinalSubmitNotice] = useState<string | null>(null)
+  const finalSubmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [studentProfile, setStudentProfile] = useState<StudentSummary | null>(null)
@@ -233,6 +236,18 @@ export function TeacherPanelPage() {
     const redemptions = redRes.data ?? []
     const plans = planRes.data ?? []
     const checklists = checklistRes.data ?? []
+
+    // High-attention notice for new final submissions (pending skill_completions).
+    const nextPendingSkillIds = new Set<string>(completions.map((r) => r.id as string))
+    const prevPendingSkillIds = prevPendingSkillIdsRef.current
+    const hasNewFinalSubmissions =
+      [...nextPendingSkillIds].some((id) => !prevPendingSkillIds.has(id)) && nextPendingSkillIds.size > 0
+    prevPendingSkillIdsRef.current = nextPendingSkillIds
+    if (hasNewFinalSubmissions) {
+      setFinalSubmitNotice('New final submissions just arrived — review the Skill completions panel.')
+      if (finalSubmitTimerRef.current) clearTimeout(finalSubmitTimerRef.current)
+      finalSubmitTimerRef.current = setTimeout(() => setFinalSubmitNotice(null), 12000)
+    }
 
     const studentIds = [
       ...new Set([
@@ -790,6 +805,24 @@ export function TeacherPanelPage() {
         <p className="muted" role="status">
           {adminMessage}
         </p>
+      ) : null}
+
+      {finalSubmitNotice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            margin: '0.75rem 0 1rem',
+            padding: '0.65rem 0.9rem',
+            borderRadius: '10px',
+            fontWeight: 800,
+            border: '2px solid rgba(185, 28, 28, 0.55)',
+            background: 'rgba(239, 68, 68, 0.12)',
+            color: '#991b1b',
+          }}
+        >
+          {finalSubmitNotice}
+        </div>
       ) : null}
 
       {loadError ? (

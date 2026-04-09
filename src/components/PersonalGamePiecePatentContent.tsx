@@ -43,6 +43,12 @@ const TINKERCAD_TEMPLATE_URL =
 
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
 
+function normalizePlanStatus(input: unknown): PlanStatus {
+  const s = String(input ?? '').trim().toLowerCase()
+  if (s === 'none' || s === 'pending' || s === 'approved' || s === 'returned') return s
+  return 'pending'
+}
+
 function patentTreePathForGuild(guild: string): string {
   return skillTreeGuildModifier(guild) === 'prism' ? '/tree/prism' : '/tree/forge'
 }
@@ -162,7 +168,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       return
     }
 
-    const planStatus = (row.status as PlanStatus) ?? 'pending'
+    const planStatus = normalizePlanStatus(row.status)
     setPlan({ id: row.id, status: planStatus })
 
     // Only reset checklist when the teacher explicitly returns the plan — not while it is pending.
@@ -343,7 +349,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   }
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
-    if (!pid || checklistSubmitted) return
+    if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase
       .from('patents')
       .update({ checklist_state: nextArr })
@@ -895,7 +901,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                       <input
                         type="checkbox"
                         checked={checks[idx] ?? false}
-                        disabled={!canStartChecklist || checklistSubmitted}
+                        disabled={!canStartChecklist || (checklistSubmitted && !checklistApproved)}
                         onChange={(e) => {
                           const nextArr = [...checks]
                           nextArr[idx] = e.target.checked
