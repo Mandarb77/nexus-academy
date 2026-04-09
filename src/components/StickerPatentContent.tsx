@@ -11,14 +11,10 @@ import { STICKER_STEPS } from '../lib/stickerSteps'
 import { supabase } from '../lib/supabase'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
-import { computeInitialPatentPhase } from '../lib/patentPhaseBootstrap'
+import { serverSuggestedPatentPhase } from '../lib/patentPhaseBootstrap'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/patentPlanStatus'
-import {
-  mergeChecklistFromDraft,
-  readChecklistDraft,
-  writeChecklistDraft,
-} from '../lib/patentChecklistDraft'
+import { patentRowMatchesTile, patentTileIdCandidates } from '../lib/patentTileQuery'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
@@ -37,13 +33,6 @@ type Props = {
 const EMPTY_CHECKS = (): boolean[] => Array(STICKER_STEPS.length).fill(false)
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
 
-function readStoredPhase(key: string): 1 | 2 | 3 {
-  const raw = sessionStorage.getItem(key)
-  if (raw === '2') return 2
-  if (raw === '3') return 3
-  return 1
-}
-
 export function StickerPatentContent({ tile, refresh, completionStatus }: Props) {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -51,7 +40,6 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
 
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
-  const checklistDraftKey = `nexus:patent-checklist-draft:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
   const [initialised, setInitialised] = useState(false)
@@ -93,7 +81,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   const [submittingChecklist, setSubmittingChecklist] = useState(false)
   const [checklistSaveError, setChecklistSaveError] = useState<string | null>(null)
 
-  const bootstrappedForTileRef = useRef<string | null>(null)
+  const phaseHydrateSigRef = useRef<string>('')
 
   const canUseDb = Boolean(user?.id)
   const planApprovedForChecklist = plan.status === 'approved'
@@ -101,9 +89,20 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
 
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) {
+      console.log('[PatentLoad] StickerPatent step:skip-no-user', { tileId: tile.id })
       setInitialised(true)
       return
     }
+
+    const tileCandidates = patentTileIdCandidates(tile.id)
+    const clen = STICKER_STEPS.length
+    console.log('[PatentLoad] StickerPatent step:1-query', {
+      studentId: user.id,
+      tileId: tile.id,
+      tileIdType: typeof tile.id,
+      tileCandidates,
+      stages: ['plan', 'packet'],
+    })
 
     const { data, error } = await supabase
       .from('patents')
@@ -111,24 +110,34 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         'id, status, stage, field_1, field_2, field_3, field_4, checklist_state, checklist_submitted, checklist_approved, upload_url, process_upload_url, created_at',
       )
       .eq('student_id', user.id)
-      .eq('tile_id', tile.id)
+      .in('tile_id', tileCandidates)
       .in('stage', ['plan', 'packet'])
       .order('created_at', { ascending: false })
       .limit(50)
 
     if (error) {
-      console.error('[StickerPatent] load:', error.message)
+      console.error('[PatentLoad] StickerPatent step:error', error.message)
       setInitialised(true)
       return
     }
 
     const allRows = (data ?? []) as LoadedPlanPatentRow[]
-    const { primary: row, rowsForMerge, canUnlockChecklist } = selectStudentPatentPrimary(
+    console.log('[PatentLoad] StickerPatent step:2-raw-rows', { count: allRows.length, rows: allRows })
+
+    const { primary: row, rowsForMerge, canUnlockChecklist, source } = selectStudentPatentPrimary(
       allRows,
       normalizePatentPlanStatus,
     )
 
     if (!row) {
+      console.log('[PatentLoad] StickerPatent step:3-no-primary', { pickSource: source })
+      phaseHydrateSigRef.current = ''
+      setPhase(1)
+      try {
+        sessionStorage.setItem(phaseKey, '1')
+      } catch {
+        /* ignore */
+      }
       const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
       const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
       localStorage.removeItem(`nexus:tile-checklist:${studentId}:${tile.id}`)
@@ -142,20 +151,27 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       setChecklistApproved(false)
       setPatent((p) => ({ ...p, field1: draftF1 }))
       setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : EMPTY_EMPATHY)
-      console.log('[PatentLoad] StickerPatent', {
-        tileId: tile.id,
-        studentId: user.id,
-        primaryRow: null,
-        rowCount: allRows.length,
-      })
+      console.log('[PatentLoad] StickerPatent step:4-state-empty', { patentField1: draftF1 })
       setInitialised(true)
       return
     }
+
+    const primaryStage = String(row.stage ?? '').trim().toLowerCase() === 'packet' ? 'packet' : 'plan'
+    console.log('[PatentLoad] StickerPatent step:3-primary-row', {
+      id: row.id,
+      stage: row.stage,
+      primaryStage,
+      status: row.status,
+      pickSource: source,
+      pickCanUnlockChecklist: canUnlockChecklist,
+    })
 
     const planStatus = normalizePatentPlanStatus(row.status)
     setPlan({ id: row.id, status: planStatus })
 
     const rawSubmitted = Boolean(row.checklist_submitted)
+    let checklistAppr = false
+    let checklistSub = false
     if (planStatus === 'returned') {
       setChecklistSubmitted(false)
       setChecklistApproved(false)
@@ -166,21 +182,26 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
           .eq('id', row.id)
       }
     } else {
-      setChecklistSubmitted(rawSubmitted)
-      setChecklistApproved(row.checklist_approved ?? false)
+      checklistSub = rawSubmitted
+      checklistAppr = Boolean(row.checklist_approved)
+      setChecklistSubmitted(checklistSub)
+      setChecklistApproved(checklistAppr)
     }
 
-    // Migration-safe: extend shorter stored arrays with false for any newly added steps.
     const rawCs = row.checklist_state
     const rawCsArr = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
-    const cs: boolean[] = [
-      ...rawCsArr.slice(0, STICKER_STEPS.length),
-      ...Array(Math.max(0, STICKER_STEPS.length - rawCsArr.length)).fill(false),
+    const csFromDb: boolean[] = [
+      ...rawCsArr.slice(0, clen),
+      ...Array(Math.max(0, clen - rawCsArr.length)).fill(false),
     ]
-    const draft = readChecklistDraft(localStorage.getItem(checklistDraftKey))
-    const mergedChecks = mergeChecklistFromDraft(cs, draft, row.id)
-    setChecks(mergedChecks)
-    writeChecklistDraft(checklistDraftKey, row.id, mergedChecks)
+    const checksForUi = primaryStage === 'packet' ? Array(clen).fill(true) : csFromDb
+    setChecks(checksForUi)
+    console.log('[PatentLoad] StickerPatent step:4-checklist_state', {
+      checklist_state_raw: rawCs,
+      normalizedFromDb: csFromDb,
+      checksAppliedToState: checksForUi,
+    })
+
     setUploadUrl(row.upload_url ?? null)
     setProcessUploadUrl(row.process_upload_url ?? null)
 
@@ -191,38 +212,38 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       localStorage.removeItem(empathyDraftKey)
     }
     const merged = fillPatentPlanFieldsFromRows(row, rowsForMerge)
-    console.log('[PatentLoad] StickerPatent', {
-      tileId: tile.id,
-      studentId: user.id,
-      primaryRow: {
-        id: row.id,
-        status: row.status,
-        field_1: row.field_1 ?? null,
-        field_2: row.field_2 ?? null,
-        field_3: row.field_3 ?? null,
-        field_4: row.field_4 ?? null,
-        checklist_submitted: row.checklist_submitted,
-        checklist_approved: row.checklist_approved,
-      },
-      mergedIntoForm: {
-        field_1: merged.field_1,
-        field_2: merged.field_2,
-        field_3: merged.field_3,
-        field_4: merged.field_4,
-      },
-      pickCanUnlockChecklist: canUnlockChecklist,
-      rowCount: allRows.length,
+    const field1 = draftField1 ?? merged.field_1
+    const field3 = merged.field_3
+    const field4 = merged.field_4
+    const empathyVal = draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(merged.field_2 || null)
+    setPatent({ field1, field3, field4 })
+    setEmpathy(empathyVal)
+    console.log('[PatentLoad] StickerPatent step:5-form-state', { field1, field3, field4, empathyParsed: empathyVal })
+
+    const planSubmittedBool = Boolean(row.id)
+    const maxPh: 1 | 2 | 3 = !planSubmittedBool ? 1 : !checklistAppr ? 2 : 3
+    const serverPh = serverSuggestedPatentPhase({
+      primaryStage,
+      planStatus,
+      checklistApproved: checklistAppr,
     })
-    setPatent({
-      field1: draftField1 ?? merged.field_1,
-      field3: merged.field_3,
-      field4: merged.field_4,
-    })
-    setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(merged.field_2 || null))
+    const nextPhase = Math.min(Math.max(serverPh, 1), maxPh) as 1 | 2 | 3
+    const sig = `${row.id}|${primaryStage}|${planStatus}|${checklistAppr}|${checklistSub}`
+    if (phaseHydrateSigRef.current !== sig) {
+      phaseHydrateSigRef.current = sig
+      setPhase(nextPhase)
+      try {
+        sessionStorage.setItem(phaseKey, String(nextPhase))
+      } catch {
+        /* ignore */
+      }
+    }
+    console.log('[PatentLoad] StickerPatent step:6-phase', { serverPh, maxPh, nextPhase, hydrateSig: sig })
 
     setInitialised(true)
+    console.log('[PatentLoad] StickerPatent step:7-initialised')
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, tile.id, studentId, field1DraftKey, empathyDraftKey, checklistDraftKey])
+  }, [user?.id, tile.id, studentId, field1DraftKey, empathyDraftKey, phaseKey])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -242,7 +263,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         (payload) => {
           const prev = payload.old as Record<string, unknown>
           const next = payload.new as Record<string, unknown>
-          if (String(next.tile_id) !== tid) return
+          if (!patentRowMatchesTile(tile.id, next.tile_id)) return
           void loadFromDatabase()
           if (prev.status !== 'approved' && next.status === 'approved') {
             showApprovalNotice('✓ Plan approved — your checklist is now unlocked!', 'success')
@@ -259,7 +280,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         (payload) => {
           const prev = payload.old as Record<string, unknown>
           const next = payload.new as Record<string, unknown>
-          if (String(next.tile_id) !== tid) return
+          if (!patentRowMatchesTile(tile.id, next.tile_id)) return
           void loadFromDatabase()
           void refresh()
           if (prev.status !== 'approved' && next.status === 'approved') {
@@ -323,31 +344,8 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
 
   useEffect(() => {
     if (!initialised) return
-    const marker = `${tile.id}:${user?.id ?? ''}`
-    if (bootstrappedForTileRef.current !== marker) {
-      bootstrappedForTileRef.current = marker
-      const stored = readStoredPhase(phaseKey)
-      const next = computeInitialPatentPhase({
-        storedRaw: stored,
-        maxPhase,
-        planSubmitted,
-        planApprovedForChecklist,
-        checklistApproved,
-      })
-      setPhase(next)
-      sessionStorage.setItem(phaseKey, String(next))
-    }
     setPhase((p) => (p > maxPhase ? maxPhase : p))
-  }, [
-    initialised,
-    tile.id,
-    user?.id,
-    maxPhase,
-    planSubmitted,
-    planApprovedForChecklist,
-    checklistApproved,
-    phaseKey,
-  ])
+  }, [initialised, maxPhase])
 
   const goPhase = (p: 1 | 2 | 3) => {
     const next = Math.min(Math.max(p, 1), maxPhase) as 1 | 2 | 3
@@ -368,7 +366,6 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     if (!pid || (checklistSubmitted && !checklistApproved)) return
-    writeChecklistDraft(checklistDraftKey, pid, nextArr)
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
     if (error) {
       console.error('[StickerPatent] checklist save:', error.message)
@@ -635,7 +632,13 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   if (!isStickerTile(tile)) {
     return <p className="error">This page is only for the Design Your Personal Sticker tile.</p>
   }
-  if (!initialised) return <p className="muted">Loading…</p>
+  if (!initialised) {
+    return (
+      <p className="muted" role="status">
+        Loading patent from the database…
+      </p>
+    )
+  }
 
   if (completionStatus === 'approved') {
     return (

@@ -16,6 +16,7 @@ export type PatentFormRow = {
 /** Full shape returned from `patents` select in student patent flows. */
 export type LoadedPlanPatentRow = PatentFormRow & {
   status: unknown
+  stage?: string | null
   checklist_submitted?: boolean | null
   checklist_approved?: boolean | null
   checklist_state?: unknown
