@@ -330,6 +330,17 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     sessionStorage.setItem(phaseKey, String(next))
   }
 
+  // Auto-advance the student UI when teacher approvals arrive via realtime.
+  useEffect(() => {
+    if (!initialised) return
+    if (plan.status === 'approved' && phase === 1 && maxPhase >= 2) {
+      goPhase(2)
+    }
+    if (checklistApproved && phase === 2 && maxPhase >= 3) {
+      goPhase(3)
+    }
+  }, [initialised, plan.status, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     // While awaiting checklist review, prevent edits that would desync what the teacher is reviewing.
     // If a teacher has already approved the checklist, allow edits again (final submission is still gated by allDone).

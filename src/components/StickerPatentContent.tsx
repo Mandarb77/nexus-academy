@@ -318,6 +318,17 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     sessionStorage.setItem(phaseKey, String(next))
   }
 
+  // Auto-advance the student UI when teacher approvals arrive via realtime.
+  useEffect(() => {
+    if (!initialised) return
+    if (plan.status === 'approved' && phase === 1 && maxPhase >= 2) {
+      goPhase(2)
+    }
+    if (checklistApproved && phase === 2 && maxPhase >= 3) {
+      goPhase(3)
+    }
+  }, [initialised, plan.status, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
