@@ -116,7 +116,6 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const [checklistSubmitted, setChecklistSubmitted] = useState(false)
   const [checklistApproved, setChecklistApproved] = useState(false)
   const [submittingChecklist, setSubmittingChecklist] = useState(false)
-  const [checklistUnlocked, setChecklistUnlocked] = useState(false)
   const [checklistSaveError, setChecklistSaveError] = useState<string | null>(null)
   const [approvalNotice, setApprovalNotice] = useState<{ message: string; tone: 'success' | 'returned' } | null>(null)
   const [finalApproval, setFinalApproval] = useState<{ wp: number; gold: number } | null>(null)
@@ -139,7 +138,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   }, [tile.id])
 
   const canUseDb = Boolean(user?.id)
-  const canStartChecklist = checklistUnlocked && !(checklistSubmitted && !checklistApproved)
+  /** Same source as read-only plan fields: teacher must have approved this plan row in the DB. */
+  const planApprovedForChecklist = plan.status === 'approved'
+  const canStartChecklist = planApprovedForChecklist && !(checklistSubmitted && !checklistApproved)
   const planStep1FieldsLocked = plan.status === 'pending' || plan.status === 'approved'
 
   const loadFromDatabase = useCallback(async () => {
@@ -167,7 +168,6 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
     const rows = (data ?? []) as LoadedPlanPatentRow[]
     const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(rows, normalizePatentPlanStatus)
-    setChecklistUnlocked(canUnlockChecklist)
 
     if (!row) {
       setPlan({ id: '', status: 'none' })
@@ -177,7 +177,6 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       setProcessUploadUrl(null)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
-      setChecklistUnlocked(false)
       const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
       const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
       setPatent((p) => ({ ...p, field1: draftF1 }))
@@ -245,7 +244,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
         field_3: merged.field_3,
         field_4: merged.field_4,
       },
-      checklistUnlocked: canUnlockChecklist,
+      pickCanUnlockChecklist: canUnlockChecklist,
       rowCount: rows.length,
     })
     setPatent({
@@ -351,7 +350,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
         storedRaw: stored,
         maxPhase,
         planSubmitted,
-        checklistUnlocked,
+        planApprovedForChecklist,
         checklistApproved,
       })
       setPhase(next)
@@ -364,7 +363,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     user?.id,
     maxPhase,
     planSubmitted,
-    checklistUnlocked,
+    planApprovedForChecklist,
     checklistApproved,
     phaseKey,
   ])
@@ -378,13 +377,13 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   // Auto-advance the student UI when teacher approvals arrive via realtime.
   useEffect(() => {
     if (!initialised) return
-    if (checklistUnlocked && phase === 1 && maxPhase >= 2) {
+    if (planApprovedForChecklist && phase === 1 && maxPhase >= 2) {
       goPhase(2)
     }
     if (checklistApproved && phase === 2 && maxPhase >= 3) {
       goPhase(3)
     }
-  }, [initialised, checklistUnlocked, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialised, planApprovedForChecklist, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     // While awaiting checklist review, prevent edits that would desync what the teacher is reviewing.

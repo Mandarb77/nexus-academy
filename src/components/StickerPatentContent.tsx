@@ -91,13 +91,13 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   const [checklistSubmitted, setChecklistSubmitted] = useState(false)
   const [checklistApproved, setChecklistApproved] = useState(false)
   const [submittingChecklist, setSubmittingChecklist] = useState(false)
-  const [checklistUnlocked, setChecklistUnlocked] = useState(false)
   const [checklistSaveError, setChecklistSaveError] = useState<string | null>(null)
 
   const bootstrappedForTileRef = useRef<string | null>(null)
 
   const canUseDb = Boolean(user?.id)
-  const canStartChecklist = checklistUnlocked && !(checklistSubmitted && !checklistApproved)
+  const planApprovedForChecklist = plan.status === 'approved'
+  const canStartChecklist = planApprovedForChecklist && !(checklistSubmitted && !checklistApproved)
 
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) {
@@ -124,7 +124,6 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
 
     const rows = (data ?? []) as LoadedPlanPatentRow[]
     const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(rows, normalizePatentPlanStatus)
-    setChecklistUnlocked(canUnlockChecklist)
 
     if (!row) {
       const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
@@ -138,7 +137,6 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       setProcessUploadUrl(null)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
-      setChecklistUnlocked(false)
       setPatent((p) => ({ ...p, field1: draftF1 }))
       setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : EMPTY_EMPATHY)
       console.log('[PatentLoad] StickerPatent', {
@@ -207,7 +205,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         field_3: merged.field_3,
         field_4: merged.field_4,
       },
-      checklistUnlocked: canUnlockChecklist,
+      pickCanUnlockChecklist: canUnlockChecklist,
       rowCount: rows.length,
     })
     setPatent({
@@ -328,7 +326,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         storedRaw: stored,
         maxPhase,
         planSubmitted,
-        checklistUnlocked,
+        planApprovedForChecklist,
         checklistApproved,
       })
       setPhase(next)
@@ -341,7 +339,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     user?.id,
     maxPhase,
     planSubmitted,
-    checklistUnlocked,
+    planApprovedForChecklist,
     checklistApproved,
     phaseKey,
   ])
@@ -355,13 +353,13 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   // Auto-advance the student UI when teacher approvals arrive via realtime.
   useEffect(() => {
     if (!initialised) return
-    if (checklistUnlocked && phase === 1 && maxPhase >= 2) {
+    if (planApprovedForChecklist && phase === 1 && maxPhase >= 2) {
       goPhase(2)
     }
     if (checklistApproved && phase === 2 && maxPhase >= 3) {
       goPhase(3)
     }
-  }, [initialised, checklistUnlocked, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialised, planApprovedForChecklist, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     if (!pid || (checklistSubmitted && !checklistApproved)) return
