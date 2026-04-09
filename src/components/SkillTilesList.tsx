@@ -55,6 +55,7 @@ export function SkillTilesList({
     <>
       <ul className="skill-tile-list">
         {sortedTiles.map((tile) => {
+          const goldAward = tile.gold_value ?? 10
           const completion = completionByTileId.get(tile.id)
           const status = completion?.status
           const isPending = status === 'pending'
@@ -88,7 +89,11 @@ export function SkillTilesList({
               <div className="skill-tile-row">
                 <div className="skill-tile-main">
                   <h3 className="skill-tile-name">{tile.skill_name}</h3>
-                  <p className="skill-tile-wp">{tile.wp_value} WP</p>
+                  <p className="skill-tile-wp">
+                    {tile.wp_value} WP
+                    <span aria-hidden="true"> · </span>
+                    <span className="gold-currency-text">{goldAward} gold</span>
+                  </p>
                   {isPatentTile && !isApproved && !isPending && !isComingSoon ? (
                     <p className="muted skill-tile-checklist-progress">
                       {doneCount} of {totalSteps} steps complete
