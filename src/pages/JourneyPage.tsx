@@ -4,6 +4,8 @@ import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { guildHeading } from '../lib/guildTree'
+import { ApprovedQuestView } from '../components/ApprovedQuestView'
+import { fetchJourneyPatentReadView, type JourneyPatentReadViewModel } from '../lib/journeyPatentReadView'
 import { getPatentRoute } from '../lib/patentRoutes'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
@@ -17,11 +19,19 @@ type TileJoin = {
 
 type CompletionRow = {
   id: string
+  tile_id: string
   created_at: string
   wp_awarded: number | null
   gold_awarded: number | null
   tiles: TileJoin | TileJoin[]
 }
+
+type JourneyQuestDetail =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; kind: 'patent'; model: JourneyPatentReadViewModel }
+  | { status: 'ready'; kind: 'other' }
+  | { status: 'ready'; kind: 'patent_empty' }
 
 type PatentWipRow = {
   id: string
@@ -52,6 +62,8 @@ export function JourneyPage() {
   const [error, setError] = useState<string | null>(null)
   const [patentWip, setPatentWip] = useState<PatentWipRow[]>([])
   const [patentWipLoading, setPatentWipLoading] = useState(true)
+  const [expandedCompletionId, setExpandedCompletionId] = useState<string | null>(null)
+  const [questDetailByCompletionId, setQuestDetailByCompletionId] = useState<Record<string, JourneyQuestDetail>>({})
 
   const load = useCallback(async () => {
     if (!user?.id || !isSupabaseConfigured) {
@@ -66,6 +78,7 @@ export function JourneyPage() {
       .select(
         `
         id,
+        tile_id,
         created_at,
         wp_awarded,
         gold_awarded,
@@ -128,6 +141,74 @@ export function JourneyPage() {
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     )
   }, [rows])
+
+  useEffect(() => {
+    if (!expandedCompletionId || !user?.id || !isSupabaseConfigured) return
+    const row = sorted.find((r) => r.id === expandedCompletionId)
+    if (!row) return
+    const completionId = expandedCompletionId
+    const tileId = row.tile_id
+
+    let skipFetch = false
+    setQuestDetailByCompletionId((prev) => {
+      const cur = prev[completionId]
+      if (cur?.status === 'ready' || cur?.status === 'loading') {
+        skipFetch = true
+        return prev
+      }
+      return { ...prev, [completionId]: { status: 'loading' } }
+    })
+    if (skipFetch) return
+
+    let cancelled = false
+    const tile = tiles.find((t) => String(t.id) === String(tileId))
+
+    void (async () => {
+      try {
+        if (!tile) {
+          if (!cancelled) {
+            setQuestDetailByCompletionId((prev) => ({
+              ...prev,
+              [completionId]: { status: 'error', message: 'Could not match this quest to the skill tree.' },
+            }))
+          }
+          return
+        }
+        const route = getPatentRoute(tile)
+        if (!route) {
+          if (!cancelled) {
+            setQuestDetailByCompletionId((prev) => ({
+              ...prev,
+              [completionId]: { status: 'ready', kind: 'other' },
+            }))
+          }
+          return
+        }
+        const model = await fetchJourneyPatentReadView(tile, user.id)
+        if (cancelled) return
+        setQuestDetailByCompletionId((prev) => ({
+          ...prev,
+          [completionId]:
+            model !== null
+              ? { status: 'ready', kind: 'patent', model }
+              : { status: 'ready', kind: 'patent_empty' },
+        }))
+      } catch (e) {
+        if (cancelled) return
+        setQuestDetailByCompletionId((prev) => ({
+          ...prev,
+          [completionId]: {
+            status: 'error',
+            message: e instanceof Error ? e.message : 'Could not load quest details.',
+          },
+        }))
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [expandedCompletionId, sorted, tiles, user?.id])
 
   /** Patent quests still in progress (quest not teacher-approved yet) — same data as the patent pages, linked here. */
   const continuePatentQuests = useMemo(() => {
@@ -335,7 +416,9 @@ export function JourneyPage() {
                 {showGuildHeading ? (
                   <h3 className="journey-guild-heading">{guildHeading(guild)}</h3>
                 ) : null}
-                <article className="journey-entry card">
+                <article
+                  className={`journey-entry card${expandedCompletionId === row.id ? ' journey-entry--expanded' : ''}`}
+                >
                   <div className="journey-entry-main">
                     <h4 className="journey-entry-title">{skillName}</h4>
                     <p className="journey-entry-meta muted">
@@ -343,12 +426,70 @@ export function JourneyPage() {
                       <span aria-hidden="true"> · </span>
                       <time dateTime={row.created_at}>{dateStr}</time>
                     </p>
+                    <button
+                      type="button"
+                      className="btn-secondary journey-entry-toggle"
+                      aria-expanded={expandedCompletionId === row.id}
+                      aria-controls={`journey-quest-detail-${row.id}`}
+                      id={`journey-quest-toggle-${row.id}`}
+                      onClick={() =>
+                        setExpandedCompletionId((prev) => (prev === row.id ? null : row.id))
+                      }
+                    >
+                      {expandedCompletionId === row.id ? 'Hide quest details' : 'Show quest details'}
+                    </button>
                   </div>
                   <div className="journey-entry-awards">
                     <span className="journey-entry-wp">+{wp} WP</span>
                     <span className="journey-entry-gold gold-currency-text">+{gold} gold</span>
                   </div>
                   <span className="journey-badge journey-badge--approved">Approved</span>
+                  {expandedCompletionId === row.id ? (
+                    <div
+                      className="journey-entry-detail"
+                      id={`journey-quest-detail-${row.id}`}
+                      role="region"
+                      aria-labelledby={`journey-quest-toggle-${row.id}`}
+                    >
+                      {(() => {
+                        const detail = questDetailByCompletionId[row.id]
+                        if (!detail || detail.status === 'loading') {
+                          return <p className="muted journey-entry-detail-loading">Loading your answers…</p>
+                        }
+                        if (detail.status === 'error') {
+                          return <p className="error">{detail.message}</p>
+                        }
+                        if (detail.kind === 'other') {
+                          return (
+                            <p className="muted journey-entry-detail-note">
+                              This quest was approved from the skill tree. Written answers and checklists are only kept
+                              for patent-style quests (game piece, sticker, custom design, and similar).
+                            </p>
+                          )
+                        }
+                        if (detail.kind === 'patent_empty') {
+                          return (
+                            <p className="muted journey-entry-detail-note">
+                              No saved patent form was found for this quest. If something looks wrong, open the quest
+                              from the skill tree or ask your teacher.
+                            </p>
+                          )
+                        }
+                        return (
+                          <div className="journey-entry-detail-patent">
+                            <ApprovedQuestView
+                              steps={detail.model.steps}
+                              checks={detail.model.checks}
+                              answers={detail.model.answers}
+                              empathy={detail.model.empathy}
+                              uploadUrl={detail.model.uploadUrl}
+                              repeatNote={detail.model.repeatNote}
+                            />
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  ) : null}
                 </article>
               </li>
             )

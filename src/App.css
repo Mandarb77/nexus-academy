@@ -991,11 +991,51 @@ a.btn-primary {
   box-shadow: var(--shadow);
 }
 
+.journey-entry--expanded {
+  grid-template-areas:
+    'main badge'
+    'awards badge'
+    'detail detail';
+}
+
+.journey-entry-toggle {
+  margin-top: 0.65rem;
+}
+
+.journey-entry-detail {
+  grid-area: detail;
+  margin-top: 0.35rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+
+.journey-entry-detail-loading {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.journey-entry-detail-note {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.journey-entry-detail-patent {
+  margin-top: 0.25rem;
+}
+
 @media (min-width: 480px) {
   .journey-entry {
     grid-template-columns: 1fr auto auto;
     grid-template-areas: 'main awards badge';
     align-items: center;
+  }
+
+  .journey-entry--expanded {
+    grid-template-areas:
+      'main awards badge'
+      'detail detail detail';
   }
 }
 
