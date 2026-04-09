@@ -77,30 +77,50 @@ function newestPacketUploadUrl(allRows: LoadedPlanPatentRow[]): string | null {
   return typeof u === 'string' && u.trim() ? u : null
 }
 
+/**
+ * OR-merge checklist flags across every row. Plan-stage rows often hold checklist_state; the same
+ * logical quest may also have a packet-stage row (or a row updated to packet) with final answers —
+ * `selectStudentPatentPrimary`'s `rowsForMerge` is plan-only, so the journey view must not use it alone.
+ */
+function mergeChecklistStateForJourneyRead(allRows: LoadedPlanPatentRow[], clen: number): boolean[] {
+  const out = Array(clen).fill(false)
+  for (const r of allRows) {
+    const raw = r.checklist_state
+    if (!Array.isArray(raw)) continue
+    const arr = raw as boolean[]
+    for (let i = 0; i < clen; i++) {
+      if (Boolean(arr[i])) out[i] = true
+    }
+  }
+  const hasPacket = allRows.some((r) => String(r.stage ?? '').trim().toLowerCase() === 'packet')
+  const anyChecked = out.some(Boolean)
+  if (hasPacket && !anyChecked) {
+    return Array(clen).fill(true)
+  }
+  return out
+}
+
 export function buildJourneyPatentReadViewFromRows(
   tile: TileRow,
   allRows: LoadedPlanPatentRow[],
 ): JourneyPatentReadViewModel | null {
   if (!getPatentRoute(tile)) return null
 
-  const { primary, rowsForMerge, source } = selectStudentPatentPrimary(allRows, normalizePatentPlanStatus)
+  const { primary, source } = selectStudentPatentPrimary(allRows, normalizePatentPlanStatus)
   if (!primary) return null
 
-  const merged = fillPatentPlanFieldsFromRows(primary, rowsForMerge)
+  // Merge field_1–4 across plan AND packet rows so final answers (saved on packet / updated row) show up
+  // even when an older duplicate `plan` row is chosen as primary.
+  const merged = fillPatentPlanFieldsFromRows(primary, allRows)
   const empathyRaw = pickField2EmpathySource(primary, allRows)
   const empathy = parseEmpathy(empathyRaw)
 
   const steps = checklistStepLabels(tile)
   const clen = steps.length
   const primaryStage = String(primary.stage ?? '').trim().toLowerCase() === 'packet' ? 'packet' : 'plan'
-  const rawCs = primary.checklist_state
-  const rawCsArr = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
-  const csFromDb: boolean[] = [
-    ...rawCsArr.slice(0, clen),
-    ...Array(Math.max(0, clen - rawCsArr.length)).fill(false),
-  ]
+  const mergedChecks = mergeChecklistStateForJourneyRead(allRows, clen)
   const checksForUi =
-    primaryStage === 'packet' || source === 'packet' ? Array(clen).fill(true) : csFromDb
+    primaryStage === 'packet' || source === 'packet' ? Array(clen).fill(true) : mergedChecks
 
   const uploadUrl = newestPacketUploadUrl(allRows) ?? primary.upload_url ?? null
 

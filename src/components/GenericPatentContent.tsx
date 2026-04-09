@@ -168,7 +168,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     const allRows = (data ?? []) as LoadedPlanPatentRow[]
     console.log('[PatentLoad] GenericPatent step:2-raw-rows', { count: allRows.length, rows: allRows })
 
-    const { primary: row, rowsForMerge, canUnlockChecklist, source } = selectStudentPatentPrimary(
+    const { primary: row, canUnlockChecklist, source } = selectStudentPatentPrimary(
       allRows,
       normalizePatentPlanStatus,
     )
@@ -256,7 +256,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       localStorage.removeItem(empathyDraftKey)
     }
 
-    const merged = fillPatentPlanFieldsFromRows(row, rowsForMerge)
+    const merged = fillPatentPlanFieldsFromRows(row, allRows)
     const field1 = draftField1 ?? merged.field_1
     const field3 = merged.field_3
     const field4 = merged.field_4
