@@ -12,7 +12,7 @@ export const SKILL_TREE_SECTION_GUILDS = [
 
 export function isComingSoonGuildSection(guildKey: string): boolean {
   const k = guildKey.trim().toLowerCase()
-  return k === 'prism' || k === 'silicon covenant' || k === 'void navigators'
+  return k === 'silicon covenant' || k === 'void navigators'
 }
 
 /** Normalize DB guild label to a URL-safe CSS modifier slug. */

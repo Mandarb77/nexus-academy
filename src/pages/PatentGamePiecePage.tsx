@@ -4,6 +4,13 @@ import { MainNav } from '../components/MainNav'
 import { PersonalGamePiecePatentContent } from '../components/PersonalGamePiecePatentContent'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
+import { skillTreeGuildModifier } from '../lib/guildTree'
+
+function patentGamePieceBackPath(guild: string): string {
+  const mod = skillTreeGuildModifier(guild)
+  if (mod === 'prism') return '/tree/prism'
+  return '/tree/forge'
+}
 
 export function PatentGamePiecePage() {
   const { tileId } = useParams<{ tileId: string }>()
@@ -16,10 +23,11 @@ export function PatentGamePiecePage() {
   }, [tiles, tileId])
 
   const completion = tile ? completionByTileId.get(tile.id) : undefined
+  const backPath = tile ? patentGamePieceBackPath(tile.guild) : '/tree/forge'
 
   // No tileId in the URL at all — go home.
   if (!tileId) {
-    return <Navigate to="/tree/forge" replace />
+    return <Navigate to="/tree" replace />
   }
 
   return (
@@ -28,8 +36,8 @@ export function PatentGamePiecePage() {
         <MainNav />
         <div className="skill-tree-top-row skill-tree-top-row--guild">
           <div className="skill-tree-guild-page-head">
-            <Link to="/tree/forge" className="skill-tree-back-link">
-              ← Back to Forge skill tree
+            <Link to={backPath} className="skill-tree-back-link">
+              ← Back to {tile?.guild ?? 'Forge'} skill tree
             </Link>
             <p className="muted skill-tree-guild-page-crumb">Patent application</p>
           </div>
@@ -41,7 +49,7 @@ export function PatentGamePiecePage() {
 
       <main className="page patent-game-piece-main" data-patent-page="game-piece-stepped">
         <h1 className="page-title" style={{ marginTop: 0 }}>
-          Design Your Personal Game Piece
+          {tile?.skill_name ?? 'Patent application'}
         </h1>
         <p className="muted page-subtitle">
           Step 1: answer both plan questions and submit for teacher approval. Step 2: after approval, complete and
@@ -58,7 +66,7 @@ export function PatentGamePiecePage() {
           <p className="muted">Loading…</p>
         ) : !tile ? (
           <p className="error" role="alert">
-            Quest tile not found. <Link to="/tree/forge">← Back to Forge</Link>
+            Quest tile not found. <Link to="/tree">← Back to skill tree</Link>
           </p>
         ) : (
           <PersonalGamePiecePatentContent

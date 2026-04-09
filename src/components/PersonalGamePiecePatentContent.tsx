@@ -6,8 +6,16 @@ import { EmpathyForm } from './EmpathyForm'
 import { FinalApprovalBanner } from './FinalApprovalBanner'
 import { ApprovedQuestView } from './ApprovedQuestView'
 import { queueApprovalCelebration } from '../lib/approvalCelebration'
-import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
+import { skillTreeGuildModifier } from '../lib/guildTree'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
+import {
+  isPopUpCardTile,
+  POP_UP_CARD_ORIGINAL_BONUS_NOTE,
+  POP_UP_CARD_RECIPIENT_GUIDANCE,
+  POP_UP_CARD_STEP2_RESOURCE_LINKS,
+  POP_UP_CARD_STEPS,
+  usesGamePieceStylePatentPage,
+} from '../lib/popUpCardQuest'
 import { supabase } from '../lib/supabase'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
@@ -33,8 +41,11 @@ type Props = {
 const TINKERCAD_TEMPLATE_URL =
   'https://www.tinkercad.com/things/1v3brIkBiqu/edit?returnTo=%2Fclassrooms%2F7CUhdwU3tyT%2Factivities%2FkSIm4lUkPQI&sharecode=DX6LI_t08XwEVWpoDJ2Puk_CeJgr5t7fhARIwRkhF2Q'
 
-const EMPTY_CHECKS = (): boolean[] => Array(PERSONAL_GAME_PIECE_STEPS.length).fill(false)
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
+
+function patentTreePathForGuild(guild: string): string {
+  return skillTreeGuildModifier(guild) === 'prism' ? '/tree/prism' : '/tree/forge'
+}
 
 function readStoredPhase(key: string): 1 | 2 | 3 {
   const raw = sessionStorage.getItem(key)
@@ -47,13 +58,18 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const { user } = useAuth()
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
+  const isPopUp = isPopUpCardTile(tile)
+  const stepLabels = isPopUp ? POP_UP_CARD_STEPS : PERSONAL_GAME_PIECE_STEPS
+  const checklistLen = stepLabels.length
 
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
   const [initialised, setInitialised] = useState(false)
   const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
-  const [checks, setChecks] = useState<boolean[]>(EMPTY_CHECKS())
+  const [checks, setChecks] = useState<boolean[]>(() =>
+    Array(isPopUpCardTile(tile) ? POP_UP_CARD_STEPS.length : PERSONAL_GAME_PIECE_STEPS.length).fill(false),
+  )
   const [patent, setPatent] = useState<PatentDraft>(EMPTY_DRAFT)
   const [empathy, setEmpathy] = useState<EmpathyDraft>(EMPTY_EMPATHY)
   const [finalApproval, setFinalApproval] = useState<{ wp: number; gold: number } | null>(null)
@@ -98,6 +114,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) return
+    const clen = isPopUpCardTile(tile) ? POP_UP_CARD_STEPS.length : PERSONAL_GAME_PIECE_STEPS.length
 
     const { data, error } = await supabase
       .from('patents')
@@ -134,7 +151,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       localStorage.removeItem(field1DraftKey)
       localStorage.removeItem(`nexus:tile-checklist:${studentId}:${tile.id}`)
       localStorage.removeItem(`nexus:tile-patent:${studentId}:${tile.id}`)
-      setChecks(EMPTY_CHECKS())
+      setChecks(Array(clen).fill(false))
       setPatent(EMPTY_DRAFT)
       setPlan({ id: '', status: 'none' })
       setUploadUrl(null)
@@ -168,8 +185,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     const rawCs = row.checklist_state
     const rawCsArr = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
     const cs: boolean[] = [
-      ...rawCsArr.slice(0, PERSONAL_GAME_PIECE_STEPS.length),
-      ...Array(Math.max(0, PERSONAL_GAME_PIECE_STEPS.length - rawCsArr.length)).fill(false),
+      ...rawCsArr.slice(0, clen),
+      ...Array(Math.max(0, clen - rawCsArr.length)).fill(false),
     ]
     setChecks(cs)
     setUploadUrl(row.upload_url ?? null)
@@ -186,7 +203,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
     setInitialised(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, tile.id, studentId])
+  }, [user?.id, tile, studentId])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -276,7 +293,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
   const canStartChecklist = plan.status === 'approved'
   const doneCount = checks.filter(Boolean).length
-  const allDone = doneCount === PERSONAL_GAME_PIECE_STEPS.length
+  const allDone = doneCount === checklistLen
 
   const planSubmitted = Boolean(plan.id)
 
@@ -349,6 +366,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
   const handleFileUpload = async (file: File) => {
     if (!user?.id || !plan.id) return
+    if (isPopUp && !file.type.startsWith('image/')) {
+      setUploadError('This quest requires a photo (image file) for the delivery step.')
+      return
+    }
     setUploading(true)
     setUploadError(null)
     try {
@@ -369,7 +390,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setUploadUrl(publicUrl)
       // Auto-check the upload step checkbox
       const nextArr = [...checks]
-      nextArr[PERSONAL_GAME_PIECE_STEPS.length - 1] = true
+      nextArr[checklistLen - 1] = true
       setChecks(nextArr)
       void saveChecklistToDb(nextArr, plan.id)
     } catch (e: unknown) {
@@ -478,6 +499,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
   const onSubmitChecklist = async () => {
     if (!plan.id || !allDone || checklistSubmitted) return
+    if (isPopUp && !uploadUrl) return
     setSubmittingChecklist(true)
     setFlowBanner(null)
     try {
@@ -543,6 +565,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setSubmitApprovalError('Wait for your teacher to approve the checklist before submitting.')
       return
     }
+    if (isPopUp && !uploadUrl) {
+      setSubmitApprovalError('Upload your delivery photo in the checklist before submitting.')
+      return
+    }
 
     setSubmittingPatent(true)
     try {
@@ -583,9 +609,11 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       }
 
       await refresh()
-      setSubmitSuccessMessage('Final application submitted! Returning to Forge…')
+      setSubmitSuccessMessage(
+        `Final application submitted! Returning to ${skillTreeGuildModifier(tile.guild) === 'prism' ? 'Prism' : 'Forge'}…`,
+      )
       setFlowBanner('Final application submitted — awaiting teacher approval.')
-      window.setTimeout(() => navigate('/tree/forge'), 1400)
+      window.setTimeout(() => navigate(patentTreePathForGuild(tile.guild)), 1400)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Submit failed.'
       console.error('[PatentContent] submit for approval:', e)
@@ -595,8 +623,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     }
   }
 
-  if (!isPersonalGamePieceTile(tile)) {
-    return <p className="error">This page is only for the Design Your Personal Game Piece tile.</p>
+  if (!usesGamePieceStylePatentPage(tile)) {
+    return <p className="error">This page is only for stepped patent quests (game piece or pop-up card).</p>
   }
 
   if (!initialised) {
@@ -610,7 +638,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           <FinalApprovalBanner wp={finalApproval.wp} gold={finalApproval.gold} onDismiss={dismissApprovalBanner} />
         ) : null}
         <ApprovedQuestView
-          steps={PERSONAL_GAME_PIECE_STEPS as unknown as string[]}
+          steps={stepLabels as unknown as string[]}
           checks={checks}
           empathy={empathy}
           answers={[
@@ -717,10 +745,12 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         </p>
 
         <div className="design3d-patent-col" style={{ maxWidth: '40rem' }}>
-          <p className="muted" style={{ marginTop: 0, marginBottom: '0.85rem' }}>
-            Use <strong>inches</strong> only for sizes. Maximum footprint:{' '}
-            <strong>1 inch wide, 1 inch deep, 2 inches tall</strong>.
-          </p>
+          {!isPopUp ? (
+            <p className="muted" style={{ marginTop: 0, marginBottom: '0.85rem' }}>
+              Use <strong>inches</strong> only for sizes. Maximum footprint:{' '}
+              <strong>1 inch wide, 1 inch deep, 2 inches tall</strong>.
+            </p>
+          ) : null}
 
           <label className="patent-field">
             <span className="patent-label">
@@ -729,7 +759,11 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
             <input
               type="text"
               value={patent.field1}
-              placeholder="One or two sentences — if you give size, use inches (max 1×1×2 inches)."
+              placeholder={
+                isPopUp
+                  ? 'Describe the pop-up card you will design — who it is for and the idea in one or two sentences.'
+                  : 'One or two sentences — if you give size, use inches (max 1×1×2 inches).'
+              }
               disabled={field1Locked}
               onChange={(e) => {
                 const val = e.target.value
@@ -752,6 +786,24 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               }
             }}
           />
+
+          {isPopUp ? (
+            <div
+              className="card"
+              role="note"
+              aria-label="Recipient guidance"
+              style={{
+                marginTop: '1rem',
+                padding: '0.9rem 1rem',
+                border: '1px solid rgba(109, 40, 217, 0.35)',
+                background: 'rgba(109, 40, 217, 0.06)',
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.55, color: 'var(--text)' }}>
+                {POP_UP_CARD_RECIPIENT_GUIDANCE}
+              </p>
+            </div>
+          ) : null}
 
           <div className="design3d-plan-actions">
             <button
@@ -813,16 +865,31 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         ) : null}
 
         <p className="muted" style={{ marginTop: 0 }}>
-          {doneCount} of {PERSONAL_GAME_PIECE_STEPS.length} steps complete. Checkboxes save as you go.
+          {doneCount} of {checklistLen} steps complete. Checkboxes save as you go.
         </p>
 
         {!planSubmitted ? (
           <p className="muted">Submit step 1 to your teacher first.</p>
         ) : (
           <>
-            <div className="design3d-checklist-col" style={{ maxWidth: '42rem' }}>
+            <div className="design3d-two-col">
+              <div className="design3d-checklist-col" style={{ maxWidth: 'none' }}>
+                {isPopUp && !canStartChecklist ? (
+                  <div
+                    className="card"
+                    role="note"
+                    style={{
+                      marginBottom: '1rem',
+                      padding: '0.9rem 1rem',
+                      border: '1px solid rgba(109, 40, 217, 0.35)',
+                      background: 'rgba(109, 40, 217, 0.06)',
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.55 }}>{POP_UP_CARD_RECIPIENT_GUIDANCE}</p>
+                  </div>
+                ) : null}
               <ol className="checklist">
-                {PERSONAL_GAME_PIECE_STEPS.map((label, idx) => (
+                {stepLabels.map((label, idx) => (
                   <li key={`${label}-${idx}`} className="checklist-item">
                     <label className="checklist-label">
                       <input
@@ -844,7 +911,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                       <span>{label}</span>
                     </label>
 
-                    {idx === 1 ? (
+                    {!isPopUp && idx === 1 ? (
                       <div
                         style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
                       >
@@ -864,7 +931,44 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                       </div>
                     ) : null}
 
-                    {idx === 2 ? (
+                    {isPopUp && idx === 1 ? (
+                      <div
+                        style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}
+                      >
+                        {POP_UP_CARD_STEP2_RESOURCE_LINKS.map((link) => (
+                          <a
+                            key={link.url}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`btn-secondary${!canStartChecklist || checklistSubmitted ? ' btn-disabled' : ''}`}
+                            aria-disabled={!canStartChecklist || checklistSubmitted}
+                            onClick={
+                              !canStartChecklist || checklistSubmitted ? (e) => e.preventDefault() : undefined
+                            }
+                            style={{ display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
+                          >
+                            {link.label} →
+                          </a>
+                        ))}
+                        <div
+                          className="card"
+                          role="note"
+                          style={{
+                            marginTop: '0.35rem',
+                            padding: '0.75rem 0.85rem',
+                            border: '2px solid rgba(34, 197, 94, 0.45)',
+                            background: 'rgba(34, 197, 94, 0.08)',
+                          }}
+                        >
+                          <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.5, fontWeight: 600 }}>
+                            {POP_UP_CARD_ORIGINAL_BONUS_NOTE}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {!isPopUp && idx === 2 ? (
                       <div style={{ marginTop: '0.5rem' }}>
                         <a
                           href={TINKERCAD_TEMPLATE_URL}
@@ -882,7 +986,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                       </div>
                     ) : null}
 
-                    {idx === 3 ? (
+                    {!isPopUp && idx === 3 ? (
                       <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <a
                           href="https://www.tinkercad.com/things/1v3brIkBiqu-game-clip2"
@@ -918,8 +1022,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                       </div>
                     ) : null}
 
-                    {/* Step 8 — upload photo/video */}
-                    {idx === PERSONAL_GAME_PIECE_STEPS.length - 1 ? (
+                    {/* Last step — upload photo (or photo/video for game piece) */}
+                    {idx === checklistLen - 1 ? (
                       <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {uploadUrl ? (
                           <div>
@@ -946,11 +1050,17 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                             className={`btn-secondary${!canStartChecklist || checklistSubmitted || uploading ? ' btn-disabled' : ''}`}
                             style={{ pointerEvents: 'none' }}
                           >
-                            {uploading ? 'Uploading…' : uploadUrl ? 'Replace file' : 'Choose photo or video'}
+                            {uploading
+                              ? 'Uploading…'
+                              : uploadUrl
+                                ? 'Replace file'
+                                : isPopUp
+                                  ? 'Choose delivery photo'
+                                  : 'Choose photo or video'}
                           </span>
                           <input
                             type="file"
-                            accept="image/*,video/*"
+                            accept={isPopUp ? 'image/*' : 'image/*,video/*'}
                             disabled={!canStartChecklist || checklistSubmitted || uploading}
                             style={{ display: 'none' }}
                             onChange={(e) => {
@@ -963,7 +1073,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                         {uploadError ? (
                           <p className="error" role="alert" style={{ margin: 0, fontSize: '0.85rem' }}>{uploadError}</p>
                         ) : null}
-                        {uploadUrl && !/\.(mp4|webm|mov|avi|m4v)$/i.test(uploadUrl) ? (
+                        {!isPopUp &&
+                        uploadUrl &&
+                        !/\.(mp4|webm|mov|avi|m4v)$/i.test(uploadUrl) ? (
                           <div style={{ marginTop: '0.65rem', paddingTop: '0.65rem', borderTop: '1px solid var(--border)' }}>
                             <p className="muted" style={{ margin: '0 0 0.35rem', fontSize: '0.85rem' }}>
                               Optional process photo (4:3) documenting your work in progress.
@@ -1002,27 +1114,47 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                 ))}
               </ol>
 
-              <div
-                className="card"
-                style={{
-                  marginTop: '1rem',
-                  padding: '0.85rem',
-                  border: '1px solid rgba(250, 204, 21, 0.35)',
-                  background: 'rgba(250, 204, 21, 0.08)',
-                }}
-              >
-                <strong style={{ display: 'block', marginBottom: '0.35rem' }}>Bonus completion available</strong>
-                <p style={{ margin: 0 }}>
-                  This quest can be completed again for bonus WP as you improve your TinkerCAD skills. Each version must
-                  show clear improvement over the last. Document the differences in your patent packet.
-                </p>
-              </div>
+              {!isPopUp ? (
+                <div
+                  className="card"
+                  style={{
+                    marginTop: '1rem',
+                    padding: '0.85rem',
+                    border: '1px solid rgba(250, 204, 21, 0.35)',
+                    background: 'rgba(250, 204, 21, 0.08)',
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: '0.35rem' }}>Bonus completion available</strong>
+                  <p style={{ margin: 0 }}>
+                    This quest can be completed again for bonus WP as you improve your TinkerCAD skills. Each version must
+                    show clear improvement over the last. Document the differences in your patent packet.
+                  </p>
+                </div>
+              ) : null}
 
               {!canStartChecklist ? (
                 <p className="muted" style={{ margin: '0.75rem 0 0' }}>
                   Checklist unlocks after your teacher approves your plan.
                 </p>
               ) : null}
+              </div>
+
+              <div className="design3d-patent-col" style={{ maxWidth: 'none' }}>
+                <h3 className="design3d-col-title">Your plan</h3>
+                <p className="muted" style={{ marginTop: 0, fontSize: '0.88rem' }}>
+                  Opening answers from step 1. Your teacher reviews them before the checklist unlocks.
+                </p>
+                <label className="patent-field">
+                  <span className="patent-label">What are you going to make</span>
+                  <textarea
+                    readOnly
+                    rows={3}
+                    value={patent.field1}
+                    style={{ resize: 'vertical' as const, opacity: 0.95 }}
+                  />
+                </label>
+                <EmpathyForm value={empathy} disabled onChange={() => {}} />
+              </div>
             </div>
 
             <div className="design3d-plan-actions">
@@ -1030,11 +1162,19 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                 type="button"
                 className="btn-primary"
                 disabled={
-                  checklistSubmitted || !canStartChecklist || !allDone || submittingChecklist
+                  checklistSubmitted ||
+                  !canStartChecklist ||
+                  !allDone ||
+                  submittingChecklist ||
+                  (isPopUp && !uploadUrl)
                 }
                 onClick={() => void onSubmitChecklist()}
               >
-                {submittingChecklist ? 'Submitting…' : 'Submit checklist for teacher review'}
+                {submittingChecklist
+                  ? 'Submitting…'
+                  : isPopUp
+                    ? 'Submit for approval'
+                    : 'Submit checklist for teacher review'}
               </button>
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
                 After you submit, your teacher reviews your checklist and uploaded photo/video. Step 3 unlocks when they approve.
@@ -1117,11 +1257,16 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
                     submittingPatent ||
                     isFinalPending ||
                     !patent.field3.trim() ||
-                    !patent.field4.trim()
+                    !patent.field4.trim() ||
+                    (isPopUp && !uploadUrl)
                   }
                   onClick={() => void onSubmitForApproval()}
                 >
-                  {submittingPatent ? 'Submitting…' : 'Submit final application'}
+                  {submittingPatent
+                    ? 'Submitting…'
+                    : isPopUp
+                      ? 'Submit for approval'
+                      : 'Submit final application'}
               </button>
             </div>
           </>

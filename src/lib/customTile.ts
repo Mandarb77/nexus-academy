@@ -1,4 +1,5 @@
 import type { StepConfig, TileRow } from '../types/tile'
+import { isPopUpCardTile } from './popUpCardQuest'
 import { T_SHIRT_QUEST_SKILL_NAME, T_SHIRT_QUEST_STEPS } from './tShirtQuestSteps'
 
 /**
@@ -43,6 +44,7 @@ export function isTShirtPatentQuestTile(tile: TileRow): boolean {
  * Hardcoded tiles (Game Piece, Sticker) have steps = null and use dedicated components.
  */
 export function resolvedTileSteps(tile: TileRow): StepConfig[] {
+  if (isPopUpCardTile(tile)) return []
   const s = tile.steps
   if (Array.isArray(s) && s.length > 0) return s as StepConfig[]
   if (isTShirtPatentQuestTile(tile)) return T_SHIRT_QUEST_STEPS
@@ -54,5 +56,6 @@ export function resolvedTileSteps(tile: TileRow): StepConfig[] {
 }
 
 export function isCustomTile(tile: TileRow): boolean {
+  if (isPopUpCardTile(tile)) return false
   return resolvedTileSteps(tile).length > 0
 }
