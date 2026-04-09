@@ -406,14 +406,18 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     const empathyJson = serializeEmpathy(empathy)
     try {
       if (!plan.id) {
-        const { error } = await supabase.from('patents').insert({
-          student_id: user.id,
-          tile_id: tile.id,
-          field_1: patent.field1,
-          field_2: empathyJson,
-          stage: 'plan',
-          status: 'pending',
-        })
+        const { data, error } = await supabase
+          .from('patents')
+          .insert({
+            student_id: user.id,
+            tile_id: tile.id,
+            field_1: patent.field1,
+            field_2: empathyJson,
+            stage: 'plan',
+            status: 'pending',
+          })
+          .select('id')
+          .single()
         if (error) {
           if (error.code === '23505') {
             setPlanSubmitError('A plan is already on file. Refresh the page.')
@@ -422,6 +426,8 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
           }
           return
         }
+        const newId = (data as { id: string } | null)?.id ?? ''
+        if (newId) setPlan({ id: newId, status: 'pending' })
         localStorage.removeItem(field1DraftKey)
         setFlowBanner(
           'Plan sent for teacher approval. Step 2 (checklist) appears next — checkboxes turn on after your teacher approves.',
