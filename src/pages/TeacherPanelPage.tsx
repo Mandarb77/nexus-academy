@@ -525,7 +525,21 @@ export function TeacherPanelPage() {
   const approvePlan = async (id: string) => {
     if (!isSupabaseConfigured) return
     setActingPlan(id, 'approve')
-    const { error } = await supabase.from('patents').update({ status: 'approved' }).eq('id', id)
+    const row = planRows.find((r) => r.id === id) ?? null
+    // Be resilient to accidental duplicate plan rows: approve all pending plan rows for this student+tile.
+    const q = supabase
+      .from('patents')
+      .update({ status: 'approved' })
+      .eq('id', id)
+    const { error } = row
+      ? await supabase
+          .from('patents')
+          .update({ status: 'approved' })
+          .eq('student_id', row.student_id)
+          .eq('tile_id', row.tile_id)
+          .eq('stage', 'plan')
+          .eq('status', 'pending')
+      : await q
     clearActingPlan()
     if (error) {
       console.error('approve plan:', error.message)
@@ -537,10 +551,19 @@ export function TeacherPanelPage() {
   const returnPlan = async (id: string) => {
     if (!isSupabaseConfigured) return
     setActingPlan(id, 'return')
-    const { error } = await supabase
-      .from('patents')
-      .update({ status: 'returned', checklist_submitted: false })
-      .eq('id', id)
+    const row = planRows.find((r) => r.id === id) ?? null
+    // Be resilient to accidental duplicate plan rows: return all plan rows for this student+tile.
+    const { error } = row
+      ? await supabase
+          .from('patents')
+          .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
+          .eq('student_id', row.student_id)
+          .eq('tile_id', row.tile_id)
+          .eq('stage', 'plan')
+      : await supabase
+          .from('patents')
+          .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
+          .eq('id', id)
     clearActingPlan()
     if (error) {
       console.error('return plan:', error.message)
@@ -553,10 +576,20 @@ export function TeacherPanelPage() {
     if (!isSupabaseConfigured) return
     setActingChecklistId(id)
     setActingChecklistKind('approve')
-    const { error } = await supabase
-      .from('patents')
-      .update({ checklist_approved: true })
-      .eq('id', id)
+    const row = checklistRows.find((r) => r.id === id) ?? null
+    // Be resilient to accidental duplicate plan rows: approve checklist for this student+tile plan row(s).
+    const { error } = row
+      ? await supabase
+          .from('patents')
+          .update({ checklist_approved: true })
+          .eq('student_id', row.student_id)
+          .eq('tile_id', row.tile_id)
+          .eq('stage', 'plan')
+          .eq('checklist_submitted', true)
+      : await supabase
+          .from('patents')
+          .update({ checklist_approved: true })
+          .eq('id', id)
     setActingChecklistId(null)
     setActingChecklistKind(null)
     if (error) {
@@ -570,10 +603,18 @@ export function TeacherPanelPage() {
     if (!isSupabaseConfigured) return
     setActingChecklistId(id)
     setActingChecklistKind('return')
-    const { error } = await supabase
-      .from('patents')
-      .update({ checklist_submitted: false, checklist_approved: false })
-      .eq('id', id)
+    const row = checklistRows.find((r) => r.id === id) ?? null
+    const { error } = row
+      ? await supabase
+          .from('patents')
+          .update({ checklist_submitted: false, checklist_approved: false })
+          .eq('student_id', row.student_id)
+          .eq('tile_id', row.tile_id)
+          .eq('stage', 'plan')
+      : await supabase
+          .from('patents')
+          .update({ checklist_submitted: false, checklist_approved: false })
+          .eq('id', id)
     setActingChecklistId(null)
     setActingChecklistKind(null)
     if (error) {
