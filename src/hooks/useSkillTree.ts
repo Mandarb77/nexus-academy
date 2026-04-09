@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { pickPrimaryPlanPatentRow } from '../lib/patentPlanRow'
+import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
@@ -128,7 +128,7 @@ export function useSkillTree() {
     }
     const next = new Map<string, PatentProgress>()
     for (const [tid, list] of byTile) {
-      const row = pickPrimaryPlanPatentRow(list, normalizePatentPlanStatus)
+      const { primary: row } = pickStudentPlanPatentContext(list, normalizePatentPlanStatus)
       if (!row) continue
       const rawCs = row.checklist_state as unknown
       const cs = Array.isArray(rawCs) ? (rawCs as boolean[]) : []

@@ -32,7 +32,12 @@ import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 import { isTShirtPatentQuestTile, resolvedTileSteps } from '../lib/customTile'
-import { pickPrimaryPlanPatentRow } from '../lib/patentPlanRow'
+import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
+import {
+  mergeChecklistFromDraft,
+  readChecklistDraft,
+  writeChecklistDraft,
+} from '../lib/patentChecklistDraft'
 import { skillTreeGuildModifier } from '../lib/guildTree'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import { T_SHIRT_QUEST_CHECKLIST_FOOTER } from '../lib/tShirtQuestSteps'
@@ -92,6 +97,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const backRoute = guildBackRoute(tile.guild)
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
+  const checklistDraftKey = `nexus:patent-checklist-draft:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
   const [initialised, setInitialised] = useState(false)
@@ -114,6 +120,8 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const [checklistSubmitted, setChecklistSubmitted] = useState(false)
   const [checklistApproved, setChecklistApproved] = useState(false)
   const [submittingChecklist, setSubmittingChecklist] = useState(false)
+  const [checklistUnlocked, setChecklistUnlocked] = useState(false)
+  const [checklistSaveError, setChecklistSaveError] = useState<string | null>(null)
   const [approvalNotice, setApprovalNotice] = useState<{ message: string; tone: 'success' | 'returned' } | null>(null)
   const [finalApproval, setFinalApproval] = useState<{ wp: number; gold: number } | null>(null)
   const bannerFiredRef = useRef(false)
@@ -135,6 +143,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   }, [tile.id])
 
   const canUseDb = Boolean(user?.id)
+  const canStartChecklist = checklistUnlocked && !(checklistSubmitted && !checklistApproved)
 
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) return
@@ -156,23 +165,11 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       return
     }
 
-    const row = pickPrimaryPlanPatentRow(
+    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(
       (data ?? []) as { id: string; status: string; created_at: string }[],
       (s) => normalizePlanStatus(s),
-    ) as {
-      id: string
-      status: string
-      stage: string
-      field_1?: string | null
-      field_2?: string | null
-      field_3?: string | null
-      field_4?: string | null
-      checklist_state?: unknown
-      checklist_submitted?: boolean | null
-      checklist_approved?: boolean | null
-      upload_url?: string | null
-      process_upload_url?: string | null
-    } | undefined
+    )
+    setChecklistUnlocked(canUnlockChecklist)
 
     if (!row) {
       setPlan({ id: '', status: 'none' })
@@ -182,6 +179,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       setProcessUploadUrl(null)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
+      setChecklistUnlocked(false)
       const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
       const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
       setPatent((p) => ({ ...p, field1: draftF1 }))
@@ -211,7 +209,8 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       ...rawCsArr.slice(0, steps.length),
       ...Array(Math.max(0, steps.length - rawCsArr.length)).fill(false),
     ]
-    setChecks(cs)
+    const draft = readChecklistDraft(localStorage.getItem(checklistDraftKey))
+    setChecks(mergeChecklistFromDraft(cs, draft, row.id))
     setUploadUrl(row.upload_url ?? null)
     setProcessUploadUrl(row.process_upload_url ?? null)
 
@@ -230,7 +229,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(row.field_2 ?? null))
 
     setInitialised(true)
-  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, checklistDraftKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     void loadFromDatabase()
@@ -304,7 +303,6 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       })
   }, [initialised, completionStatus, tile.id, user?.id])
 
-  const canStartChecklist = plan.status === 'approved'
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === steps.length
 
@@ -346,20 +344,26 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   // Auto-advance the student UI when teacher approvals arrive via realtime.
   useEffect(() => {
     if (!initialised) return
-    if (plan.status === 'approved' && phase === 1 && maxPhase >= 2) {
+    if (checklistUnlocked && phase === 1 && maxPhase >= 2) {
       goPhase(2)
     }
     if (checklistApproved && phase === 2 && maxPhase >= 3) {
       goPhase(3)
     }
-  }, [initialised, plan.status, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialised, checklistUnlocked, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     // While awaiting checklist review, prevent edits that would desync what the teacher is reviewing.
     // If a teacher has already approved the checklist, allow edits again (final submission is still gated by allDone).
     if (!pid || (checklistSubmitted && !checklistApproved)) return
+    writeChecklistDraft(checklistDraftKey, pid, nextArr)
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
-    if (error) console.error('[GenericPatent] checklist save:', error.message)
+    if (error) {
+      console.error('[GenericPatent] checklist save:', error.message)
+      setChecklistSaveError(`Could not save checklist: ${error.message}`)
+      return
+    }
+    setChecklistSaveError(null)
   }
 
   const saveFieldToDb = async (fieldName: 'field_2' | 'field_3' | 'field_4', value: string, pid: string) => {
@@ -681,6 +685,12 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
             <p className="muted" style={{ marginTop: 0 }}>
               {doneCount} of {steps.length} steps complete. Checkboxes save as you go.
             </p>
+
+            {checklistSaveError ? (
+              <p className="error" role="alert" style={{ margin: '0 0 0.75rem' }}>
+                {checklistSaveError}
+              </p>
+            ) : null}
 
             {!planSubmitted ? (
               <p className="muted">Submit step 1 to your teacher first.</p>

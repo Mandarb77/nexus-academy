@@ -17,7 +17,12 @@ import {
   usesGamePieceStylePatentPage,
 } from '../lib/popUpCardQuest'
 import { supabase } from '../lib/supabase'
-import { pickPrimaryPlanPatentRow } from '../lib/patentPlanRow'
+import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
+import {
+  mergeChecklistFromDraft,
+  readChecklistDraft,
+  writeChecklistDraft,
+} from '../lib/patentChecklistDraft'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
@@ -71,6 +76,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
+  const checklistDraftKey = `nexus:patent-checklist-draft:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
   const [initialised, setInitialised] = useState(false)
@@ -114,11 +120,14 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const [checklistSubmitted, setChecklistSubmitted] = useState(false)
   const [checklistApproved, setChecklistApproved] = useState(false)
   const [submittingChecklist, setSubmittingChecklist] = useState(false)
+  const [checklistUnlocked, setChecklistUnlocked] = useState(false)
+  const [checklistSaveError, setChecklistSaveError] = useState<string | null>(null)
 
   /** Pick initial phase once per tile+user after load; avoid resetting from sessionStorage every render. */
   const bootstrappedForTileRef = useRef<string | null>(null)
 
   const canUseDb = Boolean(user?.id)
+  const canStartChecklist = checklistUnlocked && !(checklistSubmitted && !checklistApproved)
 
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) return
@@ -141,22 +150,11 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       return
     }
 
-    const row = pickPrimaryPlanPatentRow(
+    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(
       (data ?? []) as { id: string; status: string; created_at: string }[],
       (s) => normalizePlanStatus(s),
-    ) as {
-      id: string
-      status: string
-      field_1: string
-      field_2: string | null
-      field_3: string | null
-      field_4: string | null
-      checklist_state: unknown
-      checklist_submitted?: boolean | null
-      checklist_approved?: boolean | null
-      upload_url?: string | null
-      process_upload_url?: string | null
-    } | undefined
+    )
+    setChecklistUnlocked(canUnlockChecklist)
 
     if (!row) {
       localStorage.removeItem(field1DraftKey)
@@ -169,6 +167,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setProcessUploadUrl(null)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
+      setChecklistUnlocked(false)
       const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
       const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
       setPatent((p) => ({ ...p, field1: draftF1 }))
@@ -203,7 +202,8 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       ...rawCsArr.slice(0, clen),
       ...Array(Math.max(0, clen - rawCsArr.length)).fill(false),
     ]
-    setChecks(cs)
+    const draft = readChecklistDraft(localStorage.getItem(checklistDraftKey))
+    setChecks(mergeChecklistFromDraft(cs, draft, row.id))
     setUploadUrl(row.upload_url ?? null)
     setProcessUploadUrl(row.process_upload_url ?? null)
 
@@ -222,7 +222,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
     setInitialised(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, tile, studentId, field1DraftKey, empathyDraftKey])
+  }, [user?.id, tile, studentId, field1DraftKey, empathyDraftKey, checklistDraftKey])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -310,7 +310,6 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       })
   }, [initialised, completionStatus, tile.id, user?.id])
 
-  const canStartChecklist = plan.status === 'approved'
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === checklistLen
 
@@ -364,21 +363,27 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   // Auto-advance the student UI when teacher approvals arrive via realtime.
   useEffect(() => {
     if (!initialised) return
-    if (plan.status === 'approved' && phase === 1 && maxPhase >= 2) {
+    if (checklistUnlocked && phase === 1 && maxPhase >= 2) {
       goPhase(2)
     }
     if (checklistApproved && phase === 2 && maxPhase >= 3) {
       goPhase(3)
     }
-  }, [initialised, plan.status, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialised, checklistUnlocked, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     if (!pid || (checklistSubmitted && !checklistApproved)) return
+    writeChecklistDraft(checklistDraftKey, pid, nextArr)
     const { error } = await supabase
       .from('patents')
       .update({ checklist_state: nextArr })
       .eq('id', pid)
-    if (error) console.error('[PatentContent] checklist save:', error.message)
+    if (error) {
+      console.error('[PatentContent] checklist save:', error.message)
+      setChecklistSaveError(`Could not save checklist: ${error.message}`)
+      return
+    }
+    setChecklistSaveError(null)
   }
 
   const saveFieldToDb = async (
@@ -904,6 +909,12 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         <p className="muted" style={{ marginTop: 0 }}>
           {doneCount} of {checklistLen} steps complete. Checkboxes save as you go.
         </p>
+
+        {checklistSaveError ? (
+          <p className="error" role="alert" style={{ margin: '0 0 0.75rem' }}>
+            {checklistSaveError}
+          </p>
+        ) : null}
 
         {!planSubmitted ? (
           <p className="muted">Submit step 1 to your teacher first.</p>
