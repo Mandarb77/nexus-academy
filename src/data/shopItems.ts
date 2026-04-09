@@ -1,4 +1,4 @@
-/** Keys must match `buy_shop_item` in `008_gold_shop.sql`. */
+/** Keys must match `buy_shop_item` (see `036_shop_phone_time_45_and_daily_limit.sql`). */
 export type ShopItemKey = 'workshop_dj' | 'phone_time' | 'free_tardy' | 'snack'
 
 export type ShopItem = {
@@ -18,8 +18,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     key: 'phone_time',
     name: 'Phone time',
-    description: '10 minutes of phone use.',
-    cost: 20,
+    description:
+      '10 minutes of phone use. Limit: one purchase per class period (once per school day, Chicago time).',
+    cost: 45,
   },
   {
     key: 'free_tardy',
