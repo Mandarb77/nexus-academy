@@ -17,6 +17,7 @@ import {
   usesGamePieceStylePatentPage,
 } from '../lib/popUpCardQuest'
 import { supabase } from '../lib/supabase'
+import { pickPrimaryPlanPatentRow } from '../lib/patentPlanRow'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
@@ -132,7 +133,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       .eq('tile_id', tile.id)
       .eq('stage', 'plan')
       .order('created_at', { ascending: false })
-      .limit(1)
+      .limit(50)
 
     if (error) {
       console.error('[PatentContent] load from db:', error.message)
@@ -140,7 +141,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       return
     }
 
-    const row = (data ?? [])[0] as {
+    const row = pickPrimaryPlanPatentRow(
+      (data ?? []) as { id: string; status: string; created_at: string }[],
+      (s) => normalizePlanStatus(s),
+    ) as {
       id: string
       status: string
       field_1: string

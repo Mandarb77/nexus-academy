@@ -32,6 +32,7 @@ import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 import { isTShirtPatentQuestTile, resolvedTileSteps } from '../lib/customTile'
+import { pickPrimaryPlanPatentRow } from '../lib/patentPlanRow'
 import { skillTreeGuildModifier } from '../lib/guildTree'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import { T_SHIRT_QUEST_CHECKLIST_FOOTER } from '../lib/tShirtQuestSteps'
@@ -147,7 +148,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       .eq('tile_id', tile.id)
       .eq('stage', 'plan')
       .order('created_at', { ascending: false })
-      .limit(1)
+      .limit(50)
 
     if (error) {
       console.error('[GenericPatent] load:', error.message)
@@ -155,7 +156,10 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       return
     }
 
-    const row = (data ?? [])[0] as {
+    const row = pickPrimaryPlanPatentRow(
+      (data ?? []) as { id: string; status: string; created_at: string }[],
+      (s) => normalizePlanStatus(s),
+    ) as {
       id: string
       status: string
       stage: string

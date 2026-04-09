@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { pickPrimaryPlanPatentRow } from '../lib/patentPlanRow'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
@@ -22,6 +23,12 @@ function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
 }
 
 const GUILD_ORDER = ['forge', 'prism', 'folded path', 'silicon covenant', 'void navigators']
+
+function normalizePatentPlanStatus(s: unknown): string {
+  const x = String(s ?? '').trim().toLowerCase()
+  if (x === 'none' || x === 'pending' || x === 'approved' || x === 'returned') return x
+  return 'pending'
+}
 
 export type TileCompletionState = {
   status: SkillCompletionStatus
@@ -95,7 +102,7 @@ export function useSkillTree() {
     }
     const { data, error } = await supabase
       .from('patents')
-      .select('id, tile_id, status, checklist_state')
+      .select('id, tile_id, status, checklist_state, created_at')
       .eq('student_id', studentId)
       .eq('stage', 'plan')
       .order('created_at', { ascending: false })
@@ -104,18 +111,32 @@ export function useSkillTree() {
       console.error('patents progress:', error.message)
       return
     }
-    const next = new Map<string, PatentProgress>()
+    const byTile = new Map<
+      string,
+      { id: string; tile_id: string; status: string; checklist_state: unknown; created_at: string }[]
+    >()
     for (const row of data ?? []) {
       const tid = row.tile_id as string
-      if (!next.has(tid)) {
-        const rawCs = row.checklist_state as unknown
-        const cs = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
-        next.set(tid, {
-          id: row.id as string,
-          planStatus: row.status as string,
-          checklistState: cs,
-        })
-      }
+      if (!byTile.has(tid)) byTile.set(tid, [])
+      byTile.get(tid)!.push({
+        id: row.id as string,
+        tile_id: tid,
+        status: row.status as string,
+        checklist_state: row.checklist_state,
+        created_at: row.created_at as string,
+      })
+    }
+    const next = new Map<string, PatentProgress>()
+    for (const [tid, list] of byTile) {
+      const row = pickPrimaryPlanPatentRow(list, normalizePatentPlanStatus)
+      if (!row) continue
+      const rawCs = row.checklist_state as unknown
+      const cs = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
+      next.set(tid, {
+        id: row.id,
+        planStatus: row.status,
+        checklistState: cs,
+      })
     }
     setPatentProgressByTileId(next)
   }, [studentId])

@@ -10,6 +10,7 @@ import { isStickerTile } from '../lib/stickerTile'
 import { STICKER_STEPS } from '../lib/stickerSteps'
 import { supabase } from '../lib/supabase'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
+import { pickPrimaryPlanPatentRow } from '../lib/patentPlanRow'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
@@ -104,7 +105,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       .eq('tile_id', tile.id)
       .eq('stage', 'plan')
       .order('created_at', { ascending: false })
-      .limit(1)
+      .limit(50)
 
     if (error) {
       console.error('[StickerPatent] load:', error.message)
@@ -112,7 +113,10 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       return
     }
 
-    const row = (data ?? [])[0] as {
+    const row = pickPrimaryPlanPatentRow(
+      (data ?? []) as { id: string; status: string; created_at: string }[],
+      (s) => normalizePlanStatus(s),
+    ) as {
       id: string
       status: string
       field_1: string
