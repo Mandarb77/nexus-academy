@@ -10,6 +10,7 @@ import { isStickerTile } from '../lib/stickerTile'
 import { STICKER_STEPS } from '../lib/stickerSteps'
 import { supabase } from '../lib/supabase'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
+import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import {
   mergeChecklistFromDraft,
@@ -122,14 +123,15 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       return
     }
 
-    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(
-      (data ?? []) as { id: string; status: string; created_at: string }[],
-      (s) => normalizePlanStatus(s),
+    const rows = (data ?? []) as LoadedPlanPatentRow[]
+    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(rows, (s) =>
+      normalizePlanStatus(s),
     )
     setChecklistUnlocked(canUnlockChecklist)
 
     if (!row) {
-      localStorage.removeItem(field1DraftKey)
+      const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
+      const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
       localStorage.removeItem(`nexus:tile-checklist:${studentId}:${tile.id}`)
       localStorage.removeItem(`nexus:tile-patent:${studentId}:${tile.id}`)
       setChecks(EMPTY_CHECKS())
@@ -140,8 +142,6 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
       setChecklistUnlocked(false)
-      const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
-      const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
       setPatent((p) => ({ ...p, field1: draftF1 }))
       setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : EMPTY_EMPATHY)
       setInitialised(true)
@@ -184,12 +184,13 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       localStorage.removeItem(field1DraftKey)
       localStorage.removeItem(empathyDraftKey)
     }
+    const merged = fillPatentPlanFieldsFromRows(row, rows)
     setPatent({
-      field1: draftField1 ?? row.field_1 ?? '',
-      field3: row.field_3 ?? '',
-      field4: row.field_4 ?? '',
+      field1: draftField1 ?? merged.field_1,
+      field3: merged.field_3,
+      field4: merged.field_4,
     })
-    setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(row.field_2 ?? null))
+    setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(merged.field_2 || null))
 
     setInitialised(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps

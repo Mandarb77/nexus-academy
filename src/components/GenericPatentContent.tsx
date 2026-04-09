@@ -32,6 +32,7 @@ import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 import { isTShirtPatentQuestTile, resolvedTileSteps } from '../lib/customTile'
+import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import {
   mergeChecklistFromDraft,
@@ -165,9 +166,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       return
     }
 
-    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(
-      (data ?? []) as { id: string; status: string; created_at: string }[],
-      (s) => normalizePlanStatus(s),
+    const rows = (data ?? []) as LoadedPlanPatentRow[]
+    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(rows, (s) =>
+      normalizePlanStatus(s),
     )
     setChecklistUnlocked(canUnlockChecklist)
 
@@ -221,12 +222,13 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       localStorage.removeItem(empathyDraftKey)
     }
 
+    const merged = fillPatentPlanFieldsFromRows(row, rows)
     setPatent({
-      field1: draftField1 ?? row.field_1 ?? '',
-      field3: row.field_3 ?? '',
-      field4: row.field_4 ?? '',
+      field1: draftField1 ?? merged.field_1,
+      field3: merged.field_3,
+      field4: merged.field_4,
     })
-    setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(row.field_2 ?? null))
+    setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(merged.field_2 || null))
 
     setInitialised(true)
   }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, checklistDraftKey]) // eslint-disable-line react-hooks/exhaustive-deps
