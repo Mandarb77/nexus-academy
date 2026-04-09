@@ -18,7 +18,9 @@ import {
 } from '../lib/popUpCardQuest'
 import { supabase } from '../lib/supabase'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
+import { computeInitialPatentPhase } from '../lib/patentPhaseBootstrap'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
+import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/patentPlanStatus'
 import {
   mergeChecklistFromDraft,
   readChecklistDraft,
@@ -36,7 +38,7 @@ type PatentDraft = {
   field4: string
 }
 
-type PlanStatus = 'none' | 'pending' | 'approved' | 'returned'
+type PlanStatus = UiPatentPlanStatus
 type PlanState = { id: string; status: PlanStatus }
 
 type Props = {
@@ -49,12 +51,6 @@ const TINKERCAD_TEMPLATE_URL =
   'https://www.tinkercad.com/things/1v3brIkBiqu/edit?returnTo=%2Fclassrooms%2F7CUhdwU3tyT%2Factivities%2FkSIm4lUkPQI&sharecode=DX6LI_t08XwEVWpoDJ2Puk_CeJgr5t7fhARIwRkhF2Q'
 
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
-
-function normalizePlanStatus(input: unknown): PlanStatus {
-  const s = String(input ?? '').trim().toLowerCase()
-  if (s === 'none' || s === 'pending' || s === 'approved' || s === 'returned') return s
-  return 'pending'
-}
 
 function patentTreePathForGuild(guild: string): string {
   return skillTreeGuildModifier(guild) === 'prism' ? '/tree/prism' : '/tree/forge'
@@ -131,7 +127,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const canStartChecklist = checklistUnlocked && !(checklistSubmitted && !checklistApproved)
 
   const loadFromDatabase = useCallback(async () => {
-    if (!user?.id) return
+    if (!user?.id) {
+      setInitialised(true)
+      return
+    }
     const clen = isPopUpCardTile(tile) ? POP_UP_CARD_STEPS.length : PERSONAL_GAME_PIECE_STEPS.length
 
     const { data, error } = await supabase
@@ -152,9 +151,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     }
 
     const rows = (data ?? []) as LoadedPlanPatentRow[]
-    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(rows, (s) =>
-      normalizePlanStatus(s),
-    )
+    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(rows, normalizePatentPlanStatus)
     setChecklistUnlocked(canUnlockChecklist)
 
     if (!row) {
@@ -172,11 +169,17 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       setChecklistUnlocked(false)
       setPatent((p) => ({ ...p, field1: draftF1 }))
       setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : EMPTY_EMPATHY)
+      console.log('[PatentLoad] PersonalGamePiecePatent', {
+        tileId: tile.id,
+        studentId: user.id,
+        primaryRow: null,
+        rowCount: rows.length,
+      })
       setInitialised(true)
       return
     }
 
-    const planStatus = normalizePlanStatus(row.status)
+    const planStatus = normalizePatentPlanStatus(row.status)
     setPlan({ id: row.id, status: planStatus })
 
     // Only reset checklist when the teacher explicitly returns the plan — not while it is pending.
@@ -214,6 +217,28 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       localStorage.removeItem(empathyDraftKey)
     }
     const merged = fillPatentPlanFieldsFromRows(row, rows)
+    console.log('[PatentLoad] PersonalGamePiecePatent', {
+      tileId: tile.id,
+      studentId: user.id,
+      primaryRow: {
+        id: row.id,
+        status: row.status,
+        field_1: row.field_1 ?? null,
+        field_2: row.field_2 ?? null,
+        field_3: row.field_3 ?? null,
+        field_4: row.field_4 ?? null,
+        checklist_submitted: row.checklist_submitted,
+        checklist_approved: row.checklist_approved,
+      },
+      mergedIntoForm: {
+        field_1: merged.field_1,
+        field_2: merged.field_2,
+        field_3: merged.field_3,
+        field_4: merged.field_4,
+      },
+      checklistUnlocked: canUnlockChecklist,
+      rowCount: rows.length,
+    })
     setPatent({
       field1: draftField1 ?? merged.field_1,
       field3: merged.field_3,
@@ -328,21 +353,16 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     const marker = `${tile.id}:${user?.id ?? ''}`
     if (bootstrappedForTileRef.current !== marker) {
       bootstrappedForTileRef.current = marker
-      const suggested: 1 | 2 | 3 = !planSubmitted ? 1 : !checklistApproved ? 2 : 3
       const stored = readStoredPhase(phaseKey)
-      let next: 1 | 2 | 3
-      if (stored >= 1 && stored <= maxPhase) {
-        next = stored as 1 | 2 | 3
-        if (next === 1 && planSubmitted && suggested >= 2) {
-          next = Math.min(suggested, maxPhase) as 1 | 2 | 3
-        }
-      } else {
-        next = suggested
-      }
-      next = Math.min(Math.max(next, 1), maxPhase) as 1 | 2 | 3
+      const next = computeInitialPatentPhase({
+        storedRaw: stored,
+        maxPhase,
+        planSubmitted,
+        checklistUnlocked,
+        checklistApproved,
+      })
       setPhase(next)
       sessionStorage.setItem(phaseKey, String(next))
-      return
     }
     setPhase((p) => (p > maxPhase ? maxPhase : p))
   }, [
@@ -351,6 +371,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     user?.id,
     maxPhase,
     planSubmitted,
+    checklistUnlocked,
     checklistApproved,
     phaseKey,
   ])
@@ -459,9 +480,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     }
   }
 
-  const field1Locked = plan.status === 'pending'
+  const field1Locked = plan.status === 'pending' || plan.status === 'approved'
 
   const onStep1Continue = async () => {
+    if (plan.status === 'pending' || plan.status === 'approved') return
     setPlanSubmitError(null)
     setFlowBanner(null)
     if (!user?.id) {
@@ -820,7 +842,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
           <EmpathyForm
             value={empathy}
-            disabled={!user?.id}
+            disabled={!user?.id || field1Locked}
             onChange={(next) => {
               setEmpathy(next)
               localStorage.setItem(empathyDraftKey, serializeEmpathy(next))
@@ -853,6 +875,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               type="button"
               className="btn-primary"
               disabled={
+                field1Locked ||
                 !canUseDb ||
                 !user?.id ||
                 submittingStep1 ||
@@ -872,6 +895,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
             {plan.status === 'pending' && plan.id ? (
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
                 Plan submitted — waiting for teacher approval. The checklist unlocks after your teacher approves.
+              </p>
+            ) : plan.status === 'approved' && plan.id ? (
+              <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+                Plan approved — opening answers below are read-only. Open Step 2 (checklist) to continue.
               </p>
             ) : !plan.id ? (
               <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
@@ -23,12 +24,6 @@ function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
 }
 
 const GUILD_ORDER = ['forge', 'prism', 'folded path', 'silicon covenant', 'void navigators']
-
-function normalizePatentPlanStatus(s: unknown): string {
-  const x = String(s ?? '').trim().toLowerCase()
-  if (x === 'none' || x === 'pending' || x === 'approved' || x === 'returned') return x
-  return 'pending'
-}
 
 export type TileCompletionState = {
   status: SkillCompletionStatus
