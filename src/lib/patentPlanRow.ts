@@ -37,3 +37,38 @@ export function pickPrimaryPlanPatentRow<
 >(rows: T[] | null | undefined, normalizeStatus: (s: unknown) => string): T | undefined {
   return pickStudentPlanPatentContext(rows, normalizeStatus).primary
 }
+
+export type StudentPatentPrimaryResult<T> = {
+  primary: T | undefined
+  rowsForMerge: T[]
+  canUnlockChecklist: boolean
+  source: 'plan' | 'packet' | 'none'
+}
+
+/**
+ * Load both `plan` and `packet` stage rows. Plan-stage rows drive the checklist; if the student
+ * already advanced to `packet` (final submission), fall back to the newest packet row so answers
+ * still hydrate after refresh.
+ */
+export function selectStudentPatentPrimary<
+  T extends { id: string; status: unknown; created_at: string; stage?: unknown },
+>(allRows: T[], normalizeStatus: (s: unknown) => string): StudentPatentPrimaryResult<T> {
+  const planRows = allRows.filter((r) => String(r.stage ?? '').trim().toLowerCase() === 'plan')
+  const packetRows = allRows
+    .filter((r) => String(r.stage ?? '').trim().toLowerCase() === 'packet')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+  if (planRows.length > 0) {
+    const { primary, canUnlockChecklist } = pickStudentPlanPatentContext(planRows, normalizeStatus)
+    return { primary, rowsForMerge: planRows, canUnlockChecklist, source: 'plan' }
+  }
+  if (packetRows.length > 0) {
+    return {
+      primary: packetRows[0],
+      rowsForMerge: packetRows,
+      canUnlockChecklist: false,
+      source: 'packet',
+    }
+  }
+  return { primary: undefined, rowsForMerge: [], canUnlockChecklist: false, source: 'none' }
+}

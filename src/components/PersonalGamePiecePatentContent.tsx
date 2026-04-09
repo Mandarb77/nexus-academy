@@ -19,7 +19,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
 import { computeInitialPatentPhase } from '../lib/patentPhaseBootstrap'
-import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
+import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/patentPlanStatus'
 import {
   mergeChecklistFromDraft,
@@ -140,7 +140,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       )
       .eq('student_id', user.id)
       .eq('tile_id', tile.id)
-      .eq('stage', 'plan')
+      .in('stage', ['plan', 'packet'])
       .order('created_at', { ascending: false })
       .limit(50)
 
@@ -150,8 +150,11 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       return
     }
 
-    const rows = (data ?? []) as LoadedPlanPatentRow[]
-    const { primary: row, canUnlockChecklist } = pickStudentPlanPatentContext(rows, normalizePatentPlanStatus)
+    const allRows = (data ?? []) as LoadedPlanPatentRow[]
+    const { primary: row, rowsForMerge, canUnlockChecklist } = selectStudentPatentPrimary(
+      allRows,
+      normalizePatentPlanStatus,
+    )
 
     if (!row) {
       const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
@@ -171,7 +174,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         tileId: tile.id,
         studentId: user.id,
         primaryRow: null,
-        rowCount: rows.length,
+        rowCount: allRows.length,
       })
       setInitialised(true)
       return
@@ -204,7 +207,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       ...Array(Math.max(0, clen - rawCsArr.length)).fill(false),
     ]
     const draft = readChecklistDraft(localStorage.getItem(checklistDraftKey))
-    setChecks(mergeChecklistFromDraft(cs, draft, row.id))
+    const mergedChecks = mergeChecklistFromDraft(cs, draft, row.id)
+    setChecks(mergedChecks)
+    writeChecklistDraft(checklistDraftKey, row.id, mergedChecks)
     setUploadUrl(row.upload_url ?? null)
     setProcessUploadUrl(row.process_upload_url ?? null)
 
@@ -214,7 +219,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       localStorage.removeItem(field1DraftKey)
       localStorage.removeItem(empathyDraftKey)
     }
-    const merged = fillPatentPlanFieldsFromRows(row, rows)
+    const merged = fillPatentPlanFieldsFromRows(row, rowsForMerge)
     console.log('[PatentLoad] PersonalGamePiecePatent', {
       tileId: tile.id,
       studentId: user.id,
@@ -235,7 +240,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         field_4: merged.field_4,
       },
       pickCanUnlockChecklist: canUnlockChecklist,
-      rowCount: rows.length,
+      rowCount: allRows.length,
     })
     setPatent({
       field1: draftField1 ?? merged.field_1,
