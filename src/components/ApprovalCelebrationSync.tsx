@@ -26,6 +26,7 @@ export function ApprovalCelebrationSync() {
           const next = payload.new as Record<string, unknown>
           if (next.status !== 'approved') return
           if (prev.status === 'approved') return
+          if (next.wp_awarded == null || next.gold_awarded == null) return
           const id = next.id != null ? String(next.id) : ''
           if (!id) return
           const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : Number(next.wp_awarded) || 0

@@ -27,6 +27,8 @@ type PatentRow = {
   field_2: string
   field_3: string
   field_4: string
+  /** Final submission rows use `packet`; plan-stage rows must not approve via skill_completions. */
+  stage: string | null
 }
 
 type PendingRedemptionRow = {
@@ -322,7 +324,7 @@ export function TeacherPanelPage() {
     if (patentIds.length > 0) {
       const { data: pats, error: patErr } = await supabase
         .from('patents')
-        .select('id, field_1, field_2, field_3, field_4')
+        .select('id, field_1, field_2, field_3, field_4, stage')
         .in('id', patentIds)
       if (patErr) {
         console.error('patents for teacher panel:', patErr.message)
@@ -339,6 +341,7 @@ export function TeacherPanelPage() {
           field_2: (p.field_2 as string) ?? '',
           field_3: (p.field_3 as string) ?? '',
           field_4: (p.field_4 as string) ?? '',
+          stage: (p.stage as string | null) ?? null,
         })
       }
     }
@@ -437,6 +440,20 @@ export function TeacherPanelPage() {
 
   const approveSkill = async (id: string) => {
     if (!isSupabaseConfigured) return
+    const row = skillRows.find((r) => r.id === id)
+    const pid = row?.patent_id ?? null
+    if (pid) {
+      const st = row?.patent?.stage ?? ''
+      if (String(st).trim().toLowerCase() !== 'packet') {
+        console.error(
+          'approve skill: blocked — linked patent is not final packet stage (no WP/gold at plan/checklist gates)',
+        )
+        setAdminMessage(
+          'Cannot approve this completion: the linked patent is not a final packet submission. Use Plan approvals or Checklist approvals instead.',
+        )
+        return
+      }
+    }
     setActing({ scope: 'skill', id, action: 'approve' })
     const { error } = await supabase.from('skill_completions').update({ status: 'approved' }).eq('id', id)
     clearActing()

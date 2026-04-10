@@ -310,14 +310,16 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
           void loadFromDatabase()
           void refresh()
           if (prev.status !== 'approved' && next.status === 'approved') {
-            const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : 0
-            const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
-            localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
-            localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
-            const cid = next.id != null ? String(next.id) : ''
-            if (cid) queueApprovalCelebration({ wp, gold, completionId: cid })
-            bannerFiredRef.current = true
-            setFinalApproval({ wp, gold })
+            if (next.wp_awarded != null && next.gold_awarded != null) {
+              const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : 0
+              const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
+              localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
+              localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
+              const cid = next.id != null ? String(next.id) : ''
+              if (cid) queueApprovalCelebration({ wp, gold, completionId: cid })
+              bannerFiredRef.current = true
+              setFinalApproval({ wp, gold })
+            }
           } else if (next.status === 'returned') {
             showApprovalNotice('↩ Final application returned — check with your teacher and resubmit.', 'returned')
           }
