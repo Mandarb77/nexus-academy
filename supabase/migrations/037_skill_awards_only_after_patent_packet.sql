@@ -29,18 +29,13 @@ begin
       end if;
     end if;
 
-    if new.wp_awarded is null then
-      select coalesce(t.wp_value, 0) into v_wp
-      from public.tiles t
-      where t.id = new.tile_id;
-      new.wp_awarded := coalesce(v_wp, 0);
-    end if;
-    if new.gold_awarded is null then
-      select coalesce(t.gold_value, 10) into v_gold
-      from public.tiles t
-      where t.id = new.tile_id;
-      new.gold_awarded := coalesce(v_gold, 10);
-    end if;
+    select coalesce(t.wp_value, 0), coalesce(t.gold_value, 10)
+      into v_wp, v_gold
+    from public.tiles t
+    where t.id = new.tile_id;
+
+    new.wp_awarded := coalesce(v_wp, 0);
+    new.gold_awarded := coalesce(v_gold, 10);
   end if;
   return new;
 end;

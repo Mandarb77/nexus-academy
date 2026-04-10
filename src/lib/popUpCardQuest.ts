@@ -8,7 +8,7 @@ export const POP_UP_CARD_RECIPIENT_GUIDANCE =
   'Who can you make this for? A teacher who has helped you. A staff member you want to thank — custodial staff, kitchen staff, and office staff all count and are often overlooked. A student who is new to the school. A classmate who did something worth celebrating. Day students may also make this for a family member. The rule: you must know something specific about this person that shapes your design.'
 
 export const POP_UP_CARD_ORIGINAL_BONUS_NOTE =
-  'Fully original designs not using any template earn a 5 gold bonus — teacher decides at approval.'
+  'Fully original designs not using any template may deserve extra gold — set the quest’s gold value in the teacher Quest Builder to match what you award.'
 
 export const POP_UP_CARD_STEP2_RESOURCE_LINKS: { label: string; url: string }[] = [
   {

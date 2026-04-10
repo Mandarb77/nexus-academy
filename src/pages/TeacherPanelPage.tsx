@@ -3,9 +3,6 @@ import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
-import { isPopUpCardTile } from '../lib/popUpCardQuest'
-import type { TileRow } from '../types/tile'
-
 type TileInfo = {
   guild: string
   skill_name: string
@@ -101,17 +98,6 @@ type Acting =
   | { scope: 'redemption'; id: string; action: 'approve' | 'return' }
   | null
 
-function pendingRowIsPopUpCard(row: PendingSkillRow): boolean {
-  if (!row.tile) return false
-  return isPopUpCardTile({
-    id: row.tile_id,
-    guild: row.tile.guild,
-    skill_name: row.tile.skill_name,
-    wp_value: row.tile.wp_value,
-    gold_value: row.tile.gold_value,
-  } as TileRow)
-}
-
 function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
   const e = parseEmpathy(raw)
   const hasContent = e.who || e.why || e.what_changed || e.how_learned.length > 0
@@ -157,10 +143,6 @@ export function TeacherPanelPage() {
     () => new Map(),
   )
   const [resettingCompletionId, setResettingCompletionId] = useState<string | null>(null)
-  const [popUpOriginalBonusByCompletionId, setPopUpOriginalBonusByCompletionId] = useState<
-    Record<string, boolean>
-  >(() => ({}))
-
   const loadPending = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setSkillRows([])
@@ -456,29 +438,12 @@ export function TeacherPanelPage() {
   const approveSkill = async (id: string) => {
     if (!isSupabaseConfigured) return
     setActing({ scope: 'skill', id, action: 'approve' })
-    const row = skillRows.find((r) => r.id === id)
-    const baseGold = row?.tile?.gold_value ?? 10
-    let goldAwarded: number | undefined
-    if (row && pendingRowIsPopUpCard(row)) {
-      goldAwarded = baseGold + (popUpOriginalBonusByCompletionId[id] ? 5 : 0)
-    }
-    const { error } = await supabase
-      .from('skill_completions')
-      .update({
-        status: 'approved',
-        ...(goldAwarded != null ? { gold_awarded: goldAwarded } : {}),
-      })
-      .eq('id', id)
+    const { error } = await supabase.from('skill_completions').update({ status: 'approved' }).eq('id', id)
     clearActing()
     if (error) {
       console.error('approve skill:', error.message)
       return
     }
-    setPopUpOriginalBonusByCompletionId((prev) => {
-      const next = { ...prev }
-      delete next[id]
-      return next
-    })
     void loadPending()
   }
 
@@ -831,10 +796,11 @@ export function TeacherPanelPage() {
           <div>
             <h1 className="teacher-panel-title">Teacher panel</h1>
             <p className="muted teacher-panel-subtitle">
-              Review pending skill completions and inventory redemptions. For patent quests, approving
+              Review pending skill completions and inventory redemptions.               For patent quests, approving
               the plan or checklist does not award WP or gold — rewards are added only when you approve
-              the student in <strong>Skill completions</strong> (final packet check). For other quests,
-              approving the skill awards WP and gold. Return sends work back for resubmit. Approve a
+              the student in <strong>Skill completions</strong> (final packet check). Award amounts always
+              match each quest’s tile (WP and gold shown on the skill tree). For other quests, approving
+              the skill pays those amounts once. Return sends work back for resubmit. Approve a
               redemption when the student has used their shop item; return if they need to try again.
             </p>
           </div>
@@ -1051,32 +1017,6 @@ export function TeacherPanelPage() {
                             </>
                           ) : null}
                         </p>
-                        {pendingRowIsPopUpCard(row) ? (
-                          <label
-                            style={{
-                              display: 'flex',
-                              gap: '0.5rem',
-                              alignItems: 'flex-start',
-                              marginTop: '0.65rem',
-                              fontSize: '0.88rem',
-                              cursor: 'pointer',
-                              maxWidth: '28rem',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={popUpOriginalBonusByCompletionId[row.id] ?? false}
-                              onChange={(e) =>
-                                setPopUpOriginalBonusByCompletionId((prev) => ({
-                                  ...prev,
-                                  [row.id]: e.target.checked,
-                                }))
-                              }
-                              style={{ marginTop: '0.2rem' }}
-                            />
-                            <span>Award original design bonus — add 5 gold</span>
-                          </label>
-                        ) : null}
                         {row.patent ? (
                           <div className="teacher-panel-patent">
                             <p className="teacher-panel-patent-title">
