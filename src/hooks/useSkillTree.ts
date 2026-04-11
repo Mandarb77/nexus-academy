@@ -4,6 +4,7 @@ import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
+import { shouldHideTestQuestTileOnProd } from '../lib/devTestTwoStageQuest'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
@@ -157,7 +158,8 @@ export function useSkillTree() {
       console.error('tiles:', tileErr.message)
       setTiles([])
     } else {
-      setTiles(normalizeTilesFromApi(tileRows ?? []))
+      const all = normalizeTilesFromApi(tileRows ?? [])
+      setTiles(all.filter((t) => !shouldHideTestQuestTileOnProd(t)))
     }
 
     await Promise.all([refreshCompletions(), refreshPatentProgress()])

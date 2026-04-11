@@ -20,6 +20,7 @@ import { TeacherQuestsPage } from './pages/TeacherQuestsPage'
 import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
+import { PatentDevTestTwoStagePage } from './pages/PatentDevTestTwoStagePage'
 import { JoinPage } from './pages/JoinPage'
 import { ApprovalCelebrationHost } from './components/ApprovalCelebrationHost'
 import { ApprovalCelebrationSync } from './components/ApprovalCelebrationSync'
@@ -124,6 +125,14 @@ export default function App() {
             element={
               <StudentOnlyRoute>
                 <PatentCustomPage />
+              </StudentOnlyRoute>
+            }
+          />
+          <Route
+            path="/patent-dev-test-two-stage/:tileId"
+            element={
+              <StudentOnlyRoute>
+                <PatentDevTestTwoStagePage />
               </StudentOnlyRoute>
             }
           />

@@ -3,6 +3,7 @@ import type { TileRow } from '../types/tile'
 import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 import { isPopUpCardTile, POP_UP_CARD_STEPS } from '../lib/popUpCardQuest'
+import { isDevTestTwoStageTile } from '../lib/devTestTwoStageQuest'
 import { getPatentRoute } from '../lib/patentRoutes'
 import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
 import { isCustomTile, resolvedTileSteps } from '../lib/customTile'
@@ -22,6 +23,7 @@ function stepCount(tile: TileRow): number {
   if (isPersonalGamePieceTile(tile)) return PERSONAL_GAME_PIECE_STEPS.length
   if (isPopUpCardTile(tile)) return POP_UP_CARD_STEPS.length
   if (isStickerTile(tile)) return STICKER_STEPS.length
+  if (isDevTestTwoStageTile(tile)) return 2
   if (isCustomTile(tile)) return resolvedTileSteps(tile).length
   return 0
 }
@@ -42,7 +44,7 @@ export function SkillTilesList({
       if (isPersonalGamePieceTile(t)) return 0
       if (isPopUpCardTile(t)) return 0
       if (isStickerTile(t) && !isStickerQuestLocked(t)) return 1
-      if (isCustomTile(t)) return 2
+      if (isDevTestTwoStageTile(t) || isCustomTile(t)) return 2
       if (isStickerQuestLocked(t)) return 4
       return 3
     }

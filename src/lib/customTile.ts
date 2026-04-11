@@ -8,7 +8,8 @@ import { T_SHIRT_QUEST_SKILL_NAME, T_SHIRT_QUEST_STEPS } from './tShirtQuestStep
  * `/patent-custom` with `GenericPatentContent`. When the DB has no `steps`,
  * 25/26 get the embedded T-shirt checklist (IDs are authoritative).
  */
-const FULL_PATENT_QUEST_TEMPLATE_TILE_IDS = new Set(['5', '25', '26'])
+/** Generic patent template (plan / checklist / packet) — tile ids are stable in the seeded DB. */
+const FULL_PATENT_QUEST_TEMPLATE_TILE_IDS = new Set(['5', '21', '25', '27'])
 
 function normalizeSkillTitle(s: string): string {
   return s

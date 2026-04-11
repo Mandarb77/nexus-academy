@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { isTestQuestTwoStageTileDisplay } from '../lib/devTestTwoStageQuest'
 import { parseEmpathy } from '../lib/empathy'
 type TileInfo = {
   guild: string
@@ -58,6 +59,7 @@ type PendingPlanRow = {
   display_name: string | null
   tile: { guild: string; skill_name: string } | null
   patent: { field_1: string; field_2: string } | null
+  stage: string
 }
 
 type StudentSummary = {
@@ -170,7 +172,7 @@ export function TeacherPanelPage() {
       supabase
         .from('patents')
         .select('id, student_id, tile_id, field_1, field_2, created_at, stage, status')
-        .eq('stage', 'plan')
+        .in('stage', ['plan', 'test_step1'])
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
       supabase
@@ -385,6 +387,7 @@ export function TeacherPanelPage() {
           field_1: (r.field_1 as string) ?? '',
           field_2: (r.field_2 as string) ?? '',
         },
+        stage: (r.stage as string) ?? 'plan',
       })),
     )
 
@@ -508,20 +511,23 @@ export function TeacherPanelPage() {
     if (!isSupabaseConfigured) return
     setActingPlan(id, 'approve')
     const row = planRows.find((r) => r.id === id) ?? null
-    // Be resilient to accidental duplicate plan rows: approve all pending plan rows for this student+tile.
-    const q = supabase
-      .from('patents')
-      .update({ status: 'approved' })
-      .eq('id', id)
-    const { error } = row
-      ? await supabase
-          .from('patents')
-          .update({ status: 'approved' })
-          .eq('student_id', row.student_id)
-          .eq('tile_id', row.tile_id)
-          .eq('stage', 'plan')
-          .eq('status', 'pending')
-      : await q
+    let error: { message: string } | null = null
+    if (row?.stage === 'test_step1') {
+      const res = await supabase.from('patents').update({ status: 'approved' }).eq('id', id)
+      error = res.error
+    } else if (row) {
+      const res = await supabase
+        .from('patents')
+        .update({ status: 'approved' })
+        .eq('student_id', row.student_id)
+        .eq('tile_id', row.tile_id)
+        .eq('stage', 'plan')
+        .eq('status', 'pending')
+      error = res.error
+    } else {
+      const res = await supabase.from('patents').update({ status: 'approved' }).eq('id', id)
+      error = res.error
+    }
     clearActingPlan()
     if (error) {
       console.error('approve plan:', error.message)
@@ -534,18 +540,25 @@ export function TeacherPanelPage() {
     if (!isSupabaseConfigured) return
     setActingPlan(id, 'return')
     const row = planRows.find((r) => r.id === id) ?? null
-    // Be resilient to accidental duplicate plan rows: return all plan rows for this student+tile.
-    const { error } = row
-      ? await supabase
-          .from('patents')
-          .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
-          .eq('student_id', row.student_id)
-          .eq('tile_id', row.tile_id)
-          .eq('stage', 'plan')
-      : await supabase
-          .from('patents')
-          .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
-          .eq('id', id)
+    let error: { message: string } | null = null
+    if (row?.stage === 'test_step1') {
+      const res = await supabase.from('patents').update({ status: 'returned' }).eq('id', id)
+      error = res.error
+    } else if (row) {
+      const res = await supabase
+        .from('patents')
+        .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
+        .eq('student_id', row.student_id)
+        .eq('tile_id', row.tile_id)
+        .eq('stage', 'plan')
+      error = res.error
+    } else {
+      const res = await supabase
+        .from('patents')
+        .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
+        .eq('id', id)
+      error = res.error
+    }
     clearActingPlan()
     if (error) {
       console.error('return plan:', error.message)
@@ -876,6 +889,7 @@ export function TeacherPanelPage() {
                   const busyApprove = actingPlanId === row.id && actingPlanKind === 'approve'
                   const busyReturn = actingPlanId === row.id && actingPlanKind === 'return'
                   const busy = busyApprove || busyReturn
+                  const isTestStep1 = row.stage === 'test_step1'
                   return (
                     <li key={row.id} className="card teacher-panel-item">
                       <div className="teacher-panel-item-main">
@@ -884,16 +898,43 @@ export function TeacherPanelPage() {
                           <strong>{row.tile?.skill_name ?? 'Plan'}</strong>
                         </p>
                         <p className="muted teacher-panel-guild">
-                          Plan approval · {row.tile?.guild ? <strong>{row.tile.guild}</strong> : null}
+                          {isTestStep1 ? (
+                            <>
+                              <strong>Step 1 — Test Quest</strong>
+                              {row.tile?.guild ? (
+                                <>
+                                  {' '}
+                                  · <strong>{row.tile.guild}</strong>
+                                </>
+                              ) : null}
+                            </>
+                          ) : (
+                            <>
+                              Plan approval · {row.tile?.guild ? <strong>{row.tile.guild}</strong> : null}
+                            </>
+                          )}
                         </p>
                         <div className="teacher-panel-patent">
-                          <p className="teacher-panel-patent-title">
-                            <strong>What are they going to make?</strong>
-                          </p>
-                          <p className="muted" style={{ margin: 0 }}>
-                            {row.patent?.field_1}
-                          </p>
-                          <EmpathyDisplay raw={row.patent?.field_2 ?? null} />
+                          {isTestStep1 ? (
+                            <>
+                              <p className="teacher-panel-patent-title">
+                                <strong>Step 1 — student answer</strong>
+                              </p>
+                              <p className="muted" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                                {row.patent?.field_1 || '—'}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="teacher-panel-patent-title">
+                                <strong>What are they going to make?</strong>
+                              </p>
+                              <p className="muted" style={{ margin: 0 }}>
+                                {row.patent?.field_1}
+                              </p>
+                              <EmpathyDisplay raw={row.patent?.field_2 ?? null} />
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="teacher-panel-actions">
@@ -903,7 +944,7 @@ export function TeacherPanelPage() {
                           disabled={busy}
                           onClick={() => void approvePlan(row.id)}
                         >
-                          {busyApprove ? 'Approving…' : 'Approve plan'}
+                          {busyApprove ? 'Approving…' : isTestStep1 ? 'Approve Step 1' : 'Approve plan'}
                         </button>
                         <button
                           type="button"
@@ -1036,26 +1077,46 @@ export function TeacherPanelPage() {
                         </p>
                         {row.patent ? (
                           <div className="teacher-panel-patent">
-                            <p className="teacher-panel-patent-title">
-                              <strong>Patent packet</strong>
-                            </p>
-                            <dl className="teacher-panel-patent-dl">
-                              <div>
-                                <dt>What did they make?</dt>
-                                <dd>{row.patent.field_1}</dd>
-                              </div>
-                            </dl>
-                            <EmpathyDisplay raw={row.patent.field_2} />
-                            <dl className="teacher-panel-patent-dl">
-                              <div>
-                                <dt>How did they make it an original work?</dt>
-                                <dd>{row.patent.field_3}</dd>
-                              </div>
-                              <div>
-                                <dt>What do they have to iterate?</dt>
-                                <dd>{row.patent.field_4}</dd>
-                              </div>
-                            </dl>
+                            {isTestQuestTwoStageTileDisplay(row.tile ?? { guild: '', skill_name: '' }) ? (
+                              <>
+                                <p className="teacher-panel-patent-title">
+                                  <strong>Step 2 Final — Test Quest</strong>
+                                </p>
+                                <dl className="teacher-panel-patent-dl">
+                                  <div>
+                                    <dt>Step 1 (reference)</dt>
+                                    <dd style={{ whiteSpace: 'pre-wrap' }}>{row.patent.field_1 || '—'}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Step 2 answer</dt>
+                                    <dd style={{ whiteSpace: 'pre-wrap' }}>{row.patent.field_2 || '—'}</dd>
+                                  </div>
+                                </dl>
+                              </>
+                            ) : (
+                              <>
+                                <p className="teacher-panel-patent-title">
+                                  <strong>Patent packet</strong>
+                                </p>
+                                <dl className="teacher-panel-patent-dl">
+                                  <div>
+                                    <dt>What did they make?</dt>
+                                    <dd>{row.patent.field_1}</dd>
+                                  </div>
+                                </dl>
+                                <EmpathyDisplay raw={row.patent.field_2} />
+                                <dl className="teacher-panel-patent-dl">
+                                  <div>
+                                    <dt>How did they make it an original work?</dt>
+                                    <dd>{row.patent.field_3}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>What do they have to iterate?</dt>
+                                    <dd>{row.patent.field_4}</dd>
+                                  </div>
+                                </dl>
+                              </>
+                            )}
                           </div>
                         ) : null}
                       </div>
