@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
 import { HomeRoute } from './components/HomeRoute'
 import { StudentOnlyRoute } from './components/StudentOnlyRoute'
 import { TeacherDashboardRoute } from './components/TeacherDashboardRoute'
@@ -21,18 +21,9 @@ import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
 import { JoinPage } from './pages/JoinPage'
+import { ApprovalCelebrationHost } from './components/ApprovalCelebrationHost'
 import { ApprovalCelebrationSync } from './components/ApprovalCelebrationSync'
-import { StudentTopApprovalBanner } from './components/StudentTopApprovalBanner'
-import { isTeacherProfile } from './lib/teacher'
 import './App.css'
-
-/** Fixed celebration toast on every student route when a quest is approved (same Realtime event as DB awards). */
-function StudentGlobalApprovalBanner() {
-  const { user, profile, studentPreviewMode } = useAuth()
-  if (!user?.id) return null
-  if (isTeacherProfile(profile) && !studentPreviewMode) return null
-  return <StudentTopApprovalBanner placement="fixed" />
-}
 
 export default function App() {
   return (
@@ -47,8 +38,8 @@ export default function App() {
         </div>
       )}
       <AuthProvider>
+        <ApprovalCelebrationHost />
         <ApprovalCelebrationSync />
-        <StudentGlobalApprovalBanner />
         <Routes>
           <Route path="/" element={<HomeRoute />} />
           <Route
