@@ -5,7 +5,6 @@ import foldedBanner from '../assets/folded-banner.png'
 import siliconBanner from '../assets/silicon-banner.png'
 import voidBanner from '../assets/void-banner.png'
 import { MainNav } from '../components/MainNav'
-import { StudentTopApprovalBanner } from '../components/StudentTopApprovalBanner'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
@@ -55,7 +54,6 @@ export function SkillTreePage() {
     <div className="app-shell skill-tree-page">
       <header className="skill-tree-top">
         <MainNav />
-        <StudentTopApprovalBanner />
         <div className="skill-tree-top-row">
           <div>
             <h1 className="skill-tree-title">Skill tree</h1>

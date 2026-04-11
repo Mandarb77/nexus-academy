@@ -26,12 +26,32 @@ export function ApprovalCelebrationSync() {
           const next = payload.new as Record<string, unknown>
           if (next.status !== 'approved') return
           if (prev.status === 'approved') return
-          if (next.wp_awarded == null || next.gold_awarded == null) return
           const id = next.id != null ? String(next.id) : ''
           if (!id) return
-          const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : Number(next.wp_awarded) || 0
-          const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : Number(next.gold_awarded) || 0
-          queueApprovalCelebration({ wp, gold, completionId: id })
+
+          const emit = (wp: number, gold: number) => {
+            queueApprovalCelebration({ wp, gold, completionId: id })
+          }
+
+          if (next.wp_awarded != null && next.gold_awarded != null) {
+            const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : Number(next.wp_awarded) || 0
+            const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : Number(next.gold_awarded) || 0
+            emit(wp, gold)
+            return
+          }
+
+          // Realtime payload occasionally omits trigger-filled columns; fetch the committed row once.
+          void supabase
+            .from('skill_completions')
+            .select('wp_awarded, gold_awarded')
+            .eq('id', id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data?.wp_awarded == null || data?.gold_awarded == null) return
+              const wp = typeof data.wp_awarded === 'number' ? data.wp_awarded : Number(data.wp_awarded) || 0
+              const gold = typeof data.gold_awarded === 'number' ? data.gold_awarded : Number(data.gold_awarded) || 0
+              emit(wp, gold)
+            })
         },
       )
       .subscribe()
