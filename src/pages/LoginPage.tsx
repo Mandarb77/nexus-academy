@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 export function LoginPage() {
+  const navigate = useNavigate()
   const { user, authReady, signInWithGoogle, signOut } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -59,6 +60,28 @@ export function LoginPage() {
     }
   }
 
+  async function handleDevTestLogin(kind: 'student' | 'teacher') {
+    if (!import.meta.env.DEV) return
+    if (!isSupabaseConfigured) return
+    const { DEV_TEST_LOGIN } = await import('../lib/devTestLogin')
+    const creds = kind === 'student' ? DEV_TEST_LOGIN.student : DEV_TEST_LOGIN.teacher
+    setError(null)
+    setBusy(true)
+    try {
+      const { error: signErr } = await supabase.auth.signInWithPassword({
+        email: creds.email,
+        password: creds.password,
+      })
+      if (signErr) {
+        setError(signErr.message)
+        return
+      }
+      navigate('/', { replace: true })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="app-shell auth-panel">
       <header className="brand">
@@ -81,6 +104,29 @@ export function LoginPage() {
         >
           {busy ? 'Redirecting…' : 'Sign in with Google'}
         </button>
+
+        {import.meta.env.DEV && isSupabaseConfigured ? (
+          <div className="login-dev-test" aria-label="Local development test sign-in">
+            <p className="login-dev-test__label">Dev only — email/password test accounts</p>
+            <button
+              type="button"
+              className="btn-secondary btn-block login-dev-test__btn"
+              disabled={busy}
+              onClick={() => void handleDevTestLogin('student')}
+            >
+              Login as Test Student
+            </button>
+            <button
+              type="button"
+              className="btn-secondary btn-block login-dev-test__btn"
+              disabled={busy}
+              onClick={() => void handleDevTestLogin('teacher')}
+            >
+              Login as Test Teacher
+            </button>
+          </div>
+        ) : null}
+
         {error ? <p className="error">{error}</p> : null}
       </div>
 
