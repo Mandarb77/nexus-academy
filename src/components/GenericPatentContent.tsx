@@ -25,7 +25,6 @@ import { PatentFlowBanner } from './PatentFlowBanner'
 import { EmpathyForm } from './EmpathyForm'
 import { FinalApprovalBanner } from './FinalApprovalBanner'
 import { ApprovedQuestView } from './ApprovedQuestView'
-import { queueApprovalCelebration } from '../lib/approvalCelebration'
 import { supabase } from '../lib/supabase'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
@@ -334,8 +333,6 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
             const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
             localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
             localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
-            const cid = next.id != null ? String(next.id) : ''
-            if (cid) queueApprovalCelebration({ wp, gold, completionId: cid })
             bannerFiredRef.current = true
             setFinalApproval({ wp, gold })
           }
@@ -625,14 +622,6 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
   return (
     <form className="patent-game-piece-form" data-patent-flow="generic-checklist-gate" onSubmit={(e) => e.preventDefault()}>
-      {finalApproval ? (
-        <FinalApprovalBanner
-          wp={finalApproval.wp}
-          gold={finalApproval.gold}
-          onDismiss={dismissApprovalBanner}
-        />
-      ) : null}
-
       <PatentFlowBanner message={flowBanner} tone="success" onClear={() => setFlowBanner(null)} />
 
       {approvalNotice ? (

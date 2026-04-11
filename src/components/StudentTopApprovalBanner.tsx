@@ -7,11 +7,16 @@ import {
   type PendingApprovalCelebration,
 } from '../lib/approvalCelebration'
 
+type Props = {
+  /** `fixed` = overlay on any route (global). `pageTop` = in-flow under nav (legacy pages). */
+  placement?: 'pageTop' | 'fixed'
+}
+
 /**
- * Top-of-page celebration after a quest is approved. Shows on student home and main skill tree.
- * Pending state is set by ApprovalCelebrationSync (Realtime) or patent pages when the student is online.
+ * Celebration after final quest approval (WP/gold awarded). Pending state is set by
+ * {@link ApprovalCelebrationSync} when `skill_completions` reaches `approved` with awards.
  */
-export function StudentTopApprovalBanner() {
+export function StudentTopApprovalBanner({ placement = 'pageTop' }: Props) {
   const [toast, setToast] = useState<PendingApprovalCelebration | null>(null)
 
   useEffect(() => {
@@ -31,7 +36,7 @@ export function StudentTopApprovalBanner() {
 
   return (
     <FinalApprovalBanner
-      placement="pageTop"
+      placement={placement}
       wp={toast.wp}
       gold={toast.gold}
       onDismiss={() => {

@@ -5,7 +5,6 @@ import { PatentFlowBanner } from './PatentFlowBanner'
 import { EmpathyForm } from './EmpathyForm'
 import { FinalApprovalBanner } from './FinalApprovalBanner'
 import { ApprovedQuestView } from './ApprovedQuestView'
-import { queueApprovalCelebration } from '../lib/approvalCelebration'
 import { skillTreeGuildModifier } from '../lib/guildTree'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
 import {
@@ -315,8 +314,6 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
               const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
               localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
               localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
-              const cid = next.id != null ? String(next.id) : ''
-              if (cid) queueApprovalCelebration({ wp, gold, completionId: cid })
               bannerFiredRef.current = true
               setFinalApproval({ wp, gold })
             }
@@ -722,7 +719,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   }
 
   // 'pending' no longer causes an early return — the form stays visible with a waiting notice
-  // so realtime updates push through and the approval banner fires in-place.
+  // so realtime updates push through; final approval toast is global (ApprovalCelebrationSync).
   const isFinalPending = completionStatus === 'pending'
 
   return (
@@ -731,14 +728,6 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       data-patent-flow="stepped-checklist-gate"
       onSubmit={(e) => e.preventDefault()}
     >
-      {finalApproval ? (
-        <FinalApprovalBanner
-          wp={finalApproval.wp}
-          gold={finalApproval.gold}
-          onDismiss={dismissApprovalBanner}
-        />
-      ) : null}
-
       <PatentFlowBanner
         message={flowBanner}
         tone="success"

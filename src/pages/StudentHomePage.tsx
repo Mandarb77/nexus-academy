@@ -5,7 +5,6 @@ import foldedBanner from '../assets/folded-banner.png'
 import siliconBanner from '../assets/silicon-banner.png'
 import voidBanner from '../assets/void-banner.png'
 import { MainNav } from '../components/MainNav'
-import { StudentTopApprovalBanner } from '../components/StudentTopApprovalBanner'
 import { useAuth } from '../contexts/AuthContext'
 import { progressToApprenticeMage } from '../lib/rankProgress'
 
@@ -27,7 +26,6 @@ export function StudentHomePage() {
   return (
     <div className="app-shell student-home">
       <MainNav />
-      <StudentTopApprovalBanner />
       <header className="student-home-header">
         <div>
           <p className="student-home-label">Welcome back</p>

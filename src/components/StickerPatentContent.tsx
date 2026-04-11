@@ -5,7 +5,6 @@ import { PatentFlowBanner } from './PatentFlowBanner'
 import { EmpathyForm } from './EmpathyForm'
 import { FinalApprovalBanner } from './FinalApprovalBanner'
 import { ApprovedQuestView } from './ApprovedQuestView'
-import { queueApprovalCelebration } from '../lib/approvalCelebration'
 import { isStickerTile } from '../lib/stickerTile'
 import { STICKER_STEPS } from '../lib/stickerSteps'
 import { supabase } from '../lib/supabase'
@@ -289,8 +288,6 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
               const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
               localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
               localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
-              const cid = next.id != null ? String(next.id) : ''
-              if (cid) queueApprovalCelebration({ wp, gold, completionId: cid })
               bannerFiredRef.current = true
               setFinalApproval({ wp, gold })
             }
@@ -674,14 +671,6 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       data-patent-flow="stepped-checklist-gate"
       onSubmit={(e) => e.preventDefault()}
     >
-      {finalApproval ? (
-        <FinalApprovalBanner
-          wp={finalApproval.wp}
-          gold={finalApproval.gold}
-          onDismiss={dismissApprovalBanner}
-        />
-      ) : null}
-
       <PatentFlowBanner message={flowBanner} tone="success" onClear={() => setFlowBanner(null)} />
 
       {approvalNotice ? (
