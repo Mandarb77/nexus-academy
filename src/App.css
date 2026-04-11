@@ -2924,32 +2924,27 @@ a.btn-primary {
   }
 }
 
-.nexus-app-dev-ribbon {
-  background: #1e1b2e;
-  color: #f5e6a3;
-  padding: 0.45rem 1rem;
+/* Shown only when import.meta.env.DEV (Vite dev server / localhost), not on Vercel production builds */
+.nexus-local-test-banner {
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.28rem 0.75rem;
   text-align: center;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  border-bottom: 2px solid #c9a227;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  color: #141414;
+  background: #ffeb3b;
+  border-bottom: 1px solid #c9b000;
   position: relative;
-  z-index: 2000;
-}
-
-.nexus-app-dev-ribbon a {
-  color: #fff;
-  text-decoration: underline;
-}
-
-.nexus-app-dev-ribbon code {
-  font-size: 0.9em;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.1em 0.35em;
-  border-radius: 4px;
+  z-index: 3000;
 }
 
 @media print {
-  .nexus-app-dev-ribbon {
+  .nexus-local-test-banner {
     display: none !important;
   }
 }

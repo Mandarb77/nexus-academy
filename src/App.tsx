@@ -29,12 +29,8 @@ export default function App() {
   return (
     <BrowserRouter>
       {import.meta.env.DEV && (
-        <div className="nexus-app-dev-ribbon" role="note">
-          Local dev — if this bar is missing, you are not on this repo’s Vite server.{' '}
-          <a href="/nexus-dev-verify.txt" target="_blank" rel="noopener noreferrer">
-            Open /nexus-dev-verify.txt
-          </a>{' '}
-          (first line must be <code>nexus-academy-repo-ok</code>). Power Ups section pills only appear on the Power Ups tab.
+        <div className="nexus-local-test-banner" role="status">
+          LOCAL TEST VERSION — not the live site
         </div>
       )}
       <AuthProvider>
