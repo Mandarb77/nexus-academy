@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { isTestQuestTwoStageTileDisplay } from '../lib/devTestTwoStageQuest'
+import { isDevTestTwoStageTileId } from '../lib/devTestTwoStageQuest'
 import { parseEmpathy } from '../lib/empathy'
 type TileInfo = {
   guild: string
@@ -512,7 +512,7 @@ export function TeacherPanelPage() {
     setActingPlan(id, 'approve')
     const row = planRows.find((r) => r.id === id) ?? null
     let error: { message: string } | null = null
-    if (row?.stage === 'test_step1') {
+    if (row?.stage === 'test_step1' && isDevTestTwoStageTileId(row.tile_id)) {
       const res = await supabase.from('patents').update({ status: 'approved' }).eq('id', id)
       error = res.error
     } else if (row) {
@@ -541,7 +541,7 @@ export function TeacherPanelPage() {
     setActingPlan(id, 'return')
     const row = planRows.find((r) => r.id === id) ?? null
     let error: { message: string } | null = null
-    if (row?.stage === 'test_step1') {
+    if (row?.stage === 'test_step1' && isDevTestTwoStageTileId(row.tile_id)) {
       const res = await supabase.from('patents').update({ status: 'returned' }).eq('id', id)
       error = res.error
     } else if (row) {
@@ -889,7 +889,8 @@ export function TeacherPanelPage() {
                   const busyApprove = actingPlanId === row.id && actingPlanKind === 'approve'
                   const busyReturn = actingPlanId === row.id && actingPlanKind === 'return'
                   const busy = busyApprove || busyReturn
-                  const isTestStep1 = row.stage === 'test_step1'
+                  const isTestStep1 =
+                    row.stage === 'test_step1' && isDevTestTwoStageTileId(row.tile_id)
                   return (
                     <li key={row.id} className="card teacher-panel-item">
                       <div className="teacher-panel-item-main">
@@ -1077,7 +1078,7 @@ export function TeacherPanelPage() {
                         </p>
                         {row.patent ? (
                           <div className="teacher-panel-patent">
-                            {isTestQuestTwoStageTileDisplay(row.tile ?? { guild: '', skill_name: '' }) ? (
+                            {isDevTestTwoStageTileId(row.tile_id) ? (
                               <>
                                 <p className="teacher-panel-patent-title">
                                   <strong>Step 2 Final — Test Quest</strong>
