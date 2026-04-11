@@ -11,6 +11,15 @@ export type PendingApprovalCelebration = {
   completionId: string
 }
 
+type Notifier = (c: PendingApprovalCelebration) => void
+
+let liveNotifier: Notifier | null = null
+
+/** Host component registers this so celebrations update React state the same tick as Realtime (no refresh). */
+export function setApprovalCelebrationNotifier(fn: Notifier | null) {
+  liveNotifier = fn
+}
+
 function dispatchCelebrationEvent() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(APPROVAL_CELEBRATION_EVENT))
@@ -22,6 +31,7 @@ export function queueApprovalCelebration(c: PendingApprovalCelebration) {
   if (typeof window === 'undefined') return
   if (!c.completionId) return
   localStorage.setItem(PENDING_KEY, JSON.stringify(c))
+  liveNotifier?.(c)
   dispatchCelebrationEvent()
 }
 
@@ -47,4 +57,13 @@ export function clearPendingCelebrationAfterDismiss(completionId: string) {
 export function getLastShownCompletionId(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem(LAST_SHOWN_KEY)
+}
+
+/** Skip re-showing the same completion (dismissed or already pending). */
+export function shouldQueueCompletionCelebration(completionId: string): boolean {
+  if (!completionId) return false
+  if (getLastShownCompletionId() === completionId) return false
+  const pending = peekPendingCelebration()
+  if (pending?.completionId === completionId) return false
+  return true
 }
