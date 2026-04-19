@@ -1,26 +1,17 @@
-/** Presentation-only labels (no API / DB changes). */
-export type ShopRarity = 'Common' | 'Rare' | 'Epic' | 'Legendary'
+/** Guild welcome strip accents (see `.skill-tree-guild-welcome--*` in App.css). */
+export type GuildShelfAccent = 'forge' | 'prism' | 'folded'
 
-/** Slight variety on Craft shelf: alternate Rare / Epic by row order. */
-export function rarityForShelfItem(tierName: string, displayOrder: number): ShopRarity {
+export function shelfAccentForTier(tierName: string): GuildShelfAccent {
   const n = tierName.trim().toLowerCase()
-  if (n === 'legacy') return 'Legendary'
-  if (n === 'craft') return displayOrder % 2 === 0 ? 'Rare' : 'Epic'
-  return 'Common'
+  if (n === 'convenience') return 'forge'
+  if (n === 'craft') return 'prism'
+  return 'folded'
 }
 
-/** Maps DB tier names to friendlier shelf titles from the design brief. */
+/** First shelf stays “Conveniences”; other shelves use the catalog tier name. */
 export function displayShelfTitle(tierName: string): string {
-  switch (tierName.trim()) {
-    case 'Convenience':
-      return 'Classroom Privileges'
-    case 'Craft':
-      return 'Maker Rewards'
-    case 'Legacy':
-      return 'Legendary Unlocks'
-    default:
-      return tierName
-  }
+  if (tierName.trim() === 'Convenience') return 'Conveniences'
+  return tierName.trim()
 }
 
 export function iconVariantForItemKey(itemKey: string): string {

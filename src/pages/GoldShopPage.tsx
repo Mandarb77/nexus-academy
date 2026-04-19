@@ -3,7 +3,7 @@ import { MainNav } from '../components/MainNav'
 import { MakersShopHeader, ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { isSameChicagoSchoolDay } from '../lib/schoolDayChicago'
+import { isSameEasternCalendarDay } from '../lib/schoolDayEastern'
 import type { ShopCatalogItem, ShopTierEmbed } from '../types/shopCatalog'
 import '../makersShop.css'
 
@@ -56,11 +56,6 @@ export function GoldShopPage() {
 
   const sortedCatalog = useMemo(() => sortCatalogRows(catalog), [catalog])
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
-  const featuredItem = useMemo(
-    () => sortedCatalog.find((i) => !i.is_locked && i.price_gold != null) ?? null,
-    [sortedCatalog],
-  )
-
   const refreshDailyLimits = useCallback(
     async (rows: ShopCatalogItem[]) => {
       if (!user?.id || !isSupabaseConfigured) {
@@ -92,7 +87,7 @@ export function GoldShopPage() {
       for (const row of data) {
         const sid = row.shop_item_id as string | null
         if (!sid || !row.created_at) continue
-        if (isSameChicagoSchoolDay(new Date(row.created_at), now)) {
+        if (isSameEasternCalendarDay(new Date(row.created_at), now)) {
           blocked.add(sid)
         }
       }
@@ -164,8 +159,8 @@ export function GoldShopPage() {
       return
     }
     const result = data as RpcResult
-    if (!result?.ok) {
-      if (result?.error === 'daily_purchase_limit') {
+      if (!result?.ok) {
+      if (result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit') {
         setDailyBlockedIds((prev) => new Set(prev).add(item.id))
       }
       setMessage(
@@ -173,8 +168,8 @@ export function GoldShopPage() {
           ? 'Not enough gold.'
           : result?.error === 'unknown_item'
             ? 'Unknown item.'
-            : result?.error === 'daily_purchase_limit'
-              ? 'You already bought this item for today’s class period (Chicago school day limit).'
+            : result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit'
+              ? 'You already purchased this today (New York time).'
               : result?.error === 'item_locked'
                 ? 'This reward is locked.'
                 : result?.error === 'not_for_sale'
@@ -195,7 +190,7 @@ export function GoldShopPage() {
   return (
     <div className="app-shell makers-shop">
       <MainNav />
-      <MakersShopHeader gold={gold} onSignOut={signOut} featuredItem={featuredItem} />
+      <MakersShopHeader gold={gold} onSignOut={signOut} />
 
       {!isSupabaseConfigured ? (
         <p className="makers-shop-muted makers-shop-alert" role="alert">
