@@ -218,18 +218,20 @@ export function GoldShopPage() {
         </p>
       ) : null}
 
-      {tierGroups.map((group) => (
-        <ShopTierBoard
-          key={group.tier.id}
-          group={group}
-          gold={gold}
-          buyingKey={buyingKey}
-          dailyBlockedIds={dailyBlockedIds}
-          isSupabaseConfigured={isSupabaseConfigured}
-          catalogLoading={catalogLoading}
-          onBuy={buy}
-        />
-      ))}
+      <div className="makers-shop-tier-deck">
+        {tierGroups.map((group) => (
+          <ShopTierBoard
+            key={group.tier.id}
+            group={group}
+            gold={gold}
+            buyingKey={buyingKey}
+            dailyBlockedIds={dailyBlockedIds}
+            isSupabaseConfigured={isSupabaseConfigured}
+            catalogLoading={catalogLoading}
+            onBuy={buy}
+          />
+        ))}
+      </div>
     </div>
   )
 }

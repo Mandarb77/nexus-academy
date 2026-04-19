@@ -521,7 +521,34 @@
   color: var(--ms-ink-muted);
 }
 
-@media (min-width: 960px) {
+/* Multiple tier shelves side by side on class laptops */
+.makers-shop-tier-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin-bottom: 2.75rem;
+}
+
+@media (min-width: 1024px) {
+  .makers-shop-tier-deck {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem 1.75rem;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1320px) {
+  .makers-shop-tier-deck {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.makers-shop-tier-deck .makers-shop-board {
+  margin-bottom: 0;
+}
+
+@media (min-width: 1024px) {
   .makers-shop-board__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

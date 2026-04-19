@@ -1,6 +1,12 @@
 :root {
-  /** Single column width for all main app pages — keeps headings aligned when switching tabs */
+  /**
+   * Main content width: comfortable reading column on small screens; on laptop and up
+   * the shell expands to use desk space (capped at 1400px) with roomier horizontal padding.
+   */
   --app-shell-max-width: 56rem;
+  --app-shell-padding-x: 1.25rem;
+  --app-shell-padding-y-top: 2rem;
+  --app-shell-padding-y-bottom: 3rem;
 
   --text: #5c5668;
   --text-h: #0c0a12;
@@ -28,6 +34,13 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --app-shell-max-width: 1400px;
+    --app-shell-padding-x: clamp(1.5rem, 3.5vw, 2.75rem);
+  }
 }
 
 @media (prefers-color-scheme: dark) {

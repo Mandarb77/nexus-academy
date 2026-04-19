@@ -704,30 +704,35 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         </div>
       ) : null}
 
-      <div className="patent-step-tabs" role="tablist" aria-label="Patent steps">
-        {(
-          [
-            { n: 1 as const, label: 'Plan questions' },
-            ...(planSubmitted ? [{ n: 2 as const, label: 'Checklist' }] : []),
-            ...(checklistApproved ? [{ n: 3 as const, label: 'Final questions' }] : []),
-          ] as { n: 1 | 2 | 3; label: string }[]
-        ).map(({ n, label }) => (
-          <button
-            key={n}
-            type="button"
-            role="tab"
-            aria-selected={phase === n}
-            className={
-              'patent-step-tabs__btn' +
-              (phase === n ? ' patent-step-tabs__btn--active' : '')
-            }
-            onClick={() => goPhase(n)}
-          >
-            {n}. {label}
-          </button>
-        ))}
-      </div>
+      <div className="patent-form-wide-grid">
+        <aside className="patent-form-wide-grid__rail" aria-label="Patent packet steps">
+          <p className="patent-form-rail__title">Patent packet</p>
+          <div className="patent-step-tabs patent-step-tabs--rail" role="tablist" aria-label="Patent steps">
+            {(
+              [
+                { n: 1 as const, label: 'Plan questions' },
+                ...(planSubmitted ? [{ n: 2 as const, label: 'Checklist' }] : []),
+                ...(checklistApproved ? [{ n: 3 as const, label: 'Final questions' }] : []),
+              ] as { n: 1 | 2 | 3; label: string }[]
+            ).map(({ n, label }) => (
+              <button
+                key={n}
+                type="button"
+                role="tab"
+                aria-selected={phase === n}
+                className={
+                  'patent-step-tabs__btn' +
+                  (phase === n ? ' patent-step-tabs__btn--active' : '')
+                }
+                onClick={() => goPhase(n)}
+              >
+                {n}. {label}
+              </button>
+            ))}
+          </div>
+        </aside>
 
+        <div className="patent-form-wide-grid__main">
       {phase === 1 ? (
         <div className="card patent-phase-panel">
           <section aria-labelledby="sticker-patent-phase-1">
@@ -1170,6 +1175,8 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
           </button>
         </div>
       ) : null}
+        </div>
+      </div>
     </form>
   )
 }

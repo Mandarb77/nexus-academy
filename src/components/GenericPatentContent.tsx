@@ -642,20 +642,25 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
         </div>
       ) : null}
 
-      {/* ── Tab bar ── */}
-      <div className="patent-step-tabs" role="tablist" aria-label="Quest steps">
-        {([
-          { n: 1 as const, label: 'Opening questions' },
-          ...(planSubmitted ? [{ n: 2 as const, label: 'Checklist' }] : []),
-          ...(checklistApproved ? [{ n: 3 as const, label: 'Final questions' }] : []),
-        ] as { n: 1 | 2 | 3; label: string }[]).map(({ n, label }) => (
-          <button key={n} type="button" role="tab" aria-selected={phase === n}
-            className={'patent-step-tabs__btn' + (phase === n ? ' patent-step-tabs__btn--active' : '')}
-            onClick={() => n <= maxPhase && goPhase(n)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <div className="patent-form-wide-grid">
+        <aside className="patent-form-wide-grid__rail" aria-label="Patent packet steps">
+          <p className="patent-form-rail__title">Patent packet</p>
+          <div className="patent-step-tabs patent-step-tabs--rail" role="tablist" aria-label="Quest steps">
+            {([
+              { n: 1 as const, label: 'Opening questions' },
+              ...(planSubmitted ? [{ n: 2 as const, label: 'Checklist' }] : []),
+              ...(checklistApproved ? [{ n: 3 as const, label: 'Final questions' }] : []),
+            ] as { n: 1 | 2 | 3; label: string }[]).map(({ n, label }) => (
+              <button key={n} type="button" role="tab" aria-selected={phase === n}
+                className={'patent-step-tabs__btn' + (phase === n ? ' patent-step-tabs__btn--active' : '')}
+                onClick={() => n <= maxPhase && goPhase(n)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <div className="patent-form-wide-grid__main">
 
       {/* ── Phase 1: Opening questions ── */}
       {phase === 1 ? (
@@ -992,6 +997,8 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
           </button>
         </div>
       ) : null}
+        </div>
+      </div>
     </form>
   )
 }
