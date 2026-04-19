@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
+import { MakersShopHeader, ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { isSameChicagoSchoolDay } from '../lib/schoolDayChicago'
 import type { ShopCatalogItem, ShopTierEmbed } from '../types/shopCatalog'
+import '../makersShop.css'
 
 type RpcResult = {
   ok?: boolean
@@ -54,6 +56,10 @@ export function GoldShopPage() {
 
   const sortedCatalog = useMemo(() => sortCatalogRows(catalog), [catalog])
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
+  const featuredItem = useMemo(
+    () => sortedCatalog.find((i) => !i.is_locked && i.price_gold != null) ?? null,
+    [sortedCatalog],
+  )
 
   const refreshDailyLimits = useCallback(
     async (rows: ShopCatalogItem[]) => {
@@ -92,14 +98,16 @@ export function GoldShopPage() {
       }
       setDailyBlockedIds(blocked)
     },
-    [user?.id],
+    [user],
   )
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      /* eslint-disable react-hooks/set-state-in-effect -- Supabase-off bootstrap */
       setCatalogLoading(false)
       setCatalogError(null)
       setCatalog([])
+      /* eslint-enable react-hooks/set-state-in-effect */
       return
     }
     let cancelled = false
@@ -185,40 +193,26 @@ export function GoldShopPage() {
   }
 
   return (
-    <div className="app-shell gold-shop-page">
+    <div className="app-shell makers-shop">
       <MainNav />
-      <header className="gold-shop-header">
-        <div className="gold-shop-top-row">
-          <div>
-            <h1 className="gold-shop-title">
-              <span className="gold-currency-text">Gold</span> shop
-            </h1>
-            <p className="gold-shop-balance" aria-live="polite">
-              Your gold: <strong>{gold}</strong>
-            </p>
-          </div>
-          <button type="button" className="btn-secondary" onClick={() => signOut()}>
-            Sign out
-          </button>
-        </div>
-      </header>
+      <MakersShopHeader gold={gold} onSignOut={signOut} featuredItem={featuredItem} />
 
       {!isSupabaseConfigured ? (
-        <p className="muted" role="alert">
+        <p className="makers-shop-muted makers-shop-alert" role="alert">
           Connect Supabase in <code className="inline-code">.env</code> to use the shop.
         </p>
       ) : null}
 
       {catalogLoading ? (
-        <p className="muted">Loading shop…</p>
+        <p className="makers-shop-muted makers-shop-alert">Loading catalog…</p>
       ) : catalogError ? (
-        <p className="muted" role="alert">
+        <p className="makers-shop-alert" role="alert">
           {catalogError}
         </p>
       ) : null}
 
       {message ? (
-        <p className="gold-shop-message muted" role="status">
+        <p className="makers-shop-alert" role="status">
           {message === 'Not enough gold.' ? (
             <>
               Not enough <span className="gold-currency-text">gold</span>.
@@ -229,107 +223,17 @@ export function GoldShopPage() {
         </p>
       ) : null}
 
-      {tierGroups.map(({ tier, items }) => (
-        <section key={tier.id} className="gold-shop-tier-section">
-          <h2 className="gold-shop-tier-title">{tier.name}</h2>
-          <p className="gold-shop-tier-subtitle">{tier.subtitle}</p>
-          <ul className="gold-shop-grid">
-            {items.map((item) => {
-              const dailyBlocked = dailyBlockedIds.has(item.id)
-              const catalogLocked = item.is_locked
-              const price = item.price_gold
-              const canAfford = price != null && gold >= price
-              const busy = buyingKey === item.item_key
-              const purchaseBlocked =
-                !catalogLocked && price != null && (!canAfford || dailyBlocked)
-              const canBuy = !catalogLocked && price != null && canAfford && !dailyBlocked
-
-              return (
-                <li
-                  key={item.id}
-                  className={`gold-shop-card${catalogLocked ? ' gold-shop-card--mystery-locked' : ''}${purchaseBlocked ? ' gold-shop-card--dimmed' : ''}`}
-                >
-                  <div className="gold-shop-card-body">
-                    <h3
-                      className={`gold-shop-item-name${
-                        catalogLocked
-                          ? ' gold-shop-item-name--mystery'
-                          : canBuy
-                            ? ' gold-shop-item-name--affordable'
-                            : canAfford
-                              ? ''
-                              : ' gold-shop-item-name--unaffordable'
-                      }`}
-                    >
-                      {item.name}
-                    </h3>
-                    <p className="gold-shop-item-desc">{item.description}</p>
-                    {item.flavor_text ? (
-                      <p className="gold-shop-flavor muted">{item.flavor_text}</p>
-                    ) : null}
-                    {item.rank_requirement ? (
-                      <p className="gold-shop-rank-req muted">
-                        Requires rank: <strong>{item.rank_requirement}</strong>
-                      </p>
-                    ) : null}
-                    {dailyBlocked ? (
-                      <p className="muted gold-shop-limit-note">
-                        Already purchased for today’s class period (Chicago time). Try again on the next school day.
-                      </p>
-                    ) : null}
-                    <div
-                      className="gold-shop-cost"
-                      aria-label={
-                        catalogLocked
-                          ? 'Locked catalog item'
-                          : price != null
-                            ? `Cost: ${price} gold`
-                            : 'No price'
-                      }
-                    >
-                      {catalogLocked ? (
-                        <span className="gold-shop-mystery-label">Locked</span>
-                      ) : (
-                        <>
-                          <span className="gold-shop-cost-amount">{price}</span>
-                          <span className="gold-shop-cost-unit">gold</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="gold-shop-card-footer">
-                    <button
-                      type="button"
-                      className={`gold-shop-buy-btn${canBuy ? ' gold-shop-buy-btn--active' : ''}`}
-                      disabled={
-                        !isSupabaseConfigured ||
-                        catalogLocked ||
-                        !canBuy ||
-                        busy ||
-                        catalogLoading
-                      }
-                      onClick={() => void buy(item)}
-                    >
-                      {busy ? (
-                        'Buying…'
-                      ) : catalogLocked ? (
-                        'Locked'
-                      ) : dailyBlocked ? (
-                        'Already bought today'
-                      ) : canAfford ? (
-                        'Buy'
-                      ) : (
-                        <>
-                          Not enough <span className="gold-currency-text">gold</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        </section>
+      {tierGroups.map((group) => (
+        <ShopTierBoard
+          key={group.tier.id}
+          group={group}
+          gold={gold}
+          buyingKey={buyingKey}
+          dailyBlockedIds={dailyBlockedIds}
+          isSupabaseConfigured={isSupabaseConfigured}
+          catalogLoading={catalogLoading}
+          onBuy={buy}
+        />
       ))}
     </div>
   )
