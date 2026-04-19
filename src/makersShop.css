@@ -200,13 +200,6 @@
   max-width: 44rem;
 }
 
-.makers-shop-board__accordions {
-  margin-top: 1.15rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
 /* Cards */
 .makers-shop-card {
   position: relative;
@@ -265,8 +258,15 @@
   background: rgba(255, 255, 255, 0.65);
 }
 
+.makers-shop-card__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
 .makers-shop-card__icon-row {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
 }
 
 .makers-shop-card__icon-wrap {
@@ -374,7 +374,7 @@
 }
 
 .makers-shop-card__accordion {
-  margin-top: 0.5rem;
+  margin-top: 0.55rem;
 }
 
 .makers-shop-card__purchase-panel {
@@ -383,26 +383,24 @@
   gap: 0.65rem;
 }
 
+.makers-shop-card__flavor {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ms-ink-muted);
+}
+
 .makers-shop-card__actions {
   margin-top: 0.25rem;
   padding-top: 0.15rem;
 }
 
+.makers-shop-card__frame > .makers-shop-card__actions {
+  margin-top: 0.55rem;
+}
+
 .makers-shop-card__accordion .makers-shop-accordion__panel--open {
   max-height: min(44rem, 78vh);
-}
-
-.makers-shop-prose--in-accordion {
-  font-size: 0.88rem;
-  line-height: 1.52;
-}
-
-.makers-shop-prose--in-accordion p {
-  margin: 0 0 0.45rem;
-}
-
-.makers-shop-prose--in-accordion p:last-child {
-  margin-bottom: 0;
 }
 
 .makers-shop-buy {

@@ -1,6 +1,5 @@
 import type { ShopCatalogItem, ShopTierEmbed } from '../../types/shopCatalog'
 import { GameShopCard } from './GameShopCard'
-import { ShopAccordion } from './ShopAccordion'
 import { displayShelfTitle, shelfAccentForTier } from './shopDisplay'
 
 type TierGroup = { tier: ShopTierEmbed; items: ShopCatalogItem[] }
@@ -27,7 +26,6 @@ export function ShopTierBoard({
   const { tier, items } = group
   const shelfTitle = displayShelfTitle(tier.name)
   const accent = shelfAccentForTier(tier.name)
-  const hasDailyLimited = items.some((i) => (i.max_purchases_per_chicago_school_day ?? 0) >= 1)
 
   return (
     <section
@@ -67,32 +65,6 @@ export function ShopTierBoard({
           )
         })}
       </ul>
-
-      <div className="makers-shop-board__accordions">
-        <ShopAccordion title="Shelf intent" defaultOpen={false}>
-          <div className="makers-shop-prose">
-            <p>
-              <strong>{shelfTitle}</strong> is only a reading frame: costs and locks still come from the live catalog.
-              Think months, not minutes—use this view to plan commitments across the season.
-            </p>
-            <p>{tier.subtitle}</p>
-          </div>
-        </ShopAccordion>
-        <ShopAccordion title="Table rules" defaultOpen={false}>
-          <div className="makers-shop-prose">
-            <ul>
-              <li>Gold leaves your profile the moment the server accepts a purchase.</li>
-              <li>Inventory is the canonical record of what you own; redemption follows your facilitator’s process.</li>
-              <li>
-                {hasDailyLimited
-                  ? 'Some listings reset once per New York calendar day. If you hit the cap, you already purchased today on that clock.'
-                  : 'No automatic daily cap is configured for the listings shown here.'}
-              </li>
-              <li>Sealed rows are visible on purpose: they are long-arc unlocks, not bugs.</li>
-            </ul>
-          </div>
-        </ShopAccordion>
-      </div>
     </section>
   )
 }
