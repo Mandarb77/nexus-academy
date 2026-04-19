@@ -55,94 +55,94 @@ export function GameShopCard({
     <li className={cardMods}>
       <div className="makers-shop-card__frame">
         <div className="makers-shop-card__rail" aria-hidden />
-        <div className="makers-shop-card__head">
-          <div className="makers-shop-card__icon-wrap">
-            <ShopItemGlyph variant={variant} />
-          </div>
-        </div>
         <h3 className={titleMods}>{item.name}</h3>
-        <p className="makers-shop-card__tagline">
-          {item.flavor_text?.trim() || item.description.slice(0, 120)}
-          {item.flavor_text?.trim() ? '' : item.description.length > 120 ? '…' : ''}
-        </p>
-
-        <div className="makers-shop-card__price-row" aria-live="polite">
-          {catalogLocked ? (
-            <span className="makers-shop-card__price makers-shop-card__price--locked">Sealed</span>
-          ) : (
-            <>
-              <span className="makers-shop-card__coin" aria-hidden />
-              <span className="makers-shop-card__price">{price}</span>
-              <span className="makers-shop-card__price-unit">gold</span>
-            </>
-          )}
-        </div>
-
-        {dailyBlocked && !catalogLocked ? (
-          <p className="makers-shop-card__inline-note">Already purchased today.</p>
-        ) : null}
+        <p className="makers-shop-card__desc">{item.description}</p>
 
         <ShopAccordion
-          title="Details & constraints"
+          title="Price, eligibility & purchase"
           icon={<span className="makers-shop-mini-dot" aria-hidden />}
           className="makers-shop-card__accordion"
+          defaultOpen={false}
         >
-          <div className="makers-shop-prose">
-            <p className="makers-shop-prose__lead">{item.description}</p>
-            {item.flavor_text?.trim() ? (
-              <p>
-                <em>{item.flavor_text}</em>
-              </p>
+          <div className="makers-shop-card__purchase-panel">
+            <div className="makers-shop-card__icon-row" aria-hidden="true">
+              <div className="makers-shop-card__icon-wrap">
+                <ShopItemGlyph variant={variant} />
+              </div>
+            </div>
+
+            <div className="makers-shop-card__price-row" aria-live="polite">
+              {catalogLocked ? (
+                <span className="makers-shop-card__price makers-shop-card__price--locked">Sealed</span>
+              ) : (
+                <>
+                  <span className="makers-shop-card__coin" aria-hidden />
+                  <span className="makers-shop-card__price">{price}</span>
+                  <span className="makers-shop-card__price-unit">gold</span>
+                </>
+              )}
+            </div>
+
+            {dailyBlocked && !catalogLocked ? (
+              <p className="makers-shop-card__inline-note">Already purchased today.</p>
             ) : null}
-            {item.rank_requirement ? (
+
+            <div className="makers-shop-prose makers-shop-prose--in-accordion">
+              {item.flavor_text?.trim() ? (
+                <p className="makers-shop-prose__lead">
+                  <em>{item.flavor_text}</em>
+                </p>
+              ) : null}
+              {item.rank_requirement ? (
+                <p>
+                  <strong>Rank gate:</strong> {item.rank_requirement}
+                </p>
+              ) : (
+                <p>
+                  <strong>Eligibility:</strong> Enrolled students unless your facilitator posts a narrower rule.
+                </p>
+              )}
+              {(item.max_purchases_per_chicago_school_day ?? 0) >= 1 ? (
+                <p>
+                  <strong>Daily limit:</strong> At most {item.max_purchases_per_chicago_school_day} purchase per New
+                  York calendar day for this listing. “Today” follows that clock.
+                </p>
+              ) : (
+                <p>
+                  <strong>Daily limit:</strong> None enforced by the system for this listing; facilitator discretion
+                  still applies in session.
+                </p>
+              )}
               <p>
-                <strong>Rank gate:</strong> {item.rank_requirement}
+                <strong>Ledger:</strong> Successful purchases debit gold immediately and add a row to Inventory.
+                Redemption is a separate step with your facilitator.
               </p>
-            ) : (
-              <p>
-                <strong>Eligibility:</strong> Enrolled students unless your facilitator posts a narrower rule.
-              </p>
-            )}
-            {(item.max_purchases_per_chicago_school_day ?? 0) >= 1 ? (
-              <p>
-                <strong>Daily limit:</strong> At most {item.max_purchases_per_chicago_school_day} purchase per New York
-                calendar day for this listing. “Today” follows that clock.
-              </p>
-            ) : (
-              <p>
-                <strong>Daily limit:</strong> None enforced by the system for this listing; facilitator discretion still
-                applies in session.
-              </p>
-            )}
-            <p>
-              <strong>Ledger:</strong> Successful purchases debit gold immediately and add a row to Inventory. Redemption
-              is a separate step with your facilitator.
-            </p>
+            </div>
+
+            <div className="makers-shop-card__actions">
+              <button
+                type="button"
+                className={`makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`}
+                disabled={!isSupabaseConfigured || catalogLocked || !canBuy || busy || catalogLoading}
+                onClick={() => onBuy(item)}
+              >
+                {busy ? (
+                  'Resolving…'
+                ) : catalogLocked ? (
+                  'Sealed'
+                ) : dailyBlocked ? (
+                  'Return tomorrow'
+                ) : canAfford ? (
+                  'Commit purchase'
+                ) : (
+                  <>
+                    Insufficient <span className="gold-currency-text">gold</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </ShopAccordion>
-
-        <div className="makers-shop-card__actions">
-          <button
-            type="button"
-            className={`makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`}
-            disabled={!isSupabaseConfigured || catalogLocked || !canBuy || busy || catalogLoading}
-            onClick={() => onBuy(item)}
-          >
-            {busy ? (
-              'Resolving…'
-            ) : catalogLocked ? (
-              'Sealed'
-            ) : dailyBlocked ? (
-              'Return tomorrow'
-            ) : canAfford ? (
-              'Commit purchase'
-            ) : (
-              <>
-                Insufficient <span className="gold-currency-text">gold</span>
-              </>
-            )}
-          </button>
-        </div>
       </div>
     </li>
   )
