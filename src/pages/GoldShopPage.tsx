@@ -159,7 +159,7 @@ export function GoldShopPage() {
       return
     }
     const result = data as RpcResult
-      if (!result?.ok) {
+    if (!result?.ok) {
       if (result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit') {
         setDailyBlockedIds((prev) => new Set(prev).add(item.id))
       }

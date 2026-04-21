@@ -1,46 +1,80 @@
-/* Makers shop — desktop ledger tone; guild accent colors match skill-tree welcome strips */
+/* Makers shop — fantasy workshop / trading-post surface (wood, stone, metal, slot framing) */
 
 .makers-shop {
-  --ms-paper: #faf7f2;
-  --ms-paper-deep: #f2ebe0;
-  --ms-ink: #2a2218;
-  --ms-ink-muted: #5c4f3d;
-  --ms-line: rgba(42, 34, 24, 0.12);
-  --ms-gold: #c9850e;
-  --ms-gold-soft: #f0b429;
-  --ms-wood: #5c4428;
-  /* Forge / Prism / Folded — same family as `.skill-tree-guild-welcome--*` in App.css */
-  --guild-forge-bg: linear-gradient(135deg, rgba(254, 243, 199, 0.55) 0%, rgba(253, 230, 138, 0.35) 100%);
-  --guild-forge-border: rgba(217, 119, 6, 0.28);
-  --guild-forge-accent: rgba(217, 119, 6, 0.55);
-  --guild-prism-bg: linear-gradient(135deg, rgba(238, 242, 255, 0.85) 0%, rgba(224, 231, 255, 0.45) 100%);
-  --guild-prism-border: rgba(99, 102, 241, 0.28);
-  --guild-prism-accent: rgba(99, 102, 241, 0.5);
-  --guild-folded-bg: linear-gradient(135deg, rgba(255, 247, 243, 0.95) 0%, rgba(250, 236, 231, 0.65) 100%);
-  --guild-folded-border: rgba(216, 90, 48, 0.25);
-  --guild-folded-accent: rgba(216, 90, 48, 0.45);
-  color: var(--ms-ink);
-  background: linear-gradient(180deg, var(--ms-paper) 0%, var(--ms-paper-deep) 100%);
+  --ms-void: #0f0d0b;
+  --ms-stone-deep: #1c1915;
+  --ms-stone: #2a2620;
+  --ms-stone-mid: #3a342c;
+  --ms-wood-dark: #3d2f22;
+  --ms-wood: #5c4330;
+  --ms-wood-light: #7a5c40;
+  --ms-parchment: #e8dcc8;
+  --ms-parchment-dim: #c9b89e;
+  --ms-ink: #f2e8d8;
+  --ms-ink-muted: #a89880;
+  --ms-gold: #f0c040;
+  --ms-gold-deep: #b8860b;
+  --ms-gold-shadow: #6b4a08;
+  --ms-slot-in: rgba(0, 0, 0, 0.45);
+  --ms-slot-out: rgba(255, 255, 255, 0.06);
+  --ms-bevel-light: rgba(255, 248, 220, 0.14);
+  --ms-bevel-dark: rgba(0, 0, 0, 0.55);
+  /* Tier trims — forge / prism / folded */
+  --guild-forge-glow: rgba(251, 191, 36, 0.22);
+  --guild-forge-edge: rgba(217, 119, 6, 0.75);
+  --guild-prism-glow: rgba(129, 140, 248, 0.2);
+  --guild-prism-edge: rgba(99, 102, 241, 0.75);
+  --guild-folded-glow: rgba(248, 113, 113, 0.16);
+  --guild-folded-edge: rgba(220, 90, 50, 0.78);
+
+  color: var(--ms-parchment);
+  font-family: ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  background-color: var(--ms-stone-deep);
+  background-image:
+    radial-gradient(ellipse 100% 55% at 50% -8%, rgba(240, 192, 64, 0.12), transparent 52%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 48px,
+      rgba(0, 0, 0, 0.12) 48px,
+      rgba(0, 0, 0, 0.12) 50px
+    ),
+    linear-gradient(175deg, #3d3428 0%, var(--ms-stone-deep) 38%, #12100e 100%);
   min-height: 100%;
   padding-bottom: 3rem;
 }
 
+.makers-shop .gold-currency-text {
+  color: var(--ms-gold);
+  font-weight: 700;
+}
+
 .makers-shop a {
-  color: #4338ca;
-  text-decoration-color: rgba(67, 56, 202, 0.35);
+  color: #7dd3fc;
+  text-decoration-color: rgba(125, 211, 252, 0.4);
 }
 
 .makers-shop a:hover {
-  color: #312e81;
+  color: #bae6fd;
 }
 
 .makers-shop-header {
   margin: 0 0 2rem;
-  padding: 1.35rem 1.5rem;
-  border-radius: 14px;
-  border: 1px solid var(--ms-line);
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 8px 28px rgba(42, 34, 24, 0.06);
+  padding: 1.25rem 1.35rem;
+  border-radius: 6px;
+  border: 3px solid #1a1510;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 38%),
+    repeating-linear-gradient(
+      -12deg,
+      rgba(0, 0, 0, 0.08) 0 2px,
+      transparent 2px 14px
+    ),
+    linear-gradient(165deg, var(--ms-wood-light) 0%, var(--ms-wood) 42%, var(--ms-wood-dark) 100%);
+  box-shadow:
+    inset 0 2px 0 var(--ms-bevel-light),
+    inset 0 -3px 0 var(--ms-bevel-dark),
+    0 6px 0 rgba(0, 0, 0, 0.35);
 }
 
 .makers-shop-header__inner {
@@ -56,170 +90,219 @@
 }
 
 .makers-shop-header__eyebrow {
-  margin: 0 0 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--ms-ink-muted);
+  color: var(--ms-parchment-dim);
+  text-shadow: 0 1px 0 var(--ms-void);
 }
 
 .makers-shop-header__title {
-  margin: 0 0 0.5rem;
-  font-size: clamp(1.45rem, 3vw, 2rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  color: var(--ms-ink);
-}
-
-.makers-shop-header__tagline {
   margin: 0;
-  font-size: 0.98rem;
-  line-height: 1.55;
-  color: var(--ms-ink-muted);
-  font-weight: 450;
+  font-size: clamp(1.5rem, 3.2vw, 2.05rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.12;
+  color: var(--ms-parchment);
+  text-shadow:
+    0 2px 0 var(--ms-void),
+    0 0 18px rgba(240, 192, 64, 0.15);
 }
 
 .makers-shop-header__actions {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .makers-shop-purse {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  padding: 0.5rem 0.95rem 0.55rem;
-  border-radius: 10px;
-  border: 1px solid var(--ms-line);
-  background: rgba(255, 255, 255, 0.85);
-  min-width: 8.5rem;
+  padding: 0.55rem 1rem 0.6rem;
+  border-radius: 4px;
+  border: 2px solid #1a1510;
+  background:
+    linear-gradient(180deg, rgba(255, 230, 150, 0.2) 0%, transparent 45%),
+    linear-gradient(145deg, #4a3a1a 0%, #2a2210 100%);
+  min-width: 8.75rem;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.45),
+    0 3px 0 rgba(0, 0, 0, 0.35);
 }
 
 .makers-shop-purse__label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--ms-ink-muted);
+  color: var(--ms-parchment-dim);
 }
 
 .makers-shop-purse__value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   color: var(--ms-gold);
+  text-shadow:
+    0 1px 0 var(--ms-gold-shadow),
+    0 0 12px rgba(240, 192, 64, 0.35);
 }
 
 .makers-shop-signout {
   font: inherit;
-  font-size: 0.86rem;
-  font-weight: 600;
-  padding: 0.4rem 0.9rem;
-  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.95rem;
+  border-radius: 4px;
   cursor: pointer;
-  color: var(--ms-ink-muted);
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid var(--ms-line);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  color: var(--ms-parchment-dim);
+  background: linear-gradient(180deg, var(--ms-stone-mid) 0%, var(--ms-stone) 100%);
+  border: 2px solid #0c0a08;
+  box-shadow:
+    inset 0 1px 0 var(--ms-bevel-light),
+    0 2px 0 rgba(0, 0, 0, 0.35);
+  transition:
+    color 0.15s ease,
+    filter 0.15s ease;
 }
 
 .makers-shop-signout:hover {
-  border-color: rgba(42, 34, 24, 0.22);
-  background: #fff;
+  color: var(--ms-parchment);
+  filter: brightness(1.08);
 }
 
 .makers-shop-alert {
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 10px;
-  border: 1px solid var(--ms-line);
-  background: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  border: 2px solid #3f3208;
+  background: linear-gradient(145deg, rgba(120, 53, 15, 0.55) 0%, rgba(40, 30, 14, 0.92) 100%);
   font-size: 0.94rem;
   line-height: 1.45;
+  box-shadow: inset 0 1px 0 rgba(255, 200, 120, 0.12);
 }
 
-/* Tier boards — guild strip as section frame */
+.makers-shop-muted {
+  color: var(--ms-ink-muted);
+}
+
+.makers-shop .inline-code {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(232, 220, 200, 0.22);
+  color: #fef3c7;
+}
+
+/* Tier boards — stone slab + tier glow */
 .makers-shop-board {
   margin-bottom: 2.75rem;
-  padding: 1.15rem 1.25rem 1.35rem;
-  border-radius: 14px;
-  border: 1px solid var(--ms-line);
+  padding: 1.2rem 1.2rem 1.4rem;
+  border-radius: 6px;
+  border: 3px solid #141210;
   box-sizing: border-box;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 32%),
+    linear-gradient(165deg, var(--ms-stone-mid) 0%, var(--ms-stone) 55%, var(--ms-stone-deep) 100%);
+  box-shadow:
+    inset 0 2px 0 var(--ms-bevel-light),
+    inset 0 -4px 0 var(--ms-bevel-dark),
+    0 5px 0 rgba(0, 0, 0, 0.32);
 }
 
 .makers-shop-board--forge {
-  background: var(--guild-forge-bg);
-  border-color: var(--guild-forge-border);
-  border-left: 4px solid var(--guild-forge-accent);
+  box-shadow:
+    inset 0 2px 0 var(--ms-bevel-light),
+    inset 0 -4px 0 var(--ms-bevel-dark),
+    inset 6px 0 0 var(--guild-forge-edge),
+    0 0 0 1px var(--guild-forge-glow),
+    0 5px 0 rgba(0, 0, 0, 0.32);
 }
 
 .makers-shop-board--prism {
-  background: var(--guild-prism-bg);
-  border-color: var(--guild-prism-border);
-  border-left: 4px solid var(--guild-prism-accent);
+  box-shadow:
+    inset 0 2px 0 var(--ms-bevel-light),
+    inset 0 -4px 0 var(--ms-bevel-dark),
+    inset 6px 0 0 var(--guild-prism-edge),
+    0 0 0 1px var(--guild-prism-glow),
+    0 5px 0 rgba(0, 0, 0, 0.32);
 }
 
 .makers-shop-board--folded {
-  background: var(--guild-folded-bg);
-  border-color: var(--guild-folded-border);
-  border-left: 4px solid var(--guild-folded-accent);
+  box-shadow:
+    inset 0 2px 0 var(--ms-bevel-light),
+    inset 0 -4px 0 var(--ms-bevel-dark),
+    inset 6px 0 0 var(--guild-folded-edge),
+    0 0 0 1px var(--guild-folded-glow),
+    0 5px 0 rgba(0, 0, 0, 0.32);
 }
 
 .makers-shop-board__header {
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.05rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .makers-shop-board__title {
-  margin: 0 0 0.35rem;
-  font-size: 1.28rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ms-ink);
+  margin: 0 0 0.3rem;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ms-parchment);
+  text-shadow: 0 2px 0 var(--ms-void);
 }
 
 .makers-shop-board__subtitle {
   margin: 0;
   max-width: min(44rem, 100%);
-  font-size: 0.98rem;
-  line-height: 1.55;
+  font-size: 0.92rem;
+  line-height: 1.5;
   color: var(--ms-ink-muted);
 }
 
-/* One item per row — comfortable line length, no narrow multi-column cards */
 .makers-shop-board__grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.35rem;
+  gap: 1.25rem;
   max-width: 44rem;
 }
 
-/* Cards */
+/* Cards — inventory-slot framing */
 .makers-shop-card {
   position: relative;
 }
 
 .makers-shop-card__frame {
   position: relative;
-  padding: 1.15rem 1.15rem 1.15rem 1.35rem;
-  border-radius: 12px;
-  border: 1px solid var(--ms-line);
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  padding: 1.1rem 1.1rem 1.1rem 1.3rem;
+  border-radius: 4px;
+  border: 2px solid #0a0908;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, transparent 42%),
+    linear-gradient(180deg, var(--ms-stone-mid) 0%, var(--ms-stone-deep) 100%);
+  box-shadow:
+    inset 2px 2px 0 var(--ms-slot-out),
+    inset -2px -3px 0 var(--ms-slot-in),
+    0 4px 0 rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  gap: 0.6rem;
+  transition:
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
 }
 
 .makers-shop-card__frame:hover {
-  box-shadow: 0 10px 28px rgba(42, 34, 24, 0.07);
+  filter: brightness(1.03);
 }
 
 .makers-shop-card__rail {
@@ -227,42 +310,51 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
-  border-radius: 12px 0 0 12px;
-  background: rgba(92, 79, 61, 0.25);
+  width: 5px;
+  border-radius: 2px 0 0 2px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.35));
 }
 
 .makers-shop-card--accent-forge .makers-shop-card__rail {
-  background: linear-gradient(180deg, rgba(217, 119, 6, 0.85), rgba(217, 119, 6, 0.25));
+  background: linear-gradient(180deg, #fbbf24, #92400e);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
 }
 
 .makers-shop-card--accent-prism .makers-shop-card__rail {
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.75), rgba(99, 102, 241, 0.2));
+  background: linear-gradient(180deg, #a5b4fc, #4338ca);
+  box-shadow: 0 0 12px rgba(129, 140, 248, 0.35);
 }
 
 .makers-shop-card--accent-folded .makers-shop-card__rail {
-  background: linear-gradient(180deg, rgba(216, 90, 48, 0.8), rgba(216, 90, 48, 0.22));
+  background: linear-gradient(180deg, #fca5a5, #9a3412);
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.28);
 }
 
 .makers-shop-card--ready .makers-shop-card__frame {
-  border-color: rgba(217, 119, 6, 0.35);
+  box-shadow:
+    inset 2px 2px 0 var(--ms-slot-out),
+    inset -2px -3px 0 var(--ms-slot-in),
+    0 0 0 2px rgba(240, 192, 64, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
 }
 
 .makers-shop-card--soft-lock .makers-shop-card__frame {
-  opacity: 0.94;
+  opacity: 0.88;
+  filter: saturate(0.82);
 }
 
 .makers-shop-card--mystery .makers-shop-card__frame {
   border-style: dashed;
-  border-color: rgba(99, 102, 241, 0.35);
-  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(129, 140, 248, 0.55);
+  background:
+    linear-gradient(160deg, rgba(49, 46, 129, 0.35) 0%, rgba(15, 13, 11, 0.92) 100%);
 }
 
 .makers-shop-card__summary {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: 0.15rem;
+  margin-top: 0.1rem;
 }
 
 .makers-shop-card__icon-row {
@@ -270,133 +362,143 @@
 }
 
 .makers-shop-card__icon-wrap {
-  width: 2.85rem;
-  height: 2.85rem;
-  border-radius: 10px;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 3px;
   display: grid;
   place-items: center;
-  color: #4338ca;
-  background: rgba(238, 242, 255, 0.9);
-  border: 1px solid rgba(99, 102, 241, 0.22);
+  color: #a5b4fc;
+  background:
+    linear-gradient(145deg, rgba(0, 0, 0, 0.35) 0%, rgba(30, 27, 40, 0.95) 100%);
+  border: 2px solid #0a0908;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.06),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.55);
 }
 
 .makers-shop-card--accent-forge .makers-shop-card__icon-wrap {
-  color: #b45309;
-  background: rgba(254, 243, 199, 0.65);
-  border-color: rgba(217, 119, 6, 0.22);
+  color: #fcd34d;
+  background: linear-gradient(145deg, rgba(80, 50, 10, 0.6) 0%, rgba(25, 18, 8, 0.95) 100%);
 }
 
 .makers-shop-card--accent-folded .makers-shop-card__icon-wrap {
-  color: #9a3412;
-  background: rgba(255, 247, 237, 0.9);
-  border-color: rgba(216, 90, 48, 0.2);
+  color: #fdba74;
+  background: linear-gradient(145deg, rgba(90, 30, 18, 0.55) 0%, rgba(25, 14, 10, 0.95) 100%);
 }
 
 .makers-shop-glyph {
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 2rem;
+  height: 2rem;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
 }
 
 .makers-shop-card__title {
-  margin: 0 0 0.15rem;
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.28;
-  color: var(--ms-ink);
+  margin: 0 0 0.12rem;
+  font-size: 1.14rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: var(--ms-parchment);
+  text-shadow: 0 1px 0 var(--ms-void);
 }
 
 .makers-shop-card__desc {
-  margin: 0 0 0.35rem;
-  font-size: 0.98rem;
-  line-height: 1.58;
+  margin: 0 0 0.3rem;
+  font-size: 0.93rem;
+  line-height: 1.55;
   color: var(--ms-ink-muted);
   overflow-wrap: anywhere;
 }
 
 .makers-shop-card__title--ready {
-  color: var(--ms-ink);
+  color: #fef3c7;
 }
 
 .makers-shop-card__title--low {
-  color: #9a3412;
+  color: #fdba74;
 }
 
 .makers-shop-card__title--mystery {
-  color: #4338ca;
+  color: #c7d2fe;
 }
 
 .makers-shop-card__price-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.6rem;
-  border-radius: 8px;
-  background: rgba(42, 34, 24, 0.04);
-  border: 1px solid var(--ms-line);
+  gap: 0.45rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.55) 100%);
+  border: 2px solid #0a0908;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4);
 }
 
 .makers-shop-card__coin {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1rem;
+  height: 1rem;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 25%, #fff6cf, var(--ms-gold-soft) 55%, var(--ms-gold));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: radial-gradient(circle at 32% 28%, #fff8dc, #fcd34d 50%, var(--ms-gold-deep));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
 .makers-shop-card__price {
-  font-size: 1.22rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   color: var(--ms-gold);
+  text-shadow: 0 1px 0 var(--ms-gold-shadow);
 }
 
 .makers-shop-card__price-unit {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.62rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ms-wood);
+  letter-spacing: 0.12em;
+  color: var(--ms-parchment-dim);
 }
 
 .makers-shop-card__price--locked {
-  font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #4338ca;
+  color: #c7d2fe;
 }
 
 .makers-shop-card__inline-note {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--ms-ink-muted);
 }
 
 .makers-shop-card__accordion {
-  margin-top: 0.55rem;
+  margin-top: 0.5rem;
 }
 
 .makers-shop-card__purchase-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.6rem;
 }
 
 .makers-shop-card__flavor {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   line-height: 1.5;
   color: var(--ms-ink-muted);
 }
 
 .makers-shop-card__actions {
-  margin-top: 0.25rem;
-  padding-top: 0.15rem;
+  margin-top: 0.2rem;
+  padding-top: 0.1rem;
 }
 
 .makers-shop-card__frame > .makers-shop-card__actions {
-  margin-top: 0.55rem;
+  margin-top: 0.5rem;
 }
 
 .makers-shop-card__accordion .makers-shop-accordion__panel--open {
@@ -406,40 +508,59 @@
 .makers-shop-buy {
   width: 100%;
   box-sizing: border-box;
-  min-height: 2.65rem;
-  border-radius: 8px;
+  min-height: 2.75rem;
+  border-radius: 4px;
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: not-allowed;
-  border: 1px solid var(--ms-line);
+  border: 2px solid #0a0908;
   color: var(--ms-ink-muted);
-  background: rgba(255, 255, 255, 0.55);
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  background: linear-gradient(180deg, var(--ms-stone-mid) 0%, var(--ms-stone-deep) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+  transition:
+    filter 0.12s ease,
+    transform 0.08s ease;
 }
 
 .makers-shop-buy--hot {
   cursor: pointer;
-  color: #fff;
-  border: 1px solid rgba(120, 53, 15, 0.35);
-  background: linear-gradient(180deg, #ca8a04 0%, #92400e 100%);
-  box-shadow: 0 2px 8px rgba(146, 64, 14, 0.22);
+  color: #1a1206;
+  border-color: #3f3208;
+  background: linear-gradient(180deg, #fde68a 0%, var(--ms-gold) 38%, var(--ms-gold-deep) 100%);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 0 rgba(107, 74, 8, 0.55),
+    0 4px 0 rgba(0, 0, 0, 0.45);
 }
 
 .makers-shop-buy--hot:hover:not(:disabled) {
-  filter: brightness(1.04);
+  filter: brightness(1.06);
+}
+
+.makers-shop-buy--hot:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(107, 74, 8, 0.5),
+    0 2px 0 rgba(0, 0, 0, 0.4);
 }
 
 .makers-shop-buy:disabled {
-  opacity: 0.9;
+  opacity: 0.88;
 }
 
 .makers-shop-accordion {
-  border-radius: 8px;
-  border: 1px solid var(--ms-line);
-  background: rgba(255, 255, 255, 0.45);
+  border-radius: 4px;
+  border: 2px solid #0a0908;
+  background: rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .makers-shop-accordion__trigger {
@@ -448,25 +569,28 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.55rem 0.65rem;
+  padding: 0.55rem 0.7rem;
   font: inherit;
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-align: left;
   cursor: pointer;
-  color: var(--ms-wood);
+  color: var(--ms-parchment-dim);
   background: transparent;
   border: none;
 }
 
 .makers-shop-accordion__trigger:hover {
-  background: rgba(255, 255, 255, 0.55);
+  color: var(--ms-parchment);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .makers-shop-accordion__trigger-left {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   min-width: 0;
 }
 
@@ -477,17 +601,18 @@
 
 .makers-shop-mini-dot {
   display: block;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 50%;
-  background: rgba(99, 102, 241, 0.75);
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 1px;
+  background: linear-gradient(145deg, #a5b4fc, #4338ca);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
 }
 
 .makers-shop-accordion__chevron {
   width: 0.5rem;
   height: 0.5rem;
-  border-right: 2px solid rgba(92, 68, 40, 0.55);
-  border-bottom: 2px solid rgba(92, 68, 40, 0.55);
+  border-right: 2px solid rgba(232, 220, 200, 0.55);
+  border-bottom: 2px solid rgba(232, 220, 200, 0.55);
   transform: rotate(45deg);
   transition: transform 0.2s ease;
   flex-shrink: 0;
@@ -503,7 +628,9 @@
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.35s ease, opacity 0.25s ease;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease;
 }
 
 .makers-shop-accordion__panel--open {
@@ -512,7 +639,7 @@
 }
 
 .makers-shop-accordion__panel-inner {
-  padding: 0 0.65rem 0.75rem;
+  padding: 0 0.7rem 0.75rem;
 }
 
 .makers-shop-prose {
@@ -523,7 +650,7 @@
 
 .makers-shop-prose__lead {
   margin: 0 0 0.45rem;
-  color: var(--ms-ink);
+  color: var(--ms-parchment);
 }
 
 .makers-shop-prose ul {
@@ -535,116 +662,13 @@
   margin-bottom: 0.3rem;
 }
 
-.makers-shop-muted {
-  color: var(--ms-ink-muted);
-}
-
-@media (prefers-color-scheme: dark) {
-  .makers-shop {
-    --ms-paper: #1a1714;
-    --ms-paper-deep: #12100e;
-    --ms-ink: #f4eee4;
-    --ms-ink-muted: #c9bdb0;
-    --ms-line: rgba(244, 238, 228, 0.1);
-    --ms-gold: #fbbf24;
-    --ms-gold-soft: #fcd34d;
-    --ms-wood: #d6cbbf;
-    --guild-forge-bg: linear-gradient(135deg, rgba(120, 53, 15, 0.35) 0%, rgba(146, 64, 14, 0.22) 100%);
-    --guild-forge-border: rgba(251, 191, 36, 0.22);
-    --guild-forge-accent: rgba(251, 191, 36, 0.45);
-    --guild-prism-bg: linear-gradient(135deg, rgba(49, 46, 129, 0.45) 0%, rgba(67, 56, 202, 0.2) 100%);
-    --guild-prism-border: rgba(165, 180, 252, 0.22);
-    --guild-prism-accent: rgba(165, 180, 252, 0.45);
-    --guild-folded-bg: linear-gradient(135deg, rgba(88, 28, 28, 0.35) 0%, rgba(124, 45, 18, 0.22) 100%);
-    --guild-folded-border: rgba(244, 160, 122, 0.2);
-    --guild-folded-accent: rgba(244, 160, 122, 0.42);
-    background: linear-gradient(180deg, var(--ms-paper) 0%, var(--ms-paper-deep) 100%);
+@media (prefers-reduced-motion: reduce) {
+  .makers-shop-buy--hot:active:not(:disabled) {
+    transform: none;
   }
 
-  .makers-shop a {
-    color: #a5b4fc;
-    text-decoration-color: rgba(165, 180, 252, 0.35);
-  }
-
-  .makers-shop a:hover {
-    color: #c7d2fe;
-  }
-
-  .makers-shop-header {
-    background: rgba(30, 27, 24, 0.85);
-    box-shadow: none;
-  }
-
-  .makers-shop-purse {
-    background: rgba(22, 20, 18, 0.9);
-  }
-
-  .makers-shop-signout {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .makers-shop-signout:hover {
-    background: rgba(255, 255, 255, 0.07);
-  }
-
-  .makers-shop-alert {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .makers-shop-card__frame {
-    background: rgba(28, 26, 23, 0.72);
-  }
-
-  .makers-shop-card--mystery .makers-shop-card__frame {
-    border-color: rgba(165, 180, 252, 0.28);
-    background: rgba(22, 20, 18, 0.85);
-  }
-
-  .makers-shop-card__icon-wrap {
-    color: #a5b4fc;
-    background: rgba(49, 46, 129, 0.35);
-    border-color: rgba(165, 180, 252, 0.2);
-  }
-
-  .makers-shop-card--accent-forge .makers-shop-card__icon-wrap {
-    color: #fcd34d;
-    background: rgba(120, 53, 15, 0.35);
-    border-color: rgba(251, 191, 36, 0.2);
-  }
-
-  .makers-shop-card--accent-folded .makers-shop-card__icon-wrap {
-    color: #fdba74;
-    background: rgba(88, 28, 28, 0.3);
-    border-color: rgba(244, 160, 122, 0.18);
-  }
-
-  .makers-shop-card__price-row {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .makers-shop-card__title--low {
-    color: #fdba74;
-  }
-
-  .makers-shop-card__title--mystery {
-    color: #a5b4fc;
-  }
-
-  .makers-shop-card__price--locked {
-    color: #a5b4fc;
-  }
-
-  .makers-shop-accordion {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
+  .makers-shop-card__frame,
   .makers-shop-buy--hot {
-    border-color: rgba(251, 191, 36, 0.25);
-    background: linear-gradient(180deg, #a16207 0%, #7c2d12 100%);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  }
-
-  .makers-shop-mini-dot {
-    background: rgba(165, 180, 252, 0.85);
+    transition: none;
   }
 }

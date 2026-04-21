@@ -47,13 +47,13 @@ function PurchaseButton({
         onClick={() => onBuy(item)}
       >
         {busy ? (
-          'Resolving…'
+          'Trading…'
         ) : catalogLocked ? (
           'Sealed'
         ) : dailyBlocked ? (
-          'Return tomorrow'
+          'Back tomorrow'
         ) : canAfford ? (
-          'Commit purchase'
+          'Trade'
         ) : (
           <>
             Insufficient <span className="gold-currency-text">gold</span>
@@ -145,7 +145,7 @@ export function GameShopCard({
 
         {hasFlavor ? (
           <ShopAccordion
-            title="Flavor & purchase"
+            title="Lore & trade"
             icon={<span className="makers-shop-mini-dot" aria-hidden />}
             className="makers-shop-card__accordion"
             defaultOpen={false}
