@@ -1,3 +1,15 @@
+/*
+ * Journey / Codex read-only view model for completed patent quests
+ *
+ * The Journey page shows a collapsed summary of what the student submitted: checklist
+ * lines, empathy answers, free-text fields, and final photo URL. This module merges
+ * data across all `patents` rows (plan + packet) because final answers sometimes land
+ * on packet rows while an older plan row remains “primary” for gating. The checklist merge
+ * with `hasPacket && !anyChecked` fills all boxes as done once a packet exists — fixes
+ * journey cards that looked “incomplete” even after final approval when checklist_state
+ * only lived on an earlier row.
+ */
+
 import type { TileRow } from '../types/tile'
 import type { EmpathyDraft } from './empathy'
 import { parseEmpathy } from './empathy'
@@ -47,6 +59,7 @@ function checklistStepLabels(tile: TileRow): string[] {
 
 function answerBlocksForTile(tile: TileRow, field1: string, field3: string, field4: string) {
   if (isStickerTile(tile) || isPersonalGamePieceTile(tile) || isPopUpCardTile(tile)) {
+    /* `__empathy__` is a sentinel: the renderer swaps in structured empathy fields, not one plain paragraph. */
     return [
       { label: 'What are you making?', value: field1 },
       { label: '__empathy__', value: '' },
@@ -94,6 +107,10 @@ function mergeChecklistStateForJourneyRead(allRows: LoadedPlanPatentRow[], clen:
   }
   const hasPacket = allRows.some((r) => String(r.stage ?? '').trim().toLowerCase() === 'packet')
   const anyChecked = out.some(Boolean)
+  /*
+   * Packet submission implies the physical checklist was done even if boolean flags never
+   * synced to an older plan row — show a completed journey card instead of empty boxes.
+   */
   if (hasPacket && !anyChecked) {
     return Array(clen).fill(true)
   }
@@ -109,8 +126,11 @@ export function buildJourneyPatentReadViewFromRows(
   const { primary, source } = selectStudentPatentPrimary(allRows, normalizePatentPlanStatus)
   if (!primary) return null
 
-  // Merge field_1–4 across plan AND packet rows so final answers (saved on packet / updated row) show up
-  // even when an older duplicate `plan` row is chosen as primary.
+  /*
+   * Journey read view must show the student’s latest narrative even when duplicate `plan`
+   * rows exist: final answers often live on `packet` stage rows while `selectStudentPatentPrimary`
+   * still picks a `plan` row for status — merge lifts non-empty fields from the whole set.
+   */
   const merged = fillPatentPlanFieldsFromRows(primary, allRows)
   const empathyRaw = pickField2EmpathySource(primary, allRows)
   const empathy = parseEmpathy(empathyRaw)
@@ -119,6 +139,7 @@ export function buildJourneyPatentReadViewFromRows(
   const clen = steps.length
   const primaryStage = String(primary.stage ?? '').trim().toLowerCase() === 'packet' ? 'packet' : 'plan'
   const mergedChecks = mergeChecklistStateForJourneyRead(allRows, clen)
+  /* After packet exists, journey treats checklist as complete for display (read-only teacher/student view). */
   const checksForUi =
     primaryStage === 'packet' || source === 'packet' ? Array(clen).fill(true) : mergedChecks
 

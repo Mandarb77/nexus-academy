@@ -1,4 +1,10 @@
-/** Rows from `shop_items` with embedded `shop_tiers` (Supabase select). */
+/*
+ * Gold shop catalog types — joined `shop_items` + `shop_tiers` query shape
+ *
+ * `max_purchases_per_chicago_school_day` pairs with `lib/schoolDayEastern.ts` limits in
+ * the shop UI. `rank_requirement` lets high-tier cosmetics stay locked until promotion.
+ */
+
 export type ShopTierEmbed = {
   id: string
   name: string

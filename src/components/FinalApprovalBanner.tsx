@@ -1,3 +1,12 @@
+/*
+ * Presentational “Quest Approved!” banner (WP + gold)
+ *
+ * Used by `ApprovalCelebrationHost` (global fixed toast) and can be embedded `pageTop`
+ * on student home / skill tree for the same visual language. Keeps all copy and layout
+ * in one component so teacher-facing dashboards never accidentally import this without
+ * the celebration queue logic.
+ */
+
 type Props = {
   wp: number
   gold: number

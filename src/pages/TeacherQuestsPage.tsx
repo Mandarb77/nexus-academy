@@ -1,3 +1,11 @@
+/*
+ * Quest Builder admin (`/teacher/quests`)
+ *
+ * CRUD UI for `tiles` rows: guild, rewards, ordered steps with optional teacher-checkpoint flags.
+ * Feeds the student-facing custom patent flow (`GenericPatentContent`) — changing step text here
+ * updates what students see after refresh.
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'

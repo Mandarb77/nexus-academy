@@ -1,3 +1,12 @@
+/*
+ * Purchased shop items — “My stuff” inventory (`/inventory`)
+ *
+ * Lists `inventory` rows for the signed-in student and merges pending `redemption_requests`
+ * so the UI can show “awaiting teacher approval” without letting the student mark an item
+ * used twice. `use` actions hit Supabase RPC or updates depending on how your migrations
+ * define fulfillment — see body of `load` for paired queries rationale.
+ */
+
 import { useCallback, useEffect, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
@@ -34,6 +43,7 @@ export function InventoryPage() {
         .select('id, student_id, item_name, item_description, gold_cost, status, created_at')
         .eq('student_id', studentId)
         .order('created_at', { ascending: false }),
+      /* Pending redemption hides “Mark as used” until staff approves physical perks that need verification. */
       supabase
         .from('redemption_requests')
         .select('inventory_id')

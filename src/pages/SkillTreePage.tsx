@@ -1,3 +1,10 @@
+/*
+ * Class-wide skill tree (`/tree`)
+ *
+ * Renders every guild section in `SKILL_TREE_SECTION_GUILDS` order with anchors for deep links.
+ * `SkillTilesList` owns per-tile actions; this page supplies banners and “coming soon” empty states.
+ */
+
 import { useCallback, useState } from 'react'
 import forgeBanner from '../assets/forge-banner.png'
 import prismBanner from '../assets/prism-banner.png'
@@ -8,7 +15,9 @@ import { MainNav } from '../components/MainNav'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
-import { isComingSoonGuildSection, skillTreeGuildModifier } from '../lib/guildTree'
+import { skillTreeGuildModifier } from '../lib/guildTree'
+import { canAccessVoidTile1Proto, isGuildComingSoonForUser } from '../lib/voidProtoAccess'
+import { filterVoidTilesForProto } from '../lib/voidTile1Proto'
 
 function guildSlugId(guildKey: string): string {
   return guildKey.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
@@ -26,7 +35,7 @@ function bannerForModifier(
 }
 
 export function SkillTreePage() {
-  const { signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const {
     guildKeys,
     tilesByGuild,
@@ -142,7 +151,7 @@ export function SkillTreePage() {
                     aria-labelledby={`guild-trigger-${slug}`}
                     className="skill-tree-guild-panel"
                   >
-                    {isComingSoonGuildSection(guildKey) ? (
+                    {isGuildComingSoonForUser(guildKey, user) ? (
                       <div className="guild-coming-soon-box guild-coming-soon-box--inline">
                         <p className="guild-coming-soon-box__icon">🔒</p>
                         <p className="guild-coming-soon-box__heading">Coming soon</p>
@@ -152,7 +161,11 @@ export function SkillTreePage() {
                       </div>
                     ) : (
                       <SkillTilesList
-                        tiles={tilesByGuild.get(guildKey) ?? []}
+                        tiles={
+                          skillTreeGuildModifier(guildKey) === 'void' && canAccessVoidTile1Proto(user)
+                            ? filterVoidTilesForProto(tilesByGuild.get(guildKey) ?? [])
+                            : tilesByGuild.get(guildKey) ?? []
+                        }
                         completionByTileId={completionByTileId}
                         patentProgressByTileId={patentProgressByTileId}
                         submittingTileId={submittingTileId}

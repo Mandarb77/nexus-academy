@@ -1,3 +1,11 @@
+/*
+ * Nexus Academy — global design tokens and base layout
+ *
+ * Defines CSS variables consumed across `App.css` and feature modules (shell width, palette,
+ * typography). Media blocks override tokens for wide screens and `prefers-color-scheme: dark`.
+ * Loaded from `main.tsx` before `App.css`.
+ */
+
 :root {
   /**
    * Main content width: comfortable reading column on small screens; on laptop and up

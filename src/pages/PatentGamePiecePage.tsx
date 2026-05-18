@@ -1,3 +1,10 @@
+/*
+ * Patent route shell — game piece + pop-up card (`/patent-game-piece/:tileId`)
+ *
+ * Wraps `PersonalGamePiecePatentContent` with tile lookup and guild-aware back navigation
+ * (`/tree/forge` vs `/tree/prism`). Redirects away if the tile is not part of this flow.
+ */
+
 import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
@@ -17,6 +24,9 @@ export function PatentGamePiecePage() {
   const { signOut } = useAuth()
   const { tiles, loading, refresh, completionByTileId, canUseDb } = useSkillTree()
 
+  // ---------------------------------------------------------------------------
+  // URL → tile row; back link follows guild (Forge vs Prism)
+  // ---------------------------------------------------------------------------
   const tile = useMemo(() => {
     if (!tileId) return null
     return tiles.find((t) => String(t.id) === String(tileId)) ?? null
@@ -25,13 +35,17 @@ export function PatentGamePiecePage() {
   const completion = tile ? completionByTileId.get(tile.id) : undefined
   const backPath = tile ? patentGamePieceBackPath(tile.guild) : '/tree/forge'
 
-  // No tileId in the URL at all — go home.
+  /*
+   * Malformed deep link (missing `:tileId`) — send students back to the default skill tree
+   * rather than a blank shell; keeps support tickets from “white page on patent” reports.
+   */
   if (!tileId) {
     return <Navigate to="/tree" replace />
   }
 
   return (
     <div className="app-shell patent-game-piece-page">
+      {/* ---------- Page chrome ---------- */}
       <header className="skill-tree-top">
         <MainNav />
         <div className="skill-tree-top-row skill-tree-top-row--guild">
@@ -47,6 +61,7 @@ export function PatentGamePiecePage() {
         </div>
       </header>
 
+      {/* ---------- Main: Supabase gate → loading / not found → wizard ---------- */}
       <main className="page patent-game-piece-main" data-patent-page="game-piece-stepped">
         <h1 className="page-title" style={{ marginTop: 0 }}>
           {tile?.skill_name ?? 'Patent application'}

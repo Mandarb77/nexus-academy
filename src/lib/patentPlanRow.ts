@@ -1,3 +1,19 @@
+/*
+ * Patent row selection — deduplication and “which row is truth?” for duplicate inserts
+ *
+ * Students sometimes accumulate multiple `patents` rows per tile (retries, bugs, or
+ * double clicks). Taking only `ORDER BY created_at DESC LIMIT 1` broke real classes:
+ * a newer empty `pending` row could shadow an older `approved` plan and keep the
+ * checklist locked forever. `pickStudentPlanPatentContext` encodes product rules for
+ * which row drives the UI and when checklist unlock is allowed. `selectStudentPatentPrimary`
+ * extends that to choose between plan-stage vs packet-stage rows so final packet answers
+ * still load after the student advances past planning.
+ */
+
+// =============================================================================
+// Plan-stage primary row (duplicate-safe) + thin back-compat wrapper
+// =============================================================================
+
 /**
  * Multiple `patents` rows can exist per student+tile+stage (e.g. duplicate inserts).
  *
@@ -37,6 +53,10 @@ export function pickPrimaryPlanPatentRow<
 >(rows: T[] | null | undefined, normalizeStatus: (s: unknown) => string): T | undefined {
   return pickStudentPlanPatentContext(rows, normalizeStatus).primary
 }
+
+// =============================================================================
+// Plan vs packet stage — which row set hydrates the wizard after refresh
+// =============================================================================
 
 export type StudentPatentPrimaryResult<T> = {
   primary: T | undefined

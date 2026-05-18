@@ -1,9 +1,18 @@
+/*
+ * Nexus Academy — teacher-only route guard (dashboard, approvals, quest admin)
+ *
+ * Handoff: wrap staff URLs in `App.tsx`. Requires restored session plus a loaded `profiles`
+ * row with `role=teacher`. `studentPreviewMode` intentionally **denies** access here so a
+ * teacher who is previewing the learner shell cannot accidentally open grading tools in the
+ * same tab state — they must exit preview first. Pairs with `StudentOnlyRoute`, which does
+ * the inverse for `/tree`, `/shop`, `/journey`, patent wizards, etc.
+ */
+
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isTeacherProfile } from '../lib/teacher'
 
-/** Like ProtectedRoute, but only teachers see the dashboard; students use `/`. */
 export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
   const { user, profile, authReady, loading, studentPreviewMode } = useAuth()
   const location = useLocation()
@@ -32,7 +41,10 @@ export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/" replace />
   }
 
-  // Teachers in student preview mode cannot access teacher routes — send them to student home.
+  /*
+   * Redirect to `/` (which re-resolves to student home in preview) instead of `/dashboard` to
+   * avoid a redirect loop and to make “exit preview” the one mental model: home is always safe.
+   */
   if (studentPreviewMode) {
     return <Navigate to="/" replace />
   }

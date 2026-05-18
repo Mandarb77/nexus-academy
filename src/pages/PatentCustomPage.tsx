@@ -1,3 +1,10 @@
+/*
+ * Patent route shell for Quest Builder tiles (`/patent-custom/:tileId`)
+ *
+ * Resolves `tileId` from the URL, finds the matching row from `useSkillTree`, and mounts
+ * `GenericPatentContent`. Invalid ids show recovery links back to the skill tree.
+ */
+
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
@@ -11,6 +18,9 @@ export function PatentCustomPage() {
   const { signOut } = useAuth()
   const { tiles, loading, refresh, completionByTileId, canUseDb } = useSkillTree()
 
+  // ---------------------------------------------------------------------------
+  // Resolve URL tile id → `tiles` row from skill tree hook
+  // ---------------------------------------------------------------------------
   const tile = useMemo(() => {
     if (!tileId) return null
     return tiles.find((t) => String(t.id) === String(tileId)) ?? null
@@ -18,13 +28,23 @@ export function PatentCustomPage() {
 
   const completion = tile ? completionByTileId.get(tile.id) : undefined
   const mod = tile ? skillTreeGuildModifier(tile.guild) : 'default'
-  const backPath = mod === 'forge' ? '/tree/forge' : mod === 'prism' ? '/tree/prism' : mod === 'folded' ? '/tree/folded' : '/tree'
+  const backPath =
+    mod === 'forge'
+      ? '/tree/forge'
+      : mod === 'prism'
+        ? '/tree/prism'
+        : mod === 'folded'
+          ? '/tree/folded'
+          : mod === 'void'
+            ? '/tree/void'
+            : '/tree'
   const backLabel = tile ? `← Back to ${tile.guild} skill tree` : '← Back'
 
   if (!tileId) return null
 
   return (
     <div className="app-shell patent-game-piece-page">
+      {/* ---------- Page chrome: nav, back link, sign out ---------- */}
       <header className="skill-tree-top">
         <MainNav />
         <div className="skill-tree-top-row skill-tree-top-row--guild">
@@ -38,6 +58,7 @@ export function PatentCustomPage() {
         </div>
       </header>
 
+      {/* ---------- Main: loading / error / `GenericPatentContent` ---------- */}
       <main className="page patent-game-piece-main">
         {tile ? (
           <h1 className="page-title" style={{ marginTop: 0 }}>{tile.skill_name}</h1>

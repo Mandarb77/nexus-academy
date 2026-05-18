@@ -1,4 +1,10 @@
-/* Makers shop — fantasy workshop / trading-post surface (wood, stone, metal, slot framing) */
+/*
+ * Makers Shop page skin — fantasy workshop chrome
+ *
+ * Scoped under `.makers-shop` so the trading-post aesthetic does not bleed into the rest
+ * of the student app. Tier trim variables align with Forge / Prism / Folded guild colors
+ * from the skill tree for visual continuity.
+ */
 
 .makers-shop {
   --ms-void: #0f0d0b;

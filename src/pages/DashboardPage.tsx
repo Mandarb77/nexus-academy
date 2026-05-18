@@ -1,3 +1,11 @@
+/*
+ * Teacher home / staff roster hub (`/dashboard`)
+ *
+ * Lists other teacher profiles for transparency, generates signed invite links for onboarding
+ * new staff (`claim_teacher_invite` flow), and exposes student preview entry. This is the
+ * default landing page for `role=teacher` accounts from `HomeRoute`.
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'

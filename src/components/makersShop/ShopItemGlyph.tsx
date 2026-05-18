@@ -1,6 +1,11 @@
+/*
+ * Inline SVG pictograms for shop SKUs — keyed by `iconVariantForItemKey`
+ *
+ * All glyphs inherit `currentColor` so tier accent CSS can tint them without per-asset art files.
+ */
+
 type Props = { variant: string; className?: string }
 
-/** Small game-style glyphs (inline SVG). */
 export function ShopItemGlyph({ variant, className = '' }: Props) {
   const cn = `makers-shop-glyph ${className}`.trim()
   switch (variant) {

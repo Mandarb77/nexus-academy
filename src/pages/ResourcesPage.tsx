@@ -1,3 +1,11 @@
+/*
+ * Static “Library” resource hub (`/resources`)
+ *
+ * Curated links placeholders for tool docs (TinkerCAD, printers, Cricut, etc.). Teachers
+ * extend this over time without needing new routes — it is intentionally lightweight compared
+ * to Journey/Codex which show live student artifacts.
+ */
+
 import { MainNav } from '../components/MainNav'
 
 type ResourceSection = {

@@ -1,3 +1,13 @@
+/*
+ * Google sign-in screen (`/login`) and “already signed in” explainer
+ *
+ * Shown when logged-out users hit `/login` directly; `HomeRoute` normally sends everyone
+ * through `/` instead. Keeps the OAuth button enabled while `authReady` is false so the
+ * control never deadlocks on slow `getSession`. When a session already exists, explains
+ * why the Google CTA disappeared (students often think the site broke). Wires
+ * `signInWithGoogle` / `signOut` from `AuthContext` and gates on `isSupabaseConfigured`.
+ */
+
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'

@@ -1,3 +1,11 @@
+/*
+ * Sticker patent flow — Folded Path “Design Your Personal Sticker”
+ *
+ * Same three-gate structure as the game piece wizard but with `STICKER_STEPS` checklist copy
+ * and sticker-specific validation. Realtime + final submission logic mirror
+ * `PersonalGamePiecePatentContent` so fixes to one flow should be considered for the other.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -19,6 +27,10 @@ import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
+// =============================================================================
+// Types + empty factories (sticker checklist length is fixed)
+// =============================================================================
+
 type PatentDraft = { field1: string; field3: string; field4: string }
 type PlanStatus = UiPatentPlanStatus
 type PlanState = { id: string; status: PlanStatus }
@@ -32,15 +44,25 @@ type Props = {
 const EMPTY_CHECKS = (): boolean[] => Array(STICKER_STEPS.length).fill(false)
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '' }
 
+// =============================================================================
+// StickerPatentContent — Folded Path sticker stepped patent
+// =============================================================================
+
 export function StickerPatentContent({ tile, refresh, completionStatus }: Props) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
 
+  // ---------------------------------------------------------------------------
+  // Storage keys — drafts + stepped tab persistence
+  // ---------------------------------------------------------------------------
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
+  // ---------------------------------------------------------------------------
+  // React state
+  // ---------------------------------------------------------------------------
   const [initialised, setInitialised] = useState(false)
   const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
   const [checks, setChecks] = useState<boolean[]>(EMPTY_CHECKS())
@@ -62,6 +84,10 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
   const [flowBanner, setFlowBanner] = useState<string | null>(null)
   const [approvalNotice, setApprovalNotice] = useState<{ message: string; tone: 'success' | 'returned' } | null>(null)
   const approvalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ---------------------------------------------------------------------------
+  // Inline notices
+  // ---------------------------------------------------------------------------
   const showApprovalNotice = (message: string, tone: 'success' | 'returned') => {
     setApprovalNotice({ message, tone })
     if (approvalTimerRef.current) clearTimeout(approvalTimerRef.current)
@@ -82,10 +108,16 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
 
   const phaseHydrateSigRef = useRef<string>('')
 
+  // ---------------------------------------------------------------------------
+  // Derived gates
+  // ---------------------------------------------------------------------------
   const canUseDb = Boolean(user?.id)
   const planApprovedForChecklist = plan.status === 'approved'
   const canStartChecklist = planApprovedForChecklist && !(checklistSubmitted && !checklistApproved)
 
+  // ---------------------------------------------------------------------------
+  // Data: `loadFromDatabase`
+  // ---------------------------------------------------------------------------
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) {
       console.log('[PatentLoad] StickerPatent step:skip-no-user', { tileId: tile.id })
@@ -248,7 +280,13 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     void loadFromDatabase()
   }, [loadFromDatabase])
 
-  /** Realtime: auto-refresh when teacher approves/returns this student's patent or completion. */
+  // ---------------------------------------------------------------------------
+  // Effects — Realtime + catch-up final banner
+  // ---------------------------------------------------------------------------
+  /*
+   * Realtime: patent rows for plan/checklist gates; skill_completions for final approval + WP banner.
+   * Filtered with `patentRowMatchesTile` so other tiles' events do not clobber this form.
+   */
   useEffect(() => {
     if (!user?.id) return
     const uid = user.id
@@ -286,6 +324,7 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
             if (next.wp_awarded != null && next.gold_awarded != null) {
               const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : 0
               const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
+              /* Cache awards for refresh; pairs with `bannerFiredRef` to survive StrictMode double effects. */
               localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
               localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
               bannerFiredRef.current = true
@@ -330,6 +369,9 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
       })
   }, [initialised, completionStatus, tile.id, user?.id])
 
+  // ---------------------------------------------------------------------------
+  // Derived UI — counts, tab cap, phase helpers
+  // ---------------------------------------------------------------------------
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === STICKER_STEPS.length
 
@@ -352,7 +394,11 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     sessionStorage.setItem(phaseKey, String(next))
   }
 
-  // Auto-advance the student UI when teacher approvals arrive via realtime.
+  /*
+   * Mirror game-piece / custom patent behavior: when teacher approvals raise `maxPhase`, pull the
+   * student forward in the tab UI without requiring a manual refresh.
+   * eslint-disable: same intentional omission of `goPhase` as other patent wizards.
+   */
   useEffect(() => {
     if (!initialised) return
     if (planApprovedForChecklist && phase === 1 && maxPhase >= 2) {
@@ -363,6 +409,9 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     }
   }, [initialised, planApprovedForChecklist, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---------------------------------------------------------------------------
+  // Persistence — checklist + fields + uploads
+  // ---------------------------------------------------------------------------
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
@@ -434,6 +483,9 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Student actions — plan, checklist, final packet
+  // ---------------------------------------------------------------------------
   const field1Locked = plan.status === 'pending' || plan.status === 'approved'
 
   const onStep1Continue = async () => {
@@ -591,7 +643,11 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
         .eq('id', pid)
       if (updErr) throw updErr
 
-      // Handle resubmission: update existing returned row rather than inserting a duplicate.
+      /*
+       * Handle resubmission: update existing completion row instead of inserting a duplicate.
+       * Same as game piece / generic: one completion row per tile; reset awards when resubmitting
+       * after a returned final so triggers do not treat old WP/gold as authoritative.
+       */
       const { data: existing } = await supabase
         .from('skill_completions')
         .select('id, status')
@@ -628,6 +684,9 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Render — tile guard, loading, approved view, or stepped form
+  // ---------------------------------------------------------------------------
   if (!isStickerTile(tile)) {
     return <p className="error">This page is only for the Design Your Personal Sticker tile.</p>
   }
@@ -662,7 +721,10 @@ export function StickerPatentContent({ tile, refresh, completionStatus }: Props)
     )
   }
 
-  // 'pending' no longer causes an early return — the form stays visible with a waiting notice.
+  /*
+   * Keep the stepped form mounted while final approval is pending so Realtime can hydrate the
+   * “waiting for teacher” copy; WP celebration still flows through `ApprovalCelebrationSync`.
+   */
   const isFinalPending = completionStatus === 'pending'
 
   return (

@@ -1,3 +1,12 @@
+/*
+ * Teacher invite redemption (`/join/:token`)
+ *
+ * Teachers bootstrap accounts via one-time tokens generated server-side. The invite token
+ * must survive the Google OAuth round trip — we stash it in `sessionStorage` before
+ * redirect, then call `claim_teacher_invite` RPC once `user` exists. Prevents students
+ * from claiming teacher invites accidentally because the RPC validates the token payload.
+ */
+
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -14,14 +23,21 @@ export function JoinPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  // Persist the token so it survives the OAuth redirect.
+  /*
+   * PKCE strips query params on return — without persisting the invite segment, teachers
+   * would land signed-in but still with role=student until they re-click an invite email.
+   */
   useEffect(() => {
     if (token) {
       sessionStorage.setItem(PENDING_TOKEN_KEY, token)
     }
   }, [token])
 
-  // Once auth is ready and user is signed in, claim the invite.
+  /*
+   * After OAuth returns, `user` becomes non-null — this is the only safe moment to call
+   * `claim_teacher_invite` (RPC needs an authenticated JWT). Runs once per pending token
+   * because we clear `PENDING_TOKEN_KEY` immediately to avoid double-claim loops on StrictMode.
+   */
   useEffect(() => {
     if (!authReady || loading || !user) return
     const pendingToken = sessionStorage.getItem(PENDING_TOKEN_KEY)

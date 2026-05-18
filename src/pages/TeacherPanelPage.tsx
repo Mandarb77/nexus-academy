@@ -1,8 +1,22 @@
+/*
+ * Teacher approvals console (`/teacher`)
+ *
+ * Primary grading surface: pending skill completions, patent plan/checklist/packet stages,
+ * empathy parsing for quick review, and bulk actions. Look for “duplicate plan rows” comments
+ * in approve/return handlers — those loops intentionally touch every pending plan row for a
+ * student+tile so stray duplicate inserts cannot leave one row forever stuck in limbo.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
+
+// =============================================================================
+// Types — Supabase row shapes + UI “acting” state for button spinners
+// =============================================================================
+
 type TileInfo = {
   guild: string
   skill_name: string
@@ -100,6 +114,10 @@ type Acting =
   | { scope: 'redemption'; id: string; action: 'approve' | 'return' }
   | null
 
+// -----------------------------------------------------------------------------
+// EmpathyDisplay — compact read-only empathy for patent plan rows
+// -----------------------------------------------------------------------------
+
 function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
   const e = parseEmpathy(raw)
   const hasContent = e.who || e.why || e.what_changed || e.how_learned.length > 0
@@ -117,21 +135,41 @@ function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
   )
 }
 
+// =============================================================================
+// TeacherPanelPage — `/teacher` grading console (patents + completions + redemptions)
+// =============================================================================
+
 export function TeacherPanelPage() {
   const { signOut } = useAuth()
+
+  // ---------------------------------------------------------------------------
+  // Pending queues — what needs teacher action right now
+  // ---------------------------------------------------------------------------
   const [skillRows, setSkillRows] = useState<PendingSkillRow[]>([])
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
   const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
   const [checklistRows, setChecklistRows] = useState<PendingChecklistRow[]>([])
+
+  // ---------------------------------------------------------------------------
+  // New final submissions — flash notice when pending `skill_completions` set grows
+  // ---------------------------------------------------------------------------
   const prevPendingSkillIdsRef = useRef<Set<string>>(new Set())
   const [finalSubmitNotice, setFinalSubmitNotice] = useState<string | null>(null)
   const finalSubmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ---------------------------------------------------------------------------
+  // Student roster + drill-down (selected learner’s profile / skills / shop activity)
+  // ---------------------------------------------------------------------------
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [studentProfile, setStudentProfile] = useState<StudentSummary | null>(null)
   const [studentSkills, setStudentSkills] = useState<StudentSkillCompletion[]>([])
   const [studentInventory, setStudentInventory] = useState<StudentInventoryRow[]>([])
   const [studentRedemptions, setStudentRedemptions] = useState<StudentRedemptionRow[]>([])
+
+  // ---------------------------------------------------------------------------
+  // Page load + admin toast + per-row busy flags (skills, redemptions, patent sub-flows)
+  // ---------------------------------------------------------------------------
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [adminMessage, setAdminMessage] = useState<string | null>(null)
@@ -145,6 +183,10 @@ export function TeacherPanelPage() {
     () => new Map(),
   )
   const [resettingCompletionId, setResettingCompletionId] = useState<string | null>(null)
+
+  // ---------------------------------------------------------------------------
+  // `loadPending` — parallel queries + joins (tiles, names) for all four queues
+  // ---------------------------------------------------------------------------
   const loadPending = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setSkillRows([])
@@ -221,7 +263,10 @@ export function TeacherPanelPage() {
     const plans = planRes.data ?? []
     const checklists = checklistRes.data ?? []
 
-    // High-attention notice for new final submissions (pending skill_completions).
+    /*
+     * Surface a one-time banner when the pending-final queue grows — distinct from plan/checklist
+     * panels because final approval fires WP/gold on `skill_completions`, not `patents` alone.
+     */
     const nextPendingSkillIds = new Set<string>(completions.map((r) => r.id as string))
     const prevPendingSkillIds = prevPendingSkillIdsRef.current
     const hasNewFinalSubmissions =
@@ -403,10 +448,16 @@ export function TeacherPanelPage() {
     setLoading(false)
   }, [])
 
+  // ---------------------------------------------------------------------------
+  // Mount — populate all four pending queues once Supabase is ready
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     void loadPending()
   }, [loadPending])
 
+  // ---------------------------------------------------------------------------
+  // Realtime — re-fetch when students touch `patents` or `skill_completions`
+  // ---------------------------------------------------------------------------
   /** Realtime: re-fetch pending items whenever a student submits a plan, checklist, or final packet. */
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -436,6 +487,9 @@ export function TeacherPanelPage() {
     return () => { void supabase.removeChannel(channel) }
   }, [loadPending])
 
+  // ---------------------------------------------------------------------------
+  // Skill completions + shop redemptions — approve / return (WP guard on packet-only)
+  // ---------------------------------------------------------------------------
   const clearActing = () => setActing(null)
 
   const approveSkill = async (id: string) => {
@@ -444,6 +498,11 @@ export function TeacherPanelPage() {
     const pid = row?.patent_id ?? null
     if (pid) {
       const st = row?.patent?.stage ?? ''
+      /*
+       * Guardrail: `skill_completions` rows can exist during plan/checklist phases for some flows,
+       * but WP/gold must only fire when the linked patent is the final `packet` submission.
+       * Without this check, a teacher approving the wrong queue entry could double-pay or pay early.
+       */
       if (String(st).trim().toLowerCase() !== 'packet') {
         console.error(
           'approve skill: blocked — linked patent is not final packet stage (no WP/gold at plan/checklist gates)',
@@ -494,6 +553,9 @@ export function TeacherPanelPage() {
     void loadPending()
   }
 
+  // ---------------------------------------------------------------------------
+  // Patent plan + checklist — duplicate-row safe batch updates (see block comments in handlers)
+  // ---------------------------------------------------------------------------
   const setActingPlan = (id: string, kind: 'approve' | 'return') => {
     setActingPlanId(id)
     setActingPlanKind(kind)
@@ -508,7 +570,11 @@ export function TeacherPanelPage() {
     if (!isSupabaseConfigured) return
     setActingPlan(id, 'approve')
     const row = planRows.find((r) => r.id === id) ?? null
-    // Be resilient to accidental duplicate plan rows: approve all pending plan rows for this student+tile.
+    /*
+     * Duplicate `patents` plan rows happen in the wild (double submit / retries). Approving only
+     * the clicked `id` can leave a second `pending` row that keeps the student’s checklist locked —
+     * batch-approve every pending plan for this student+tile when we know the row context.
+     */
     const q = supabase
       .from('patents')
       .update({ status: 'approved' })
@@ -534,7 +600,11 @@ export function TeacherPanelPage() {
     if (!isSupabaseConfigured) return
     setActingPlan(id, 'return')
     const row = planRows.find((r) => r.id === id) ?? null
-    // Be resilient to accidental duplicate plan rows: return all plan rows for this student+tile.
+    /*
+     * Same duplicate-row story as approve: returning one row but leaving another `pending` would
+     * strand the class — clear **all** plan-stage rows for the pair and reset checklist flags so
+     * the student’s next resubmit is clean.
+     */
     const { error } = row
       ? await supabase
           .from('patents')
@@ -559,7 +629,10 @@ export function TeacherPanelPage() {
     setActingChecklistId(id)
     setActingChecklistKind('approve')
     const row = checklistRows.find((r) => r.id === id) ?? null
-    // Be resilient to accidental duplicate plan rows: approve checklist for this student+tile plan row(s).
+    /*
+     * Checklist approval must stick even when multiple plan rows exist — update every submitted
+     * plan for the student+tile so the UI cannot show “submitted” on one row and “not approved” on another.
+     */
     const { error } = row
       ? await supabase
           .from('patents')
@@ -621,6 +694,9 @@ export function TeacherPanelPage() {
     void loadPending()
   }
 
+  // ---------------------------------------------------------------------------
+  // Row busy helpers — disable approve/return while matching RPC in flight
+  // ---------------------------------------------------------------------------
   const isActing = (scope: 'skill' | 'redemption', id: string, action: 'approve' | 'return') =>
     acting?.scope === scope && acting.id === id && acting.action === action
 
@@ -629,6 +705,9 @@ export function TeacherPanelPage() {
   const busyRedemption = (id: string) =>
     acting?.scope === 'redemption' && acting.id === id ? acting : null
 
+  // ---------------------------------------------------------------------------
+  // Student list — all learners (`profiles.role = student`)
+  // ---------------------------------------------------------------------------
   const loadStudents = useCallback(async () => {
     if (!isSupabaseConfigured) return
     setStudentsBusy(true)
@@ -663,6 +742,9 @@ export function TeacherPanelPage() {
     [students, selectedStudentId],
   )
 
+  // ---------------------------------------------------------------------------
+  // Student drill-down — profile + skill history + shop rows (tiles joined for labels)
+  // ---------------------------------------------------------------------------
   const loadStudentDetail = useCallback(
     async (studentId: string) => {
       if (!isSupabaseConfigured) return
@@ -761,6 +843,9 @@ export function TeacherPanelPage() {
     [],
   )
 
+  // ---------------------------------------------------------------------------
+  // Admin — reverse an approved completion (RPC + optional WP/gold penalty %)
+  // ---------------------------------------------------------------------------
   const resetCompletion = async (row: StudentSkillCompletion) => {
     if (!isSupabaseConfigured || resettingCompletionId) return
     const wp = row.wp_awarded ?? 0
@@ -805,8 +890,12 @@ export function TeacherPanelPage() {
     void loadPending()
   }
 
+  // ---------------------------------------------------------------------------
+  // Render — chrome, banners, four approval panels, student inspector
+  // ---------------------------------------------------------------------------
   return (
     <div className="app-shell teacher-panel-page">
+      {/* ---------- Header + teacher nav ---------- */}
       <header className="teacher-panel-header">
         <MainNav variant="teacher" />
         <div className="teacher-panel-top-row">
@@ -827,6 +916,7 @@ export function TeacherPanelPage() {
         </div>
       </header>
 
+      {/* ---------- Inline feedback (admin RPC errors, new submissions pulse) ---------- */}
       {adminMessage ? (
         <p className="muted" role="status">
           {adminMessage}
@@ -861,6 +951,7 @@ export function TeacherPanelPage() {
         <p className="muted">Loading pending requests…</p>
       ) : loadError ? null : (
         <>
+          {/* ========== Patent gates (no WP/gold until final skill approval) ========== */}
           <div className="teacher-panel-approvals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-plans-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
             <h2 id="teacher-panel-plans-heading" className="teacher-panel-section-title">
@@ -999,8 +1090,9 @@ export function TeacherPanelPage() {
               </ul>
             )}
           </section>
-          </div>{/* end approval grid */}
+          </div>{/* end patent gates grid */}
 
+          {/* ========== Final payouts + shop queue (WP/gold triggers on skill approve) ========== */}
           <div className="teacher-panel-approvals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-skills-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
             <h2 id="teacher-panel-skills-heading" className="teacher-panel-section-title">
@@ -1136,8 +1228,9 @@ export function TeacherPanelPage() {
               </ul>
             )}
           </section>
-          </div>{/* end approvals grid row 2 */}
+          </div>{/* end skills + redemptions grid */}
 
+          {/* ========== Roster + drill-down (read-only except completion reset) ========== */}
           <section className="teacher-panel-section" aria-labelledby="teacher-panel-progress-heading">
             <h2 id="teacher-panel-progress-heading" className="teacher-panel-section-title">
               Student progress

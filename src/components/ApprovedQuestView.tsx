@@ -1,5 +1,17 @@
+/*
+ * Read-only “trophy case” layout for an approved patent / journey card
+ *
+ * Renders checklist lines, structured empathy (`EmpathyReadOnly`), free-text answers, and
+ * optional delivery photo URL. Shared by Journey and Codex so students see the same narrative
+ * after teacher approval without exposing edit controls.
+ */
+
 import type { EmpathyDraft } from '../lib/empathy'
 import { EMPATHY_CHECKBOXES } from '../lib/empathy'
+
+// =============================================================================
+// Types — read-only props for post-approval “trophy” card
+// =============================================================================
 
 type Answer = {
   label: string
@@ -14,6 +26,10 @@ type Props = {
   uploadUrl?: string | null
   repeatNote?: string
 }
+
+// -----------------------------------------------------------------------------
+// EmpathyReadOnly — structured Q2 fields (checkboxes read-only)
+// -----------------------------------------------------------------------------
 
 function EmpathyReadOnly({ e }: { e: EmpathyDraft }) {
   const hasContent = e.who || e.why || e.what_changed || e.how_learned.length > 0
@@ -44,6 +60,7 @@ function EmpathyReadOnly({ e }: { e: EmpathyDraft }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', paddingLeft: '0.1rem', marginTop: '0.25rem' }}>
             {EMPATHY_CHECKBOXES.map((opt) => (
               <label key={opt} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.88rem', opacity: e.how_learned.includes(opt) ? 1 : 0.35, pointerEvents: 'none' }}>
+                {/* Dim unchecked options in read-only mode so teachers scan for chosen empathy strategies quickly. */}
                 <input type="checkbox" checked={e.how_learned.includes(opt)} readOnly style={{ marginTop: '0.2rem', flexShrink: 0 }} />
                 <span>{opt}</span>
               </label>
@@ -55,10 +72,14 @@ function EmpathyReadOnly({ e }: { e: EmpathyDraft }) {
   )
 }
 
+// -----------------------------------------------------------------------------
+// ApprovedQuestView — banner + checklist + answers + optional artifact URL
+// -----------------------------------------------------------------------------
+
 export function ApprovedQuestView({ steps, checks, answers, empathy, uploadUrl, repeatNote }: Props) {
   return (
     <div className="approved-quest-view">
-      {/* Approved banner */}
+      {/* ========== Approved banner ========== */}
       <div className="approved-quest-banner" role="status">
         <span className="approved-quest-banner__icon">✅</span>
         <div>
@@ -67,7 +88,7 @@ export function ApprovedQuestView({ steps, checks, answers, empathy, uploadUrl, 
         </div>
       </div>
 
-      {/* Checklist */}
+      {/* ========== Checklist (read-only) ========== */}
       <section className="approved-quest-section">
         <h3 className="approved-quest-section-heading">Your checklist</h3>
         <ul className="approved-quest-checklist">
@@ -85,7 +106,7 @@ export function ApprovedQuestView({ steps, checks, answers, empathy, uploadUrl, 
         </ul>
       </section>
 
-      {/* Patent answers */}
+      {/* ========== Written answers (+ empathy slot) ========== */}
       <section className="approved-quest-section">
         <h3 className="approved-quest-section-heading">Your answers</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -117,7 +138,7 @@ export function ApprovedQuestView({ steps, checks, answers, empathy, uploadUrl, 
         </div>
       </section>
 
-      {/* Uploaded photo/video */}
+      {/* ========== Optional delivery / process photo ========== */}
       {uploadUrl ? (
         <section className="approved-quest-section">
           <h3 className="approved-quest-section-heading">Uploaded photo / video</h3>
@@ -129,7 +150,7 @@ export function ApprovedQuestView({ steps, checks, answers, empathy, uploadUrl, 
         </section>
       ) : null}
 
-      {/* Repeat-play note */}
+      {/* ========== Repeat / bonus note (teacher reset messaging) ========== */}
       {repeatNote ? (
         <p className="muted" style={{ marginTop: '0.75rem', fontSize: '0.88rem' }}>
           {repeatNote}

@@ -1,5 +1,15 @@
+/*
+ * Custom / Quest Builder tiles — step resolution and T-shirt heuristics
+ *
+ * Most maker-defined quests store `steps` JSON on `tiles`. A few legacy tiles (ids 25/26)
+ * shipped before steps existed in the DB; we embed the T-shirt checklist so patent gating
+ * still works. `isTShirtPatentQuestTile` fuzzy-matches because teachers sometimes tweak
+ * capitalization or punctuation in `skill_name`. `isCustomTile` drives `/patent-custom` routing.
+ */
+
 import type { StepConfig, TileRow } from '../types/tile'
 import { isPopUpCardTile } from './popUpCardQuest'
+import { isVoidTile1Tile, VOID_TILE1_STEPS } from './voidTile1Proto'
 import { T_SHIRT_QUEST_SKILL_NAME, T_SHIRT_QUEST_STEPS } from './tShirtQuestSteps'
 
 /**
@@ -45,6 +55,7 @@ export function isTShirtPatentQuestTile(tile: TileRow): boolean {
  */
 export function resolvedTileSteps(tile: TileRow): StepConfig[] {
   if (isPopUpCardTile(tile)) return []
+  if (isVoidTile1Tile(tile)) return VOID_TILE1_STEPS
   const s = tile.steps
   if (Array.isArray(s) && s.length > 0) return s as StepConfig[]
   if (isTShirtPatentQuestTile(tile)) return T_SHIRT_QUEST_STEPS
@@ -57,5 +68,6 @@ export function resolvedTileSteps(tile: TileRow): StepConfig[] {
 
 export function isCustomTile(tile: TileRow): boolean {
   if (isPopUpCardTile(tile)) return false
+  if (isVoidTile1Tile(tile)) return true
   return resolvedTileSteps(tile).length > 0
 }

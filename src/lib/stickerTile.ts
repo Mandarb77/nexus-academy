@@ -1,13 +1,12 @@
-import type { TileRow } from '../types/tile'
-
-/**
- * When true, the personal sticker quest is treated like other coming-soon tiles in the skill tree,
- * and `/patent-sticker/:id` shows a locked message instead of the patent flow.
+/*
+ * Folded Path — personal sticker patent quest
+ *
+ * `STICKER_QUEST_COMING_SOON` lets the teacher hide an in-progress patent flow without
+ * deleting the tile: skill tree shows “locked” messaging and the patent route can no-op.
+ * Detection is name-based so Quest Builder titles stay aligned with this file.
  */
-export const STICKER_QUEST_COMING_SOON = true
 
-/** Folded Path "Design Your Personal Sticker" tile — identified by guild + name. */
-export function isStickerTile(tile: TileRow): boolean {
+import type { TileRow } from '../types/tile'
   const skill = tile.skill_name?.trim().toLowerCase()
   const guild = tile.guild?.trim().toLowerCase()
   return guild === 'folded path' && skill === 'design your personal sticker'

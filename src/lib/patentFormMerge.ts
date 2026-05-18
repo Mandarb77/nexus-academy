@@ -1,8 +1,15 @@
-/**
- * When multiple `patents` rows exist for the same tile, the UI may pick a primary row
- * (e.g. newest approved) that has empty `field_*` while an older row still holds the
- * student's answers. Merge fills gaps from other rows, newest first.
+/*
+ * Merge answers across duplicate `patents` rows for the same tile
+ *
+ * The “primary” row chosen by `pickStudentPlanPatentContext` might be newest-approved but
+ * missing some `field_*` values if the student edited an older row or partial migrations
+ * split data. We backfill empty fields from other rows (newest wins) so the form shows
+ * the full story without teachers thinking answers were deleted.
  */
+
+// =============================================================================
+// Row types — subset of `patents` columns used when merging duplicate rows
+// =============================================================================
 
 export type PatentFormRow = {
   id: string
@@ -28,21 +35,28 @@ function nonEmptyField(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0
 }
 
+// =============================================================================
+// `fillPatentPlanFieldsFromRows` — backfill empty `field_*` from other duplicate rows
+// =============================================================================
+
 export function fillPatentPlanFieldsFromRows(
   primary: PatentFormRow,
   allRows: PatentFormRow[],
 ): { field_1: string; field_2: string; field_3: string; field_4: string } {
+  /* Newest rows first so “backfill from duplicates” prefers recent teacher-visible edits. */
   const sorted = [...allRows].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )
 
   const pick = (key: 'field_1' | 'field_2' | 'field_3' | 'field_4'): string => {
     const primaryVal = primary[key]
+    /* Primary row is authoritative when non-empty — UI picked it for checklist + phase reasons. */
     if (nonEmptyField(primaryVal)) return primaryVal
     for (const r of sorted) {
       const v = r[key]
       if (nonEmptyField(v)) return v
     }
+    /* Fall back to empty string (or raw primary string) so controlled inputs never receive `undefined`. */
     return typeof primaryVal === 'string' ? primaryVal : ''
   }
 

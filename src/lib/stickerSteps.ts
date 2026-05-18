@@ -1,4 +1,10 @@
-/** Checklist steps for Design Your Personal Sticker (Folded Path guild). */
+/*
+ * Folded Path sticker patent — static checklist strings
+ *
+ * Same indexing contract as `PERSONAL_GAME_PIECE_STEPS`: checklist_state arrays in the DB
+ * line up with these descriptions. Used by sticker patent UI and journey read view.
+ */
+
 export const STICKER_STEPS = [
   'Step 1 — Design your sticker in Piskel. Create a pixel art design that represents something that matters to you.',
   'Step 2 — Export your design correctly. Use the Export button and save as a zip file — this keeps the layers separate. Do not use screenshot or save image — use Export and zip only.',

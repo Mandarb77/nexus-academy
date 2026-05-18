@@ -1,3 +1,15 @@
+/*
+ * Authentication and profile context for the whole SPA
+ *
+ * Wraps Supabase Auth (`getSession`, `onAuthStateChange`) and the `profiles` row
+ * (WP, gold, rank, role, display name). Student pages read `profile` for economy
+ * state; teacher pages use `role`. `refreshProfile` is called after skill approvals
+ * and from a Realtime listener on the signed-in user’s profile so WP changes from
+ * the server appear without a full reload. `studentPreviewMode` lets teachers walk
+ * the student UI without losing their session. Retries in `fetchProfile` exist because
+ * right after Google OAuth the row can lag briefly behind the session.
+ */
+
 import {
   createContext,
   useCallback,
@@ -12,6 +24,11 @@ import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Profile } from '../types/profile'
 
+// -----------------------------------------------------------------------------
+// Module helpers — profile row shape, first-time insert, fetch with backoff
+// -----------------------------------------------------------------------------
+
+/* Narrow select keeps payload small and types in sync with `types/profile.ts`. */
 const PROFILE_COLUMNS =
   'id, email, display_name, wp, gold, rank, role, portfolio_quote' as const
 
@@ -35,10 +52,15 @@ async function ensureProfileIfMissing(user: User): Promise<void> {
     rank: 'Initiate',
     role: 'student',
   })
+  /* Race on first login: two tabs or retry can insert twice — 23505 is unique violation, safe to ignore. */
   if (error && error.code !== '23505') {
     console.error('ensure profile:', error.message)
   }
 }
+
+// -----------------------------------------------------------------------------
+// Context contract + `createContext` (used by `useAuth` at bottom of file)
+// -----------------------------------------------------------------------------
 
 type AuthContextValue = {
   user: User | null
@@ -70,6 +92,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
       const p = data as Profile
       return {
         ...p,
+        /* Defensive normalize: DB could theoretically hold unexpected strings; routing only cares about teacher vs not. */
         role: p.role === 'teacher' ? 'teacher' : 'student',
       }
     }
@@ -77,10 +100,15 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
       console.error('profiles fetch:', error.message)
       return null
     }
+    /* Backoff gives Supabase triggers / RLS a moment to finish creating the profile row after OAuth. */
     await new Promise((r) => setTimeout(r, 350 * (attempt + 1)))
   }
   return null
 }
+
+// -----------------------------------------------------------------------------
+// AuthProvider — React state, Supabase effects, Google OAuth, context value
+// -----------------------------------------------------------------------------
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
@@ -109,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(p)
   }, [user])
 
+  // --- Effect: restore Supabase session + subscribe to auth changes ---
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setSession(null)
@@ -122,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) return
       setAuthReady(true)
     }
+    /* Failsafe: never leave the app stuck on “Checking session…” if getSession hangs on a bad network. */
     const sessionTimeout = window.setTimeout(forceAuthReady, 12_000)
 
     supabase.auth
@@ -153,6 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // --- Effect: load `profiles` row (or insert default) once session user is known ---
   useEffect(() => {
     if (!authReady) return
 
@@ -182,7 +213,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [authReady, user?.id])
 
-  /** When WP changes after a teacher approves a skill, refresh without reloading the page. */
+  // --- Effect: Realtime on own profile — refresh WP/gold without full page reload ---
+  /*
+   * When WP changes after a teacher approves a skill (or other server-side profile
+   * update), pull the latest row without a full page reload — keeps header/student
+   * home in sync with the database.
+   */
   useEffect(() => {
     if (!isSupabaseConfigured || !user?.id) return
 
@@ -209,6 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loading = !authReady || !profileReady
 
+  // --- Actions: Google OAuth + sign out (navigate to /login) ---
   const signInWithGoogle = useCallback(async () => {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase is not configured')
@@ -244,6 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate('/login', { replace: true })
   }, [navigate])
 
+  // --- Memoize context value (avoid rerendering whole tree on unrelated parent updates) ---
   const value = useMemo(
     () => ({
       user,
@@ -273,6 +311,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+
+// -----------------------------------------------------------------------------
+// `useAuth` — read session/profile from any component under `<AuthProvider>`
+// -----------------------------------------------------------------------------
 
 export function useAuth() {
   const ctx = useContext(AuthContext)

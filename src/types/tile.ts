@@ -1,3 +1,10 @@
+/*
+ * Quest definitions from the `tiles` table (plus optional Quest Builder JSON)
+ *
+ * `steps` holds per-checklist-line approval flags and resource links for custom patents.
+ * Nullable `steps` means “use hardcoded flow” for legacy tiles (see `lib/customTile.ts`).
+ */
+
 export type StepConfig = {
   description: string
   requiresApproval: boolean

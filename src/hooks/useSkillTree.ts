@@ -1,3 +1,14 @@
+/*
+ * Skill tree data hook — tiles, completions, and patent checklist badges
+ *
+ * Fetches all public `tiles`, the current student’s `skill_completions`, and latest
+ * plan-stage `patents` rows grouped per tile. Uses `pickStudentPlanPatentContext` so a
+ * stray duplicate `pending` row cannot hide teacher-approved plan state on the tree.
+ * Exposes `markComplete` for “Submit for approval” on non-patent tiles. The tiles select
+ * intentionally omits `checklist_footer_note` on older databases that predate migration
+ * 034 — requesting a missing column used to blank the entire tree in production.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
@@ -7,6 +18,10 @@ import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
+// -----------------------------------------------------------------------------
+// Small helpers — normalize API rows, guild sort order (used by hook + consumers)
+// -----------------------------------------------------------------------------
+
 function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
   if (!rows?.length) return []
   return rows.map((row) => {
@@ -14,6 +29,7 @@ function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
     let steps = r.steps
     if (typeof steps === 'string') {
       try {
+        /* Supabase sometimes returns JSON columns as serialized strings depending on cast/version. */
         steps = JSON.parse(steps) as unknown
       } catch {
         steps = null
@@ -49,6 +65,10 @@ function sortGuildKeys(guilds: string[]): string[] {
   })
 }
 
+// -----------------------------------------------------------------------------
+// `useSkillTree` — tiles + completions + patent checklist snapshot for current student
+// -----------------------------------------------------------------------------
+
 export function useSkillTree() {
   const { user } = useAuth()
   const [tiles, setTiles] = useState<TileRow[]>([])
@@ -63,6 +83,7 @@ export function useSkillTree() {
 
   const studentId = user?.id
 
+  // --- Load skill_completions into a Map (pending / approved / returned per tile) ---
   const refreshCompletions = useCallback(async () => {
     if (!studentId || !isSupabaseConfigured) {
       setCompletionByTileId(new Map())
@@ -84,12 +105,14 @@ export function useSkillTree() {
       const st = row.status as SkillCompletionStatus
       const id = row.id as string
       if (st === 'pending' || st === 'approved' || st === 'returned') {
+        /* One completion row per tile in practice; map overwrites if duplicates exist (newest wins by query order). */
         next.set(tid, { status: st, completionId: id })
       }
     }
     setCompletionByTileId(next)
   }, [studentId])
 
+  // --- Latest plan-stage patent per tile (checklist progress on skill tree) ---
   const refreshPatentProgress = useCallback(async () => {
     if (!studentId || !isSupabaseConfigured) {
       setPatentProgressByTileId(new Map())
@@ -136,6 +159,7 @@ export function useSkillTree() {
     setPatentProgressByTileId(next)
   }, [studentId])
 
+  // --- One-shot refresh: all tiles + completions + patent rows (used on mount + after actions) ---
   const refreshAll = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setTiles([])
@@ -146,7 +170,11 @@ export function useSkillTree() {
     }
     setLoading(true)
 
-    // Omit checklist_footer_note: requesting it fails on DBs before migration 034 and clears all tiles.
+    /*
+     * Omit `checklist_footer_note`: older class DBs without migration 034 throw on unknown
+     * columns — PostgREST used to return an error for the whole `tiles` select, which made
+     * the skill tree empty for everyone until the migration landed.
+     */
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
       .select('id, guild, skill_name, wp_value, gold_value, steps')
@@ -164,10 +192,12 @@ export function useSkillTree() {
     setLoading(false)
   }, [refreshCompletions, refreshPatentProgress])
 
+  // --- Initial + dependency-driven load ---
   useEffect(() => {
     void refreshAll()
   }, [refreshAll])
 
+  // --- Derived: tiles grouped under canonical guild labels (for `/tree` sections) ---
   const tilesByGuild = useMemo(() => {
     const map = new Map<string, TileRow[]>()
     for (const t of tiles) {
@@ -178,12 +208,14 @@ export function useSkillTree() {
     return map
   }, [tiles])
 
+  // --- Derived: guild keys for section headers (merge known guilds + any from DB) ---
   const guildKeys = useMemo(() => {
     const fromTiles = [...tilesByGuild.keys()]
     const merged = [...new Set<string>([...SKILL_TREE_SECTION_GUILDS, ...fromTiles])]
     return sortGuildKeys(merged)
   }, [tilesByGuild])
 
+  // --- Student action: insert or resubmit `skill_completions` (non-patent tiles) ---
   const markComplete = useCallback(
     async (tile: TileRow) => {
       if (!studentId || !isSupabaseConfigured) return false
@@ -218,6 +250,7 @@ export function useSkillTree() {
       })
       setSubmittingTileId(null)
       if (error) {
+        /* Unique violation: completion already exists (double tap / race) — refresh map instead of showing a hard error. */
         if (error.code === '23505') {
           await refreshCompletions()
           return true
@@ -231,6 +264,7 @@ export function useSkillTree() {
     [studentId, completionByTileId, refreshCompletions],
   )
 
+  // --- Public API returned to `SkillTreePage` / guild pages ---
   return {
     tiles,
     guildKeys,

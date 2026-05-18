@@ -1,3 +1,10 @@
+/*
+ * Codex / quest archive placeholder (`/codex`, legacy `/portfolio` redirect)
+ *
+ * Points students to Journey for the real approved-work timeline. Kept as a lightweight
+ * route so bookmarks and nav copy can migrate without breaking deep links.
+ */
+
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 

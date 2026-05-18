@@ -1,4 +1,12 @@
-/** Guild welcome strip accents (see `.skill-tree-guild-welcome--*` in App.css). */
+/*
+ * Presentation helpers for shop shelves — ties catalog tier names to guild theming
+ *
+ * Visual accents echo the skill-tree guild palette so the shop feels like part of the
+ * same world. `iconVariantForItemKey` maps stable `item_key` substrings to glyph variants
+ * in `ShopItemGlyph` without requiring art assets per SKU — important when teachers add
+ * rows via SQL without redeploying the frontend.
+ */
+
 export type GuildShelfAccent = 'forge' | 'prism' | 'folded'
 
 export function shelfAccentForTier(tierName: string): GuildShelfAccent {

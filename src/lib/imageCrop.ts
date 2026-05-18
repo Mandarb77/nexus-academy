@@ -1,7 +1,12 @@
-/**
- * Center-crop an image file to a target aspect ratio (width/height), then scale.
- * Outputs JPEG for predictable PDF/storage size.
+/*
+ * Client-side image normalization using Canvas + `createImageBitmap`
+ *
+ * Patent uploads and similar flows need predictable dimensions and file sizes. This helper
+ * center-crops to the requested aspect ratio (e.g. 4:3 for patent photos) and caps edge
+ * length so a 12MP phone photo does not hammer Storage bandwidth. JPEG quality 0.92 is
+ * a balance between artifacting and upload time for classroom Wi‑Fi.
  */
+
 export async function cropFileToAspectRatio(
   file: File,
   aspectWidthOverHeight: number,

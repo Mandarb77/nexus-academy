@@ -1,3 +1,14 @@
+/*
+ * Global mount for the “Quest Approved!” congratulations banner
+ *
+ * Sits once under `AuthProvider` in `App.tsx` so any student route can show the toast
+ * without each page subscribing to Realtime. Registers `setApprovalCelebrationNotifier`
+ * so `queueApprovalCelebration` can update React immediately when the websocket fires.
+ * Re-reads `localStorage` on `user?.id` change so account switches do not leak another
+ * student’s pending celebration. Teachers (unless in student preview) never see this
+ * UI — avoids confusing staff with student reward language.
+ */
+
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { FinalApprovalBanner } from './FinalApprovalBanner'
@@ -9,10 +20,6 @@ import {
 } from '../lib/approvalCelebration'
 import { isTeacherProfile } from '../lib/teacher'
 
-/**
- * Renders the global “Quest Approved!” toast and registers a notifier so Realtime can
- * update React state immediately (same tick as the websocket message — no navigation/refresh).
- */
 export function ApprovalCelebrationHost() {
   const { user, profile, studentPreviewMode } = useAuth()
   const [toast, setToast] = useState<PendingApprovalCelebration | null>(() => peekPendingCelebration())

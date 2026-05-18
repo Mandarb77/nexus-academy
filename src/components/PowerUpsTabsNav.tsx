@@ -1,3 +1,11 @@
+/*
+ * In-page section pills for the Power Ups lore page
+ *
+ * Intentionally returns null unless `pathname === '/powerups'` — App.tsx comment calls
+ * this out: hash pills should not appear on Home or Skills where they would confuse IA.
+ * Uses hash routes so each section is deep-linkable for classroom projection.
+ */
+
 import { NavLink, useLocation } from 'react-router-dom'
 
 export const POWER_UP_SECTION_HASHES = [
@@ -7,7 +15,6 @@ export const POWER_UP_SECTION_HASHES = [
   { id: 'backstory', label: 'The Backstory' },
 ] as const
 
-/** Quick links to Power Ups sections — only shown on `/powerups` (never on Home, Skill tree, etc.). */
 export function PowerUpsTabsNav() {
   const { pathname, hash } = useLocation()
   if (pathname !== '/powerups') return null

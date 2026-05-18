@@ -1,3 +1,16 @@
+/*
+ * Realtime listener: teacher approved a skill → queue celebration + rewards display
+ *
+ * Subscribes to `skill_completions` UPDATEs for the signed-in student. The `prev.status`
+ * vs `next.status` guard ensures we only fire on the transition into `approved`, not on
+ * unrelated column updates to an already-approved row (prevents double banners). When
+ * the websocket payload lacks `wp_awarded` / `gold_awarded` yet (race with DB trigger),
+ * we re-fetch that row. `catchUpRecentApprovals` covers the case the tab was backgrounded
+ * and missed the event — it scans the last two minutes after subscribe. Effect deps
+ * intentionally use `profile?.role` rather than whole `profile` so routine WP refreshes
+ * from `AuthContext` do not tear down the channel and drop events.
+ */
+
 import { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -6,13 +19,6 @@ import {
 } from '../lib/approvalCelebration'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
-/**
- * Listens for final skill approvals and queues the global celebration toast.
- * Runs for students and for teachers in student preview mode.
- *
- * Effect deps use `profile?.role` only so profile WP/gold realtime refreshes do not
- * tear down this channel (which would delay or drop the approval event).
- */
 export function ApprovalCelebrationSync() {
   const { user, profile, studentPreviewMode } = useAuth()
   const roleIsTeacher = profile?.role === 'teacher'
@@ -28,6 +34,7 @@ export function ApprovalCelebrationSync() {
       queueApprovalCelebration({ wp, gold, completionId })
     }
 
+    /* If the student had the tab asleep during approval, Realtime might not deliver — poll a short recent window once subscribed. */
     const catchUpRecentApprovals = async () => {
       const since = new Date(Date.now() - 120_000).toISOString()
       const { data, error } = await supabase
@@ -61,6 +68,7 @@ export function ApprovalCelebrationSync() {
           const prev = payload.old as Record<string, unknown>
           const next = payload.new as Record<string, unknown>
           if (next.status !== 'approved') return
+          /* Transition-only: ignore later updates to notes/attachments on an already-approved completion. */
           if (prev.status === 'approved') return
           const id = next.id != null ? String(next.id) : ''
           if (!id) return
@@ -72,6 +80,7 @@ export function ApprovalCelebrationSync() {
             return
           }
 
+          /* Trigger may fill award columns after the row update event — follow-up read avoids showing 0 WP. */
           void supabase
             .from('skill_completions')
             .select('wp_awarded, gold_awarded')

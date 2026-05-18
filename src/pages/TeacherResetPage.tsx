@@ -1,3 +1,11 @@
+/*
+ * Danger-zone utilities for clearing student progress (`/teacher/reset`)
+ *
+ * Lets staff reset `skill_completions`, inventory/economy, or redemption queues for demo days
+ * or mistaken submissions. All operations should remain behind teacher auth + Supabase RLS;
+ * this UI is the controlled front-end to those maintenance RPCs/deletes.
+ */
+
 import { useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'

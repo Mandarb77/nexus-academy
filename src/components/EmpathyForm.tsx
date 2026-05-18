@@ -1,3 +1,11 @@
+/*
+ * Interactive empathy block for patent plan step (student editing)
+ *
+ * Collects narrative answers plus multi-select “how did you learn?” checkboxes. Values are
+ * serialized into `field_2` JSON via `serializeEmpathy` on submit. `what_changed` is the
+ * gating required field aligned with design-thinking rubrics in class.
+ */
+
 import type { EmpathyDraft } from '../lib/empathy'
 import { EMPATHY_CHECKBOXES } from '../lib/empathy'
 

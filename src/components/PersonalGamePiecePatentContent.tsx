@@ -1,3 +1,18 @@
+/*
+ * Stepped patent wizard — personal game piece (Forge) and Prism pop-up card
+ *
+ * Implements the three-gate patent pipeline: (1) teacher approves plan → checklist unlocks,
+ * (2) teacher approves checklist → final packet fields unlock, (3) teacher approves final
+ * packet → WP/gold land on `profiles` via server triggers, not when intermediate gates pass.
+ * Shares UI patterns with sticker/custom patents but hard-codes checklist copy from
+ * `PERSONAL_GAME_PIECE_STEPS` or `POP_UP_CARD_STEPS`. Realtime on `patents` + `skill_completions`
+ * refreshes the form when teachers act elsewhere; the skill_completions branch also drives the
+ * on-page congratulations banner when `wp_awarded`/`gold_awarded` appear after final approval
+ * (distinct from plan approval). `patentRowMatchesTile` prevents cross-tile noise when one student
+ * has many open quests. Resubmitting final packet clears `wp_awarded`/`gold_awarded` on the
+ * completion row so a returned packet does not leave stale award numbers that imply credit already granted.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -27,6 +42,10 @@ import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
+// =============================================================================
+// Types + module constants (no hooks)
+// =============================================================================
+
 type PatentDraft = {
   field1: string
   field3: string
@@ -51,6 +70,10 @@ function patentTreePathForGuild(guild: string): string {
   return skillTreeGuildModifier(guild) === 'prism' ? '/tree/prism' : '/tree/forge'
 }
 
+// =============================================================================
+// PersonalGamePiecePatentContent — Forge piece + Prism pop-up stepped wizard
+// =============================================================================
+
 export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus }: Props) {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -59,10 +82,16 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const stepLabels = isPopUp ? POP_UP_CARD_STEPS : PERSONAL_GAME_PIECE_STEPS
   const checklistLen = stepLabels.length
 
+  // ---------------------------------------------------------------------------
+  // Storage keys — drafts + stepped tab persistence (per student + tile)
+  // ---------------------------------------------------------------------------
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
+  // ---------------------------------------------------------------------------
+  // React state — plan, checklist, uploads, tabs, banners
+  // ---------------------------------------------------------------------------
   const [initialised, setInitialised] = useState(false)
   const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
   const [checks, setChecks] = useState<boolean[]>(() =>
@@ -86,6 +115,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
   const [flowBanner, setFlowBanner] = useState<string | null>(null)
   const [approvalNotice, setApprovalNotice] = useState<{ message: string; tone: 'success' | 'returned' } | null>(null)
   const approvalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ---------------------------------------------------------------------------
+  // Inline notices — teacher actions (auto-dismiss)
+  // ---------------------------------------------------------------------------
   const showApprovalNotice = (message: string, tone: 'success' | 'returned') => {
     setApprovalNotice({ message, tone })
     if (approvalTimerRef.current) clearTimeout(approvalTimerRef.current)
@@ -108,10 +141,16 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
 
   const phaseHydrateSigRef = useRef<string>('')
 
+  // ---------------------------------------------------------------------------
+  // Derived gates — checklist tab availability
+  // ---------------------------------------------------------------------------
   const canUseDb = Boolean(user?.id)
   const planApprovedForChecklist = plan.status === 'approved'
   const canStartChecklist = planApprovedForChecklist && !(checklistSubmitted && !checklistApproved)
 
+  // ---------------------------------------------------------------------------
+  // Data: `loadFromDatabase` — hydrate `patents` (plan/packet), merge duplicates
+  // ---------------------------------------------------------------------------
   const loadFromDatabase = useCallback(async () => {
     if (!user?.id) {
       console.log('[PatentLoad] PersonalGamePiecePatent step:skip-no-user', { tileId: tile.id })
@@ -274,7 +313,15 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     void loadFromDatabase()
   }, [loadFromDatabase])
 
-  /** Realtime: auto-refresh when teacher approves/returns this student's patent or completion. */
+  // ---------------------------------------------------------------------------
+  // Effects — Realtime (`patents` + `skill_completions`), catch-up congratulations banner
+  // ---------------------------------------------------------------------------
+  /*
+   * Realtime: teacher action on this student's patent rows OR skill completion for this tile.
+   * Patents channel handles plan return/approve and checklist_approve. Completions channel handles
+   * final quest approval + award columns — that is what triggers the congratulations banner here
+   * (in addition to the global `ApprovalCelebrationSync` toast on the same event).
+   */
   useEffect(() => {
     if (!user?.id) return
     const uid = user.id
@@ -312,6 +359,7 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
             if (next.wp_awarded != null && next.gold_awarded != null) {
               const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : 0
               const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : 0
+              /* Cache awards for refresh: ref + localStorage avoid double banner if effect runs twice in StrictMode. */
               localStorage.setItem(`nexus:approval-wp:${tid}`, String(wp))
               localStorage.setItem(`nexus:approval-gold:${tid}`, String(gold))
               bannerFiredRef.current = true
@@ -356,6 +404,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       })
   }, [initialised, completionStatus, tile.id, user?.id])
 
+  // ---------------------------------------------------------------------------
+  // Derived UI — counts, max tab, phase clamp + `goPhase`
+  // ---------------------------------------------------------------------------
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === checklistLen
 
@@ -379,7 +430,11 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     sessionStorage.setItem(phaseKey, String(next))
   }
 
-  // Auto-advance the student UI when teacher approvals arrive via realtime.
+  /*
+   * When Realtime bumps plan/checklist approval, grow the stepped wizard tab so students are not
+   * stuck on phase 1 after the teacher unlocked the build checklist.
+   * eslint-disable: omit `goPhase` from deps to avoid oscillation; this mirrors server gates only.
+   */
   useEffect(() => {
     if (!initialised) return
     if (planApprovedForChecklist && phase === 1 && maxPhase >= 2) {
@@ -390,6 +445,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     }
   }, [initialised, planApprovedForChecklist, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---------------------------------------------------------------------------
+  // Persistence — checklist + fields + Storage
+  // ---------------------------------------------------------------------------
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
     if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase
@@ -441,7 +499,10 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
       if (dbErr) throw dbErr
 
       setUploadUrl(publicUrl)
-      // Auto-check the upload step checkbox
+      /*
+       * Patent checklist’s last row is the artifact upload — flipping it here matches teacher expectation
+       * (“I uploaded my photo”) without a second manual checkbox click after Storage succeeds.
+       */
       const nextArr = [...checks]
       nextArr[checklistLen - 1] = true
       setChecks(nextArr)
@@ -476,6 +537,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Student actions — plan save, checklist submit, final packet → `skill_completions`
+  // ---------------------------------------------------------------------------
   const field1Locked = plan.status === 'pending' || plan.status === 'approved'
 
   const onStep1Continue = async () => {
@@ -643,7 +707,12 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
         .eq('id', pid)
       if (updErr) throw updErr
 
-      // Handle resubmission: update existing returned row rather than inserting a duplicate.
+      /*
+       * Final packet submission moves the patent row to `packet` stage for teacher review.
+       * Skill completion row must exist for the approval queue: update in place when resubmitting
+       * a returned final so we never stack duplicate pending rows (which confused award triggers).
+       * Nulling wp_awarded/gold_awarded on resubmit signals “not yet re-graded” after a return.
+       */
       const { data: existing } = await supabase
         .from('skill_completions')
         .select('id, status')
@@ -683,6 +752,9 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Render — tile guard, loading, approved trophy view, or stepped form
+  // ---------------------------------------------------------------------------
   if (!usesGamePieceStylePatentPage(tile)) {
     return <p className="error">This page is only for stepped patent quests (game piece or pop-up card).</p>
   }
@@ -718,8 +790,11 @@ export function PersonalGamePiecePatentContent({ tile, refresh, completionStatus
     )
   }
 
-  // 'pending' no longer causes an early return — the form stays visible with a waiting notice
-  // so realtime updates push through; final approval toast is global (ApprovalCelebrationSync).
+  /*
+   * `pending` on `skill_completions` means “awaiting final teacher action” — we still render the
+   * stepped form with a waiting banner so Realtime can flip fields when the row is approved; the
+   * global WP toast remains `ApprovalCelebrationSync`, not this component’s local state alone.
+   */
   const isFinalPending = completionStatus === 'pending'
 
   return (

@@ -1,3 +1,10 @@
+/*
+ * Gold shop purchase rows — what the student bought and whether they “spent” it in class
+ *
+ * Written when students redeem items from `shop_items`; teachers may flip status when
+ * the physical perk is delivered. Consumed by `InventoryPage` and related dashboard views.
+ */
+
 export type InventoryStatus = 'unused' | 'used'
 
 export type InventoryRow = {

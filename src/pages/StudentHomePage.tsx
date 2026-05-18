@@ -1,3 +1,11 @@
+/*
+ * Student landing hub after sign-in (`/` via `HomeRoute`)
+ *
+ * Surfaces guild entry points (deep links to `/tree/:slug`), WP/gold summary, and rank
+ * progress toward Apprentice Mage. Uses static banner art from `src/assets`. This page is
+ * the motivational “home base” — detailed quest state lives on Skills / Journey / Codex.
+ */
+
 import { Link } from 'react-router-dom'
 import forgeBanner from '../assets/forge-banner.png'
 import prismBanner from '../assets/prism-banner.png'
@@ -7,6 +15,7 @@ import voidBanner from '../assets/void-banner.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { progressToApprenticeMage } from '../lib/rankProgress'
+import { canAccessVoidTile1Proto } from '../lib/voidProtoAccess'
 
 export function StudentHomePage() {
   const { profile, user, signOut } = useAuth()
@@ -22,6 +31,7 @@ export function StudentHomePage() {
   const gold = profile?.gold ?? 0
   const rank = profile?.rank?.trim() || 'Initiate'
   const progress = progressToApprenticeMage(wpTotal)
+  const voidProtoUnlocked = canAccessVoidTile1Proto(user)
 
   return (
     <div className="app-shell student-home">
@@ -108,10 +118,29 @@ export function StudentHomePage() {
                 className="student-home-guild-banner-img" decoding="async" />
               <span className="student-home-guild-coming-soon-badge">Coming soon</span>
             </Link>
-            <Link to="/tree/void" className="student-home-guild-banner-link student-home-guild-banner-link--void student-home-guild-banner-link--coming-soon">
-              <img src={voidBanner} alt="Void Navigators guild — coming soon"
-                className="student-home-guild-banner-img" decoding="async" />
-              <span className="student-home-guild-coming-soon-badge">Coming soon</span>
+            <Link
+              to="/tree/void"
+              className={`student-home-guild-banner-link student-home-guild-banner-link--void${
+                voidProtoUnlocked ? '' : ' student-home-guild-banner-link--coming-soon'
+              }`}
+            >
+              <img
+                src={voidBanner}
+                alt={
+                  voidProtoUnlocked
+                    ? 'Void Navigators guild — view prototype quest'
+                    : 'Void Navigators guild — coming soon'
+                }
+                className="student-home-guild-banner-img"
+                decoding="async"
+              />
+              {voidProtoUnlocked ? (
+                <span className="student-home-guild-coming-soon-badge student-home-guild-proto-badge">
+                  Prototype
+                </span>
+              ) : (
+                <span className="student-home-guild-coming-soon-badge">Coming soon</span>
+              )}
             </Link>
           </div>
         </div>

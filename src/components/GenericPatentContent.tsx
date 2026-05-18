@@ -1,5 +1,8 @@
-/**
- * GenericPatentContent — patent packet flow for Quest Builder tiles.
+/*
+ * Nexus Academy — Quest Builder patent wizard (`GenericPatentContent`, route `/patent-custom/:tileId`)
+ *
+ * Patent packet flow for tiles defined in the database (Quest Builder) or embedded templates
+ * like the T-shirt quest when `resolvedTileSteps(tile)` returns steps.
  *
  * Fixed opening questions (field_1 / field_2 labels):
  *   Q1  "Describe what you are going to make."
@@ -31,6 +34,7 @@ import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 import { isTShirtPatentQuestTile, resolvedTileSteps } from '../lib/customTile'
+import { isVoidTile1Tile, VOID_TILE1_CHECKLIST_FOOTER, VOID_TILE1_RECIPIENT_GUIDANCE } from '../lib/voidTile1Proto'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
 import { serverSuggestedPatentPhase } from '../lib/patentPhaseBootstrap'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
@@ -39,6 +43,10 @@ import { patentRowMatchesTile, patentTileIdCandidates } from '../lib/patentTileQ
 import { skillTreeGuildModifier } from '../lib/guildTree'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import { T_SHIRT_QUEST_CHECKLIST_FOOTER } from '../lib/tShirtQuestSteps'
+
+// =============================================================================
+// Types + file-level helpers (pure functions — no hooks)
+// =============================================================================
 
 type Props = {
   tile: TileRow
@@ -61,6 +69,7 @@ function guildBackRoute(guild: string): string {
   if (mod === 'forge') return '/tree/forge'
   if (mod === 'prism') return '/tree/prism'
   if (mod === 'folded') return '/tree/folded'
+  if (mod === 'void') return '/tree/void'
   return '/tree'
 }
 
@@ -68,14 +77,22 @@ function checklistFooterNoteForTile(tile: TileRow): string | null {
   const fromDb = tile.checklist_footer_note?.trim()
   if (fromDb) return fromDb
   if (isTShirtPatentQuestTile(tile)) return T_SHIRT_QUEST_CHECKLIST_FOOTER
+  if (isVoidTile1Tile(tile)) return VOID_TILE1_CHECKLIST_FOOTER
   return null
 }
+
+// =============================================================================
+// GenericPatentContent — Quest Builder / T-shirt style stepped patent UI
+// =============================================================================
 
 export function GenericPatentContent({ tile, refresh, completionStatus }: Props) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
 
+  // ---------------------------------------------------------------------------
+  // Tile-derived config — dynamic steps, back nav, localStorage/session keys
+  // ---------------------------------------------------------------------------
   const steps: StepConfig[] = resolvedTileSteps(tile)
   const checklistFooterNote = checklistFooterNoteForTile(tile)
   const backRoute = guildBackRoute(tile.guild)
@@ -83,6 +100,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
+  // ---------------------------------------------------------------------------
+  // React state — `patents` row snapshot, checklist, uploads, stepped tabs, UX copy
+  // ---------------------------------------------------------------------------
   const [initialised, setInitialised] = useState(false)
   const [plan, setPlan] = useState<PlanState>({ id: '', status: 'none' })
   const [checks, setChecks] = useState<boolean[]>(() => emptyChecks(steps))
@@ -111,6 +131,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   /** When this changes vs last load, re-apply tab from DB (refresh / realtime). */
   const phaseHydrateSigRef = useRef<string>('')
 
+  // ---------------------------------------------------------------------------
+  // Inline notices — teacher return / Realtime toasts (auto-dismiss)
+  // ---------------------------------------------------------------------------
   const showApprovalNotice = (message: string, tone: 'success' | 'returned') => {
     setApprovalNotice({ message, tone })
     if (approvalTimerRef.current) clearTimeout(approvalTimerRef.current)
@@ -125,13 +148,33 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     setFinalApproval(null)
   }, [tile.id])
 
+  // ---------------------------------------------------------------------------
+  // Derived gates — which tabs and edits are allowed for current plan/checklist status
+  // ---------------------------------------------------------------------------
   const canUseDb = Boolean(user?.id)
   /** Same source as read-only plan fields: teacher must have approved this plan row in the DB. */
   const planApprovedForChecklist = plan.status === 'approved'
   const canStartChecklist = planApprovedForChecklist && !(checklistSubmitted && !checklistApproved)
   const planStep1FieldsLocked = plan.status === 'pending' || plan.status === 'approved'
 
+  // ---------------------------------------------------------------------------
+  // Data: `loadFromDatabase` — query `patents`, pick primary row, hydrate form + phase
+  // ---------------------------------------------------------------------------
   const loadFromDatabase = useCallback(async () => {
+    /*
+     * Hydrate patent UI from `patents` (plan + packet stages) and reconcile duplicates.
+     *
+     * Why this is dense: WP/gold for patents are awarded on **final** `skill_completions`
+     * approval (see Realtime on `skill_completions` below), while plan/checklist gates live
+     * on `patents`. `selectStudentPatentPrimary` picks which row is “live” so a stray new
+     * `pending` row cannot shadow an older approved plan (`lib/patentPlanRow`). When the
+     * teacher returns the plan, we clear checklist submitted flags in the DB so the student
+     * cannot leave the teacher reviewing a stale checklist bitmap. `primaryStage === 'packet'`
+     * forces checklist checkmarks on in the UI because packet stage implies the checklist
+     * was already passed — otherwise refresh mid-flow would blank progress. Phase is
+     * hydrated with a signature so identical DB snapshots do not fight the student’s tab
+     * state on every poll.
+     */
     if (!user?.id) {
       console.log('[PatentLoad] GenericPatent step:skip-no-user', { tileId: tile.id })
       setInitialised(true)
@@ -301,6 +344,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     console.log('[PatentLoad] GenericPatent step:7-initialised')
   }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, phaseKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---------------------------------------------------------------------------
+  // Effects — initial load, Realtime (`patents` + `skill_completions`), post-approval banner
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     void loadFromDatabase()
   }, [loadFromDatabase])
@@ -310,6 +356,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     const uid = user.id
     const tid = String(tile.id)
 
+    /* Same dual-channel pattern as game piece patent: patents for gates, skill_completions for final awards banner. */
     const channel = supabase
       .channel(`patent-watch-custom-${tid}-${uid}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'patents', filter: `student_id=eq.${uid}` }, (payload) => {
@@ -373,6 +420,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       })
   }, [initialised, completionStatus, tile.id, user?.id])
 
+  // ---------------------------------------------------------------------------
+  // Derived progression — checklist counts, tab cap, session-backed phase nudge
+  // ---------------------------------------------------------------------------
   const doneCount = checks.filter(Boolean).length
   const allDone = doneCount === steps.length
 
@@ -395,7 +445,11 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     sessionStorage.setItem(phaseKey, String(next))
   }
 
-  // Auto-advance the student UI when teacher approvals arrive via realtime.
+  /*
+   * When Realtime bumps `plan` / checklist approval, `maxPhase` grows — nudge the tab UI
+   * forward so students are not stuck on step 1 after the teacher already unlocked the checklist.
+   * eslint-disable: intentionally omit `goPhase` from deps to avoid a feedback loop; effect only mirrors gates.
+   */
   useEffect(() => {
     if (!initialised) return
     if (planApprovedForChecklist && phase === 1 && maxPhase >= 2) {
@@ -406,9 +460,16 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     }
   }, [initialised, planApprovedForChecklist, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---------------------------------------------------------------------------
+  // Persistence — checklist autosave, closing Q fields, Storage uploads
+  // ---------------------------------------------------------------------------
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
-    // While awaiting checklist review, prevent edits that would desync what the teacher is reviewing.
-    // If a teacher has already approved the checklist, allow edits again (final submission is still gated by allDone).
+    /*
+     * After “submit checklist for review”, block further checkbox writes until approve/return —
+     * otherwise the student mutates state the teacher is actively grading. Once checklist is
+     * approved, edits are allowed again (e.g. polish) because final submission still requires
+     * `allDone` + explicit submit for the **packet** stage, not ad-hoc checkbox toggles alone.
+     */
     if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
     if (error) {
@@ -472,6 +533,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Student actions — plan row, checklist review request, final packet → `skill_completions`
+  // ---------------------------------------------------------------------------
   const onStep1Continue = async () => {
     if (plan.status === 'pending' || plan.status === 'approved') return
     if (!patent.field1.trim()) {
@@ -569,6 +633,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
         .maybeSingle()
 
       if (existing) {
+        /* Resubmit after return: clear stale award columns so triggers/UI do not think payment already happened. */
         const { error } = await supabase.from('skill_completions').update({ status: 'pending', patent_id: pid, wp_awarded: null, gold_awarded: null }).eq('id', existing.id)
         if (error) throw error
       } else {
@@ -587,6 +652,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Render — loading shell, approved read-only, or active stepped form
+  // ---------------------------------------------------------------------------
   if (!initialised) {
     return (
       <p className="muted" role="status">
@@ -670,6 +738,22 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
             <p className="muted" style={{ marginTop: 0 }}>
               Answer both questions, then save. Your teacher will review before the checklist unlocks.
             </p>
+
+            {isVoidTile1Tile(tile) ? (
+              <p
+                className="muted"
+                style={{
+                  margin: '0 0 0.85rem',
+                  padding: '0.65rem 0.85rem',
+                  borderLeft: '4px solid rgba(124, 58, 237, 0.55)',
+                  background: 'rgba(124, 58, 237, 0.08)',
+                  borderRadius: '6px',
+                  lineHeight: 1.55,
+                }}
+              >
+                {VOID_TILE1_RECIPIENT_GUIDANCE}
+              </p>
+            ) : null}
 
             {plan.status === 'pending' && plan.id ? (
               <p style={{ fontWeight: 600, padding: '0.45rem 0.85rem', background: 'rgba(234,179,8,0.12)', borderLeft: '4px solid #ca8a04', borderRadius: '6px', marginBottom: '0.75rem' }}>

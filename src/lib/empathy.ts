@@ -1,3 +1,12 @@
+/*
+ * Empathy interview data shape for patent packets (game piece, sticker, pop-up card)
+ *
+ * Field 2 in patent forms historically held a paragraph; we now store structured JSON
+ * so the UI can show checklists (“how did you learn about this person?”) and teachers
+ * get comparable answers across classes. `parseEmpathy` accepts legacy plain strings so
+ * old rows still render as the “who” narrative without crashing JSON.parse.
+ */
+
 export type EmpathyDraft = {
   who: string
   why: string
@@ -44,7 +53,7 @@ export function parseEmpathy(raw: string | null | undefined): EmpathyDraft {
           : [],
       }
     }
-    // Old plain-string value: treat as "who"
+    /* Pre-JSON era: entire field was one blob — map it to `who` so nothing is silently dropped. */
     return { ...EMPTY_EMPATHY, who: raw }
   } catch {
     return { ...EMPTY_EMPATHY, who: raw }

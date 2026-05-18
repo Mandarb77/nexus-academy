@@ -1,3 +1,10 @@
+/*
+ * Collapsible shelf panel — wraps each item group inside a tier board
+ *
+ * Used for keyboard-friendly expand/collapse of dense shop lists. `useId` keeps `aria-controls`
+ * relationships unique when multiple accordions mount on the same page.
+ */
+
 import { useId, useState, type ReactNode } from 'react'
 
 type ShopAccordionProps = {

@@ -1,7 +1,16 @@
-/**
- * `tiles.id` / URL params may be string while `patents.tile_id` in Postgres can be stored as
- * text or integer depending on migrations — use `.in('tile_id', …)` so both match.
+/*
+ * Tile id matching for `patents` queries
+ *
+ * Historical migrations stored `tile_id` as text or bigint; React Router params are
+ * strings. Building a small candidate set (original, stringified, numeric) makes
+ * `.in('tile_id', …)` reliable so students always see their saved patent for the tile
+ * they clicked, regardless of how that id was serialized in Postgres.
  */
+
+// =============================================================================
+// Tile id candidates + row match (string vs numeric `tile_id` in Postgres)
+// =============================================================================
+
 export function patentTileIdCandidates(tileId: unknown): (string | number)[] {
   const out: (string | number)[] = []
   if (tileId === null || tileId === undefined) return out

@@ -1,3 +1,11 @@
+/*
+ * Optional bonus WP lore — “Power Ups” (`/powerups`)
+ *
+ * Classroom culture page: Maine connections, inventor stories, land acknowledgment hooks.
+ * Hash-based sections pair with `PowerUpsTabsNav` (only on this route). `useEffect` scrolls
+ * into view on load when URL includes `#section-id` so projector links land on the right block.
+ */
+
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'

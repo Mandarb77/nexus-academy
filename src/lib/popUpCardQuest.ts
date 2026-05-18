@@ -1,7 +1,17 @@
+/*
+ * Prism guild — “Pop-Up Card” community quest copy and routing helpers
+ *
+ * Content here mirrors the teacher-authored `tiles.skill_name` in Supabase (migration 035)
+ * so the UI can recognize that specific quest and show the empathy-driven checklist, resource
+ * links, and stepped patent layout. `usesGamePieceStylePatentPage` ties this tile to the
+ * same multi-step patent experience as the personal game piece flow (`PersonalGamePiecePatentContent`).
+ * Changing `POP_UP_CARD_SKILL_NAME` without updating the database row will silently break detection.
+ */
+
 import type { TileRow } from '../types/tile'
 import { isPersonalGamePieceTile } from './gamePieceTile'
 
-/** Must match `tiles.skill_name` for the Prism pop-up card quest (migration 035). */
+/* Must stay character-for-character aligned with `tiles.skill_name` for the Prism pop-up card tile in the DB. */
 export const POP_UP_CARD_SKILL_NAME = 'Make a Pop-Up Card for Someone at Kents Hill'
 
 export const POP_UP_CARD_RECIPIENT_GUIDANCE =
@@ -47,7 +57,6 @@ export function isPopUpCardTile(tile: Pick<TileRow, 'guild' | 'skill_name'>): bo
   return g === 'prism' && s === POP_UP_CARD_SKILL_NAME
 }
 
-/** Routes to `/patent-game-piece/:id` and `PersonalGamePiecePatentContent` (stepped layout). */
 export function usesGamePieceStylePatentPage(tile: TileRow): boolean {
   return isPersonalGamePieceTile(tile) || isPopUpCardTile(tile)
 }

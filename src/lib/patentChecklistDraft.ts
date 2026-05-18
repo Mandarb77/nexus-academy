@@ -1,4 +1,16 @@
-/** Local backup when `checklist_state` DB writes fail or before they replicate. */
+/*
+ * Checklist draft persistence in `localStorage`
+ *
+ * Patent checklist checkboxes normally live in `patents.checklist_state`, but flaky
+ * networks or optimistic UI can lose ticks. We mirror progress locally keyed by student+
+ * tile so a refresh mid-session does not wipe student effort. `mergeChecklistFromDraft`
+ * ORs draft bits on top of DB flags only when the draft belongs to the same plan row id
+ * — prevents a stale draft from an old patent attempt corrupting a new row.
+ */
+
+// =============================================================================
+// Read / write / merge — `localStorage` checklist mirror keyed by plan row id
+// =============================================================================
 
 export type ChecklistDraftPayload = { planRowId: string; checks: boolean[] }
 

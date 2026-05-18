@@ -1,3 +1,11 @@
+/*
+ * Nexus Academy — component-level layout and feature styles
+ *
+ * Large stylesheet backing React class names across pages (skill tree, patents, shop,
+ * teacher tools). Prefer adding tokens to `index.css` when values repeat; keep patent /
+ * shop-specific clusters grouped with section banners like the patent grid below.
+ */
+
 .app-shell {
   max-width: var(--app-shell-max-width);
   width: 100%;
@@ -689,6 +697,23 @@ a.btn-primary {
   border-radius: 20px;
   white-space: nowrap;
   pointer-events: none;
+}
+
+.student-home-guild-banner-link--void:not(.student-home-guild-banner-link--coming-soon) {
+  opacity: 1;
+  filter: none;
+}
+
+.student-home-guild-proto-badge {
+  background: rgba(124, 58, 237, 0.88);
+}
+
+.void-tile1-proto-banner {
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.85rem;
+  border-left: 4px solid rgba(124, 58, 237, 0.55);
+  background: rgba(124, 58, 237, 0.08);
+  border-radius: 6px;
 }
 
 /* Guild page coming-soon box */

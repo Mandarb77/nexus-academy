@@ -1,3 +1,12 @@
+/*
+ * Gold economy storefront (`/shop`)
+ *
+ * Fetches active `shop_items` with tier embeds, groups by tier, and calls purchase RPCs that
+ * enforce gold balance, rank locks, and `max_purchases_per_chicago_school_day` using
+ * `isSameEasternCalendarDay` so “one per day” matches Kents Hill’s instructional timezone, not
+ * the laptop’s local midnight. Loads `makersShop.css` for the trading-post theme only on this route.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { MakersShopHeader, ShopTierBoard } from '../components/makersShop'

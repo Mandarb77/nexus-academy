@@ -1,3 +1,11 @@
+/*
+ * Single catalog card in the Makers Shop — price, lock state, purchase CTA
+ *
+ * Composes `ShopAccordion` + `ShopItemGlyph`. `dailyBlocked` and `catalogLocked` come from
+ * `GoldShopPage` RPC results and Eastern-calendar limits so the button label explains *why*
+ * a purchase is disabled (affordability vs rank vs daily cap vs inactive item).
+ */
+
 import type { ShopCatalogItem } from '../../types/shopCatalog'
 import { ShopAccordion } from './ShopAccordion'
 import { ShopItemGlyph } from './ShopItemGlyph'

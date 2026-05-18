@@ -1,3 +1,16 @@
+/*
+ * Nexus Academy — application shell and route table
+ *
+ * Defines every URL the gamified maker-class app serves: student areas (skill trees,
+ * gold shop, inventory, journey/codex, patent flows) vs teacher areas (dashboard,
+ * approvals, quest tooling, reset). Wraps the tree in `AuthProvider` so any page can
+ * read session/profile; mounts `ApprovalCelebrationHost` and `ApprovalCelebrationSync`
+ * once at the top so congratulations / WP updates can fire from Realtime without
+ * each page wiring its own channel. The dev-only ribbon (`import.meta.env.DEV`) is
+ * intentionally absent in production builds so students never see local-debug hints
+ * or the `/nexus-dev-verify.txt` sanity-check link.
+ */
+
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { HomeRoute } from './components/HomeRoute'
@@ -28,6 +41,7 @@ import './App.css'
 export default function App() {
   return (
     <BrowserRouter>
+      {/* ========== Dev-only: not in production (`import.meta.env.DEV`) ========== */}
       {import.meta.env.DEV && (
         <div className="nexus-app-dev-ribbon" role="note">
           Local dev — if this bar is missing, you are not on this repo’s Vite server.{' '}
@@ -38,10 +52,14 @@ export default function App() {
         </div>
       )}
       <AuthProvider>
+        {/* ========== Global: quest-approval toast + Realtime → localStorage bridge ========== */}
         <ApprovalCelebrationHost />
         <ApprovalCelebrationSync />
         <Routes>
+          {/* ========== Public / entry ========== */}
           <Route path="/" element={<HomeRoute />} />
+
+          {/* ========== Student — guilds, economy, static pages ========== */}
           <Route
             path="/tree"
             element={
@@ -82,6 +100,8 @@ export default function App() {
               </StudentOnlyRoute>
             }
           />
+
+          {/* ========== Student — program nav: Power Ups, Journey, Codex (+ legacy /portfolio) ========== */}
           <Route
             path="/powerups"
             element={
@@ -106,7 +126,10 @@ export default function App() {
               </StudentOnlyRoute>
             }
           />
+          {/* Legacy path from earlier naming — portfolio content lives on Codex now. */}
           <Route path="/portfolio" element={<Navigate to="/codex" replace />} />
+
+          {/* ========== Student — patent packet flows (tile id in URL) ========== */}
           <Route
             path="/patent-game-piece/:tileId"
             element={
@@ -131,9 +154,13 @@ export default function App() {
               </StudentOnlyRoute>
             }
           />
+
+          {/* ========== Auth & invites (no StudentOnly/Teacher wrapper on these paths) ========== */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/join/:token" element={<JoinPage />} />
+
+          {/* ========== Teacher — dashboard, approvals panel, utilities ========== */}
           <Route
             path="/dashboard"
             element={
@@ -166,6 +193,8 @@ export default function App() {
               </TeacherDashboardRoute>
             }
           />
+
+          {/* ========== Unknown paths → home ========== */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

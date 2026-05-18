@@ -1,4 +1,12 @@
-/** Checklist steps for Design Your Personal Game Piece (must match count in localStorage). */
+/*
+ * Static checklist copy — Forge “Design Your Personal Game Piece”
+ *
+ * The patent UI stores checklist completion as a boolean array aligned by index with this
+ * list. If you add/remove/reorder steps here, migrate existing `patents.checklist_state`
+ * rows or students will see mismatched ticks. Kept as `as const` for tuple typing in
+ * components that map over steps.
+ */
+
 export const PERSONAL_GAME_PIECE_STEPS = [
   'Step 1 — Sketch your design on paper. Before opening any software draw at least one rough sketch of your game piece. What symbol or shape represents you as a maker? Your finished piece must be no larger than 1 inch wide, 1 inch deep, and 2 inches tall.',
   'Step 2 — Join the TinkerCAD class and learn the basics. Class code: 2XTJEL26G. Then watch the intro video before you start building.',

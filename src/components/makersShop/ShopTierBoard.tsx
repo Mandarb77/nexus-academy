@@ -1,3 +1,10 @@
+/*
+ * One tier (“shelf”) in the Makers Shop — heading + list of `GameShopCard`
+ *
+ * Maps `shop_tiers` metadata to `shelfAccentForTier` / `displayShelfTitle` for consistent naming
+ * (e.g. “Conveniences” vs raw DB label).
+ */
+
 import type { ShopCatalogItem, ShopTierEmbed } from '../../types/shopCatalog'
 import { GameShopCard } from './GameShopCard'
 import { displayShelfTitle, shelfAccentForTier } from './shopDisplay'

@@ -1,4 +1,12 @@
-/** Next rank milestone for students starting as Initiate. */
+/*
+ * Rank ladder math — first promotion after Initiate
+ *
+ * Workshop Points (WP) from approved quests accumulate on `profiles.wp`. This module
+ * powers the progress bar toward “Apprentice Mage” on student home; server-side rank
+ * promotion may still be manual or trigger-based — the UI here is motivational clarity,
+ * not the sole source of rank changes.
+ */
+
 export const APPRENTICE_MAGE_WP = 100
 export const NEXT_RANK_NAME = 'Apprentice Mage'
 

@@ -1,7 +1,12 @@
-import type { StepConfig } from '../types/tile'
+/*
+ * Folded Path T-shirt community quest — embedded step definitions
+ *
+ * Mirrors migration `034_t_shirt_quest_tile.sql` so the app still shows the full empathy
+ * + Cricut pipeline when `tiles.steps` is null (common for seeded tiles). `T_SHIRT_QUEST_SKILL_NAME`
+ * must stay aligned with the DB `skill_name` for fuzzy routing in `customTile.ts`.
+ */
 
-/** Must match `tiles.skill_name` in migration 034. */
-export const T_SHIRT_QUEST_SKILL_NAME = 'Design a T-Shirt for Someone In the Room'
+import type { StepConfig } from '../types/tile'
 
 export const T_SHIRT_QUEST_CHECKLIST_FOOTER =
   'This quest can be completed again for bonus WP with a different recipient. Each version must show a new interview and a new design — not the same design on a different shirt.'

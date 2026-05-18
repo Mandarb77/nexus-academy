@@ -1,3 +1,10 @@
+/*
+ * Shop page masthead — gold purse + sign out
+ *
+ * Keeps economy context visible while scrolling long tier boards. `aria-live` on the purse
+ * politely announces gold changes after purchases for screen reader users.
+ */
+
 type Props = {
   gold: number
   onSignOut: () => void

@@ -1,3 +1,14 @@
+/*
+ * Journey — personal timeline of quest + patent progress (`/journey`)
+ *
+ * Loads approved `skill_completions` for the signed-in student (with embedded `tiles` for
+ * titles) and renders a reverse-chronological timeline. Expanding an entry lazy-loads patent
+ * detail via `fetchJourneyPatentReadView` so empathy/checklist/photo evidence appear for patent
+ * quests without bloating the initial query. A separate “Continue your patent quests” section
+ * surfaces in-progress patent rows (plan/checklist not done) so students do not lose track of
+ * drafts that are not yet `skill_completions` rows.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'

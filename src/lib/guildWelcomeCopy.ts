@@ -1,5 +1,12 @@
-/** Copy for single-guild skill tree pages (`/tree/:slug`). */
-export type GuildWelcomeSlug = 'forge' | 'prism' | 'folded'
+/*
+ * Flavor text for deep-linked guild skill trees (`/tree/forge`, `/tree/prism`, …)
+ *
+ * Separated from React components so teachers can rewrite lore without touching layout
+ * code. Only a subset of slugs have blocks today; unknown slugs fall back to generic UI
+ * in `GuildSkillTreePage`.
+ */
+
+export type GuildWelcomeSlug = 'forge' | 'prism' | 'folded' | 'void'
 
 export type GuildWelcomeBlock = {
   /** Display name (e.g. Forge Covenant) */
@@ -27,6 +34,13 @@ export const GUILD_WELCOME_BY_SLUG: Partial<Record<GuildWelcomeSlug, GuildWelcom
     sentences: [
       'In this guild you will work with the Cricut, Piskel, and Cricut Design Space to cut vinyl, print stickers, and make things that carry your design into the world on objects people actually use.',
       'Your tools are color, pattern, and the courage to make something someone will wear or display.',
+    ],
+  },
+  void: {
+    orderName: 'Void Navigators',
+    sentences: [
+      'In this guild you will make profile-cut gifts for real people and pets — coasters, holders, and parts that must fit something in the world.',
+      'Your tools are observation, tolerance, and the discipline to test on scrap before you cut the real thing.',
     ],
   },
 }

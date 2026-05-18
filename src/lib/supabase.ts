@@ -1,3 +1,15 @@
+/*
+ * Supabase browser client — single source of truth for Postgres + Auth + Realtime
+ *
+ * Every feature that touches the database (profiles WP/gold, quests, patents,
+ * teacher approvals) imports `supabase` from here. `isSupabaseConfigured` gates the
+ * app when `.env` still has template placeholders so we never call `createClient` with
+ * empty strings (that throws). We still construct a client with known demo placeholders
+ * so imports do not crash at module load; `AuthContext` and UI branches skip network
+ * work until real URL/key are set. New teachers cloning the repo see a console warning
+ * instead of a white screen.
+ */
+
 import { createClient } from '@supabase/supabase-js'
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''

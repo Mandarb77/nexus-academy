@@ -1,3 +1,13 @@
+/*
+ * Primary navigation chrome — student hub vs teacher tools
+ *
+ * Two variants: default student links (Home, Journey, Skills, Shop, …) used across the
+ * gamified experience, and a compact teacher strip for dashboard/reset/quest admin.
+ * Mounts `StudentPreviewBanner` above student nav so preview mode is always visible.
+ * The yellow “Dev check” strip uses `import.meta.env.DEV` so production students never
+ * see port 5173/5174 debugging copy — only developers running Vite locally.
+ */
+
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isTeacherProfile } from '../lib/teacher'
@@ -56,6 +66,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             className="student-nav-link"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ca8a04', fontWeight: 700 }}
             onClick={() => {
+              /* Preview uses same Google session; flip flag then land on `/` so student route guards apply. */
               toggleStudentPreview()
               navigate('/', { replace: true })
             }}
@@ -69,6 +80,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
 
   return (
     <div className="student-chrome">
+      {/* Dev-only: students on production never see this — avoids “where did Journey go?” confusion when the wrong localhost tab is open. */}
       {import.meta.env.DEV ? (
         <div
           className="nexus-dev-server-hint"
@@ -151,6 +163,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
           Bonuses
         </NavLink>
         {teacher && !studentPreviewMode ? (
+          /* Teachers keep a quick escape hatch to approvals without memorizing `/teacher`. Hidden during student preview to reduce clutter. */
           <NavLink
             to="/teacher"
             className={({ isActive }) =>

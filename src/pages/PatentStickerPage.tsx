@@ -1,3 +1,10 @@
+/*
+ * Patent route shell — Folded Path sticker quest (`/patent-sticker/:tileId`)
+ *
+ * When `STICKER_QUEST_COMING_SOON` is true, redirects students to a locked explanation instead
+ * of the full patent wizard so in-person curriculum can catch up before submissions open.
+ */
+
 import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
@@ -11,6 +18,9 @@ export function PatentStickerPage() {
   const { signOut } = useAuth()
   const { tiles, loading, refresh, completionByTileId, canUseDb } = useSkillTree()
 
+  // ---------------------------------------------------------------------------
+  // URL → tile; `isStickerQuestLocked` drives “coming soon” vs full wizard
+  // ---------------------------------------------------------------------------
   const tile = useMemo(() => {
     if (!tileId) return null
     return tiles.find((t) => String(t.id) === String(tileId)) ?? null
@@ -23,6 +33,7 @@ export function PatentStickerPage() {
 
   return (
     <div className="app-shell patent-game-piece-page">
+      {/* ---------- Page chrome (always Folded Path back link) ---------- */}
       <header className="skill-tree-top">
         <MainNav />
         <div className="skill-tree-top-row skill-tree-top-row--guild">
@@ -38,6 +49,7 @@ export function PatentStickerPage() {
         </div>
       </header>
 
+      {/* ---------- Main: locked explainer vs `StickerPatentContent` ---------- */}
       <main className="page patent-game-piece-main" data-patent-page="sticker-stepped">
         <h1 className="page-title" style={{ marginTop: 0 }}>Design Your Personal Sticker</h1>
         {stickerLocked ? (

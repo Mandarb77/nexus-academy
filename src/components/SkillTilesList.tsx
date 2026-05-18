@@ -1,8 +1,18 @@
+/*
+ * Skill tree tile grid — one row per quest with status, patent deep link, or mark complete
+ *
+ * Consumes `useSkillTree` data. Sort order is deliberate pedagogy: flagship physical builds
+ * first, active sticker second, custom patents third, generic skills, then locked “coming soon”
+ * sticker last so it does not look like the primary path. Patent tiles navigate to the correct
+ * wizard via `getPatentRoute`; simple skills use `markComplete` for direct submission.
+ */
+
 import { useNavigate } from 'react-router-dom'
 import type { TileRow } from '../types/tile'
 import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 import { isPopUpCardTile, POP_UP_CARD_STEPS } from '../lib/popUpCardQuest'
+import { isVoidTile1Tile, VOID_TILE1_STEPS } from '../lib/voidTile1Proto'
 import { getPatentRoute } from '../lib/patentRoutes'
 import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
 import { isCustomTile, resolvedTileSteps } from '../lib/customTile'
@@ -21,6 +31,7 @@ type Props = {
 function stepCount(tile: TileRow): number {
   if (isPersonalGamePieceTile(tile)) return PERSONAL_GAME_PIECE_STEPS.length
   if (isPopUpCardTile(tile)) return POP_UP_CARD_STEPS.length
+  if (isVoidTile1Tile(tile)) return VOID_TILE1_STEPS.length
   if (isStickerTile(tile)) return STICKER_STEPS.length
   if (isCustomTile(tile)) return resolvedTileSteps(tile).length
   return 0
@@ -36,11 +47,15 @@ export function SkillTilesList({
 }: Props) {
   const navigate = useNavigate()
 
-  // Game piece first, then live sticker, then other patent/custom quests, then standard skills, locked sticker last
+  /*
+   * Pedagogical sort: anchor cohort around flagship builds first; bury “coming soon” sticker
+   * at the end so freshmen do not mistake it for the main progression path.
+   */
   const sortedTiles = [...tiles].sort((a, b) => {
     const rank = (t: TileRow) => {
       if (isPersonalGamePieceTile(t)) return 0
       if (isPopUpCardTile(t)) return 0
+      if (isVoidTile1Tile(t)) return 0
       if (isStickerTile(t) && !isStickerQuestLocked(t)) return 1
       if (isCustomTile(t)) return 2
       if (isStickerQuestLocked(t)) return 4
@@ -69,7 +84,10 @@ export function SkillTilesList({
           const patentProgress = isPatentTile ? patentProgressByTileId.get(tile.id) : undefined
           const doneCount = patentProgress?.checklistState.filter(Boolean).length ?? 0
 
-          // Only the personal sticker quest is UI-locked when STICKER_QUEST_COMING_SOON; all other tiles use Mark complete or patent flow
+          /*
+           * `STICKER_QUEST_COMING_SOON` is the only tile that shows a hard lock while still
+           * existing in the DB — avoids deleting curriculum content while the room is not ready.
+           */
           const isComingSoon = isStickerQuestLocked(tile)
 
           const isSimpleMarkCompleteOnly =

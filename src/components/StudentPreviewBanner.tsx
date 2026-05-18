@@ -1,11 +1,16 @@
+/*
+ * Teacher UX: visible reminder when browsing as a student
+ *
+ * When a teacher toggles student preview in the dashboard, they navigate student routes
+ * with full auth still as teacher — this sticky bar prevents mistaken grading assumptions
+ * (“why is gold wrong?”) and gives a one-click exit back to `/dashboard`. Renders null
+ * for real students so it never consumes vertical space in class.
+ */
+
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isTeacherProfile } from '../lib/teacher'
 
-/**
- * Sticky banner shown to teachers who are browsing in student-preview mode.
- * Renders nothing for students or when preview mode is off.
- */
 export function StudentPreviewBanner() {
   const { profile, studentPreviewMode, toggleStudentPreview } = useAuth()
   const navigate = useNavigate()
@@ -14,6 +19,7 @@ export function StudentPreviewBanner() {
 
   const exitPreview = () => {
     toggleStudentPreview()
+    /* Replace so the student stack is not preserved in history — reduces accidental “back” into preview. */
     navigate('/dashboard', { replace: true })
   }
 
