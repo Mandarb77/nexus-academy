@@ -7,6 +7,9 @@
  */
 
 import type { TileRow } from '../types/tile'
+
+/** Forge “Design Your Personal Game Piece” tile (DB id 5 in some installs, or by name). */
+export function isPersonalGamePieceTile(tile: TileRow): boolean {
   if (tile.id === '5') return true
   /* Numeric id match covers bigint-as-number JSON from Supabase. */
   const asNum = Number(tile.id)
