@@ -438,9 +438,9 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
   const maxPhase = useMemo((): 1 | 2 | 3 => {
     if (!planSubmitted) return 1
-    if (!checklistApproved) return 2
+    if (!checklistApproved && !(bypassApprovals && checklistSubmitted)) return 2
     return 3
-  }, [planSubmitted, checklistApproved])
+  }, [planSubmitted, checklistApproved, bypassApprovals, checklistSubmitted])
 
   useEffect(() => {
     if (!initialised) return
@@ -463,7 +463,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
     if (planApprovedForChecklist && phase === 1 && maxPhase >= 2) {
       goPhase(2)
     }
-    if (checklistApproved && phase === 2 && maxPhase >= 3) {
+    if ((checklistApproved || (bypassApprovals && checklistSubmitted)) && phase === 2 && maxPhase >= 3) {
       goPhase(3)
     }
   }, [initialised, planApprovedForChecklist, checklistApproved, phase, maxPhase]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -589,7 +589,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       const { error } = await supabase.from('patents').update({ checklist_submitted: true }).eq('id', plan.id)
       if (error) throw error
       setChecklistSubmitted(true)
-      setFlowBanner('Checklist submitted for teacher review. Step 3 unlocks once your teacher approves.')
+      setFlowBanner(bypassApprovals ? 'Checklist done — proceeding to step 3.' : 'Checklist submitted for teacher review. Step 3 unlocks once your teacher approves.')
       await loadFromDatabase()
     } catch (e: unknown) {
       console.error('[GenericPatent] submit checklist:', e)
@@ -832,7 +832,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
           <section aria-labelledby="generic-patent-phase-2">
             <h2 id="generic-patent-phase-2" className="patent-phase-title">Step 2 — Workshop checklist</h2>
 
-            {checklistSubmitted && !checklistApproved ? (
+            {checklistSubmitted && !checklistApproved && !bypassApprovals ? (
               <p role="status" style={{ fontWeight: 600, margin: '0 0 0.75rem', padding: '0.55rem 0.85rem', background: 'rgba(234,179,8,0.12)', borderLeft: '4px solid #ca8a04', borderRadius: '6px' }}>
                 ⏳ Submitted — waiting for teacher approval
               </p>
@@ -1010,7 +1010,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
               Your answers save as you type. Submit when both are complete.
             </p>
 
-            {!checklistApproved ? (
+            {!checklistApproved && !(bypassApprovals && checklistSubmitted) ? (
               <p className="muted">Your teacher must approve the checklist in step 2 before this section unlocks.</p>
             ) : (
               <>
