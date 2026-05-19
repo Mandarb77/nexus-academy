@@ -640,18 +640,19 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
         .eq('tile_id', tile.id)
         .maybeSingle()
 
+      const finalStatus = bypassApprovals ? 'approved' : 'pending'
       if (existing) {
         /* Resubmit after return: clear stale award columns so triggers/UI do not think payment already happened. */
-        const { error } = await supabase.from('skill_completions').update({ status: 'pending', patent_id: pid, wp_awarded: null, gold_awarded: null }).eq('id', existing.id)
+        const { error } = await supabase.from('skill_completions').update({ status: finalStatus, patent_id: pid, wp_awarded: null, gold_awarded: null }).eq('id', existing.id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('skill_completions').insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'pending', patent_id: pid })
+        const { error } = await supabase.from('skill_completions').insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: finalStatus, patent_id: pid })
         if (error) throw error
       }
 
       await refresh()
-      setSubmitSuccessMessage('Final application submitted! Returning to skill tree…')
-      setFlowBanner('Final application submitted — awaiting teacher approval.')
+      setSubmitSuccessMessage('Quest complete! Returning to skill tree…')
+      setFlowBanner(bypassApprovals ? 'Quest complete.' : 'Final application submitted — awaiting teacher approval.')
       window.setTimeout(() => navigate(backRoute), 1400)
     } catch (e: unknown) {
       setSubmitApprovalError(e instanceof Error ? e.message : 'Submit failed.')
