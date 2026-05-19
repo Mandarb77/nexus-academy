@@ -855,7 +855,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                 <div className="design3d-checklist-col" style={{ maxWidth: '42rem' }}>
                   <ol className="checklist">
                     {steps.map((step, idx) => {
-                      const isUploadStep = idx === steps.length - 1
+                      const isUploadStep = idx === steps.length - 1 && !bypassApprovals
                       const isApprovalGate = step.requiresApproval
                       return (
                         <li key={idx} className="checklist-item">
