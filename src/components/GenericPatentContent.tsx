@@ -37,6 +37,7 @@ import type { TileRow, StepConfig } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 import { isTShirtPatentQuestTile, resolvedTileSteps } from '../lib/customTile'
 import { isVoidTile1Tile, VOID_TILE1_CHECKLIST_FOOTER, VOID_TILE1_RECIPIENT_GUIDANCE } from '../lib/voidTile1Proto'
+import { canAccessVoidTile1Proto } from '../lib/voidProtoAccess'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
 import { serverSuggestedPatentPhase } from '../lib/patentPhaseBootstrap'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
@@ -155,9 +156,13 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
   // Derived gates — which tabs and edits are allowed for current plan/checklist status
   // ---------------------------------------------------------------------------
   const canUseDb = Boolean(user?.id)
+  /** Proto-only: skip all teacher approval gates for Void Navigators tiles on the preview tester account. */
+  const bypassApprovals = canAccessVoidTile1Proto(user) && (tile.guild ?? '').trim().toLowerCase() === 'void navigators'
   /** Same source as read-only plan fields: teacher must have approved this plan row in the DB. */
-  const planApprovedForChecklist = plan.status === 'approved'
-  const canStartChecklist = planApprovedForChecklist && !(checklistSubmitted && !checklistApproved)
+  const planApprovedForChecklist = bypassApprovals
+    ? plan.status === 'pending' || plan.status === 'approved'
+    : plan.status === 'approved'
+  const canStartChecklist = planApprovedForChecklist && !(checklistSubmitted && !(checklistApproved || bypassApprovals))
   const planStep1FieldsLocked = plan.status === 'pending' || plan.status === 'approved'
 
   // ---------------------------------------------------------------------------
@@ -613,7 +618,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       setSubmitApprovalError('Complete all checklist steps first.')
       return
     }
-    if (!checklistApproved) {
+    if (!checklistApproved && !bypassApprovals) {
       setSubmitApprovalError('Wait for your teacher to approve the checklist before submitting.')
       return
     }
