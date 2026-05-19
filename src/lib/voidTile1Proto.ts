@@ -71,9 +71,8 @@ export function isVoidTile1Tile(tile: Pick<TileRow, 'guild' | 'skill_name'>): bo
 }
 
 /**
- * Proto pilot: hide any other Void rows until the tier/curriculum model ships — even if
- * someone adds extra quests in Supabase or Quest Builder during testing.
+ * Returns all Void Navigators tiles — any row seeded for the guild is shown.
  */
 export function filterVoidTilesForProto(tiles: TileRow[]): TileRow[] {
-  return tiles.filter(isVoidTile1Tile)
+  return tiles.filter((t) => (t.guild ?? '').trim().toLowerCase() === 'void navigators')
 }
