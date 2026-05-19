@@ -21,6 +21,7 @@ export type TileRow = {
   gold_value?: number | null
   wp_display?: string | null
   gold_display?: string | null
+  subtitle?: string | null
   /** Null for hardcoded tiles (Game Piece, Sticker); populated for builder-created quests. */
   steps?: StepConfig[] | null
   /** Shown below the checklist on some quests (e.g. replay rules). */

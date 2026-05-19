@@ -142,7 +142,7 @@ export function GuildSkillTreePage() {
           ) : null}
           {voidProto && tiles.length > 0 ? (
             <p className="muted void-tile1-proto-banner" role="note">
-              Prototype — Tile 1 only. Visible to you while we test the Void UX.
+              Prototype — Void Navigators quests. Visible to you while we test the Void UX.
             </p>
           ) : null}
           {slug === 'void' && showComingSoon ? (

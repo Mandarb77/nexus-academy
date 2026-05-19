@@ -106,7 +106,7 @@ export function SkillTilesList({
             >
               <div className="skill-tile-row">
                 <div className="skill-tile-main">
-                  <h3 className="skill-tile-name">{tile.skill_name}</h3>
+                  <h3 className="skill-tile-name" title={tile.subtitle ?? undefined}>{tile.skill_name}</h3>
                   <p className="skill-tile-wp">
                     {tile.wp_display ?? `${tile.wp_value} WP`}
                     <span aria-hidden="true"> · </span>
