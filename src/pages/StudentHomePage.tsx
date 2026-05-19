@@ -2,8 +2,8 @@
  * Student landing hub after sign-in (`/` via `HomeRoute`)
  *
  * Surfaces guild entry points (deep links to `/tree/:slug`), WP/gold summary, and rank
- * progress toward Apprentice Mage. Uses static banner art from `src/assets`. This page is
- * the motivational “home base” — detailed quest state lives on Skills / Journey / Codex.
+ * progress toward Apprentice Mage. Void banner uses `canAccessVoidTile1Proto` during the
+ * Tile 1 prototype — Prototype badge requires `position: relative` on banner links (App.css).
  */
 
 import { Link } from 'react-router-dom'
@@ -31,6 +31,7 @@ export function StudentHomePage() {
   const gold = profile?.gold ?? 0
   const rank = profile?.rank?.trim() || 'Initiate'
   const progress = progressToApprenticeMage(wpTotal)
+  /* Same email gate as `/tree/void` — see voidProtoAccess.ts */
   const voidProtoUnlocked = canAccessVoidTile1Proto(user)
 
   return (
@@ -118,6 +119,7 @@ export function StudentHomePage() {
                 className="student-home-guild-banner-img" decoding="async" />
               <span className="student-home-guild-coming-soon-badge">Coming soon</span>
             </Link>
+            {/* Void: coming-soon styling drops when proto email matches; badge is on this link only. */}
             <Link
               to="/tree/void"
               className={`student-home-guild-banner-link student-home-guild-banner-link--void${

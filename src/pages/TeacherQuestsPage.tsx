@@ -62,7 +62,7 @@ export function TeacherQuestsPage() {
     setLoadingQuests(true)
     const { data, error } = await supabase
       .from('tiles')
-      .select('id, guild, skill_name, wp_value, gold_value, steps')
+      .select('id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, steps')
       .not('steps', 'is', null)
       .order('guild', { ascending: true })
       .order('skill_name', { ascending: true })
@@ -77,6 +77,8 @@ export function TeacherQuestsPage() {
           skill_name: r.skill_name as string,
           wp_value: (r.wp_value as number) ?? 0,
           gold_value: (r.gold_value as number) ?? 10,
+          wp_display: (r.wp_display as string | null) ?? null,
+          gold_display: (r.gold_display as string | null) ?? null,
           steps: r.steps as StepConfig[],
         })),
     )
@@ -372,7 +374,7 @@ export function TeacherQuestsPage() {
                 <div className="teacher-panel-item-main">
                   <p className="teacher-panel-student" style={{ fontWeight: 700 }}>{q.skill_name}</p>
                   <p className="muted teacher-panel-guild" style={{ margin: 0 }}>
-                    {q.guild} · {q.wp_value} WP · {q.gold_value ?? 10} gold · {q.steps.length} step{q.steps.length !== 1 ? 's' : ''}
+                    {q.guild} · {q.wp_display ?? `${q.wp_value} WP`} · {q.gold_display ?? `${q.gold_value ?? 10} gold`} · {q.steps.length} step{q.steps.length !== 1 ? 's' : ''}
                   </p>
                   <details style={{ marginTop: '0.35rem' }}>
                     <summary style={{ fontSize: '0.85rem', cursor: 'pointer', color: 'var(--muted-text,#666)' }}>View steps</summary>

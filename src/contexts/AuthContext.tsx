@@ -251,6 +251,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Supabase is not configured')
     }
     const redirectTo = `${window.location.origin}/auth/callback`
+    /*
+     * Preview testing: Supabase must allow `https://*.vercel.app/auth/callback` or sign-in
+     * returns to production Site URL and the Preview bundle (proto env vars) is skipped.
+     */
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

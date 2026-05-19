@@ -12,7 +12,11 @@
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string
   readonly VITE_SUPABASE_ANON_KEY: string
-  /** Email allowed to see Void Navigators Tile 1 prototype (coming-soon bypass). */
+  /**
+   * Void Tile 1 prototype only — who bypasses coming-soon on `/tree/void`.
+   * Vite inlines at build time: set on Vercel Preview, redeploy after changes.
+   * See voidProtoAccess.ts and docs/void-tile1-prototype.md.
+   */
   readonly VITE_VOID_TILE1_PROTO_EMAIL?: string
 }
 

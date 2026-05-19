@@ -36,6 +36,7 @@ export const GUILD_WELCOME_BY_SLUG: Partial<Record<GuildWelcomeSlug, GuildWelcom
       'Your tools are color, pattern, and the courage to make something someone will wear or display.',
     ],
   },
+  /* Shown on `/tree/void` when proto email gate passes (voidProtoAccess.ts). */
   void: {
     orderName: 'Void Navigators',
     sentences: [

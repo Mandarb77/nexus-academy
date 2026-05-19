@@ -22,6 +22,8 @@ type TileInfo = {
   skill_name: string
   wp_value: number
   gold_value: number
+  wp_display?: string | null
+  gold_display?: string | null
 }
 
 type PendingSkillRow = {
@@ -311,7 +313,7 @@ export function TeacherPanelPage() {
     if (tileIds.length > 0) {
       const { data: tileRows, error: tErr } = await supabase
         .from('tiles')
-        .select('id, guild, skill_name, wp_value, gold_value')
+        .select('id, guild, skill_name, wp_value, gold_value, wp_display, gold_display')
         .in('id', tileIds)
       if (tErr) {
         console.error('tiles for teacher panel:', tErr.message)
@@ -1122,7 +1124,7 @@ export function TeacherPanelPage() {
                           {t?.wp_value != null ? (
                             <>
                               {' '}
-                              · {t.wp_value} WP and {t.gold_value ?? 10} gold on approval
+                              · {t.wp_display ?? `${t.wp_value} WP`} and {t.gold_display ?? `${t.gold_value ?? 10} gold`} on approval
                             </>
                           ) : null}
                         </p>

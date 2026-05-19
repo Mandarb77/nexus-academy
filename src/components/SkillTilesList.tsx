@@ -55,7 +55,7 @@ export function SkillTilesList({
     const rank = (t: TileRow) => {
       if (isPersonalGamePieceTile(t)) return 0
       if (isPopUpCardTile(t)) return 0
-      if (isVoidTile1Tile(t)) return 0
+      if (isVoidTile1Tile(t)) return 0 /* Void proto: flagship tier-1 build, same band as game piece */
       if (isStickerTile(t) && !isStickerQuestLocked(t)) return 1
       if (isCustomTile(t)) return 2
       if (isStickerQuestLocked(t)) return 4
@@ -108,9 +108,9 @@ export function SkillTilesList({
                 <div className="skill-tile-main">
                   <h3 className="skill-tile-name">{tile.skill_name}</h3>
                   <p className="skill-tile-wp">
-                    {tile.wp_value} WP
+                    {tile.wp_display ?? `${tile.wp_value} WP`}
                     <span aria-hidden="true"> · </span>
-                    <span className="gold-currency-text">{goldAward} gold</span>
+                    <span className="gold-currency-text">{tile.gold_display ?? `${goldAward} gold`}</span>
                   </p>
                   {isPatentTile && !isApproved && !isPending && !isComingSoon ? (
                     <p className="muted skill-tile-checklist-progress">

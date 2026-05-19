@@ -650,6 +650,7 @@ a.btn-primary {
 
 .student-home-guild-banner-link {
   display: block;
+  /* Anchor absolutely positioned Prototype / Coming soon badges (see void-tile1-prototype.md §9). */
   position: relative;
   border-radius: 12px;
   overflow: hidden;
@@ -674,7 +675,7 @@ a.btn-primary {
   outline-offset: 3px;
 }
 
-/* Coming-soon banner overlay */
+/* Coming-soon banner overlay — parent link needs position: relative (all banner links, not only --coming-soon). */
 .student-home-guild-banner-link--coming-soon {
   position: relative;
   opacity: 0.72;
@@ -706,6 +707,7 @@ a.btn-primary {
 }
 
 .student-home-guild-proto-badge {
+  /* Void prototype unlock badge — violet to match .skill-tree-guild--void */
   background: rgba(124, 58, 237, 0.88);
 }
 

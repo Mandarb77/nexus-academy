@@ -1,5 +1,5 @@
 -- Void Navigators Tier 1 required #1 — profile-cut coaster (prototype seed)
--- Apply on Supabase before student end-to-end test; UI copy lives in src/lib/voidTile1Proto.ts
+-- UI copy: src/lib/voidTile1Proto.ts | Handoff + challenges: docs/void-tile1-prototype.md
 -- Safe to paste in SQL Editor even if migrations 031/034 were never applied.
 
 alter table public.tiles

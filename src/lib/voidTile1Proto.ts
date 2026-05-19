@@ -4,6 +4,9 @@
  * Hardcoded copy for UX pilot before the guild curriculum / modification path. Must stay
  * aligned with `039_void_tile1_coaster_proto.sql` (`guild` + `skill_name`). Detection is
  * by name, not tile id, so the migration can use any UUID in Supabase.
+ *
+ * Student flow: skill tree → `/patent-custom/:tileId` → GenericPatentContent (plan,
+ * checklist, final packet). Full handoff + deployment pitfalls: docs/void-tile1-prototype.md
  */
 
 import type { StepConfig, TileRow } from '../types/tile'
@@ -67,7 +70,10 @@ export function isVoidTile1Tile(tile: Pick<TileRow, 'guild' | 'skill_name'>): bo
   return g === 'void navigators' && s === VOID_TILE1_SKILL_NAME
 }
 
-/** Proto pilot: only Tile 1 is visible even if more Void rows exist in the DB. */
+/**
+ * Proto pilot: hide any other Void rows until the tier/curriculum model ships — even if
+ * someone adds extra quests in Supabase or Quest Builder during testing.
+ */
 export function filterVoidTilesForProto(tiles: TileRow[]): TileRow[] {
   return tiles.filter(isVoidTile1Tile)
 }

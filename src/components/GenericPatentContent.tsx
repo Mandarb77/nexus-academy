@@ -19,6 +19,8 @@
  *   Gate 1 — Teacher approves plan (Q1+Q2) → checklist unlocks.
  *   Gate 2 — Teacher approves submitted checklist → closing Qs unlock.
  *   Gate 3 — Teacher approves final submission → WP + gold awarded.
+ *
+ * Void Tile 1 (prototype) uses this component via `isVoidTile1Tile` / `customTile.ts`.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -69,6 +71,7 @@ function guildBackRoute(guild: string): string {
   if (mod === 'forge') return '/tree/forge'
   if (mod === 'prism') return '/tree/prism'
   if (mod === 'folded') return '/tree/folded'
+  /* Void Tile 1 prototype returns students to deep-linked guild page, not accordion `/tree`. */
   if (mod === 'void') return '/tree/void'
   return '/tree'
 }
@@ -740,6 +743,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
             </p>
 
             {isVoidTile1Tile(tile) ? (
+              /* Void Tile 1 — extra plan guidance (recipient must be named before CAM). Copy in voidTile1Proto.ts */
               <p
                 className="muted"
                 style={{

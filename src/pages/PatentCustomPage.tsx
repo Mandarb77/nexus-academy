@@ -2,7 +2,7 @@
  * Patent route shell for Quest Builder tiles (`/patent-custom/:tileId`)
  *
  * Resolves `tileId` from the URL, finds the matching row from `useSkillTree`, and mounts
- * `GenericPatentContent`. Invalid ids show recovery links back to the skill tree.
+ * `GenericPatentContent`. Void Tile 1 prototype lands here via `isCustomTile` in customTile.ts.
  */
 
 import { useMemo } from 'react'
@@ -28,6 +28,7 @@ export function PatentCustomPage() {
 
   const completion = tile ? completionByTileId.get(tile.id) : undefined
   const mod = tile ? skillTreeGuildModifier(tile.guild) : 'default'
+  /* Include `/tree/void` so patent back link matches GuildSkillTreePage deep link. */
   const backPath =
     mod === 'forge'
       ? '/tree/forge'

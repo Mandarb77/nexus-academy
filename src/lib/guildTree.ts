@@ -15,6 +15,10 @@ export const SKILL_TREE_SECTION_GUILDS = [
   'Void Navigators',
 ] as const
 
+/*
+ * Legacy always-lock check. Student pages should use `isGuildComingSoonForUser` (voidProtoAccess.ts)
+ * so Void can unlock for the Tile 1 prototype tester email.
+ */
 export function isComingSoonGuildSection(guildKey: string): boolean {
   const k = guildKey.trim().toLowerCase()
   return k === 'silicon covenant' || k === 'void navigators'

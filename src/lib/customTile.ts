@@ -55,6 +55,7 @@ export function isTShirtPatentQuestTile(tile: TileRow): boolean {
  */
 export function resolvedTileSteps(tile: TileRow): StepConfig[] {
   if (isPopUpCardTile(tile)) return []
+  /* Void coaster: hardcoded steps even when DB `steps` JSON exists (proto copy is source of truth). */
   if (isVoidTile1Tile(tile)) return VOID_TILE1_STEPS
   const s = tile.steps
   if (Array.isArray(s) && s.length > 0) return s as StepConfig[]
@@ -68,6 +69,7 @@ export function resolvedTileSteps(tile: TileRow): StepConfig[] {
 
 export function isCustomTile(tile: TileRow): boolean {
   if (isPopUpCardTile(tile)) return false
+  /* Routes Void Tile 1 to `/patent-custom` → GenericPatentContent (not game-piece wizard). */
   if (isVoidTile1Tile(tile)) return true
   return resolvedTileSteps(tile).length > 0
 }

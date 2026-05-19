@@ -1,9 +1,9 @@
 /*
  * Per-guild skill tree (`/tree/:guildSlug`)
  *
- * Deep link from student home banners. Validates slug against known guilds, shows coming-soon
- * treatment for Silicon/Void, and reuses `SkillTilesList` with the same `useSkillTree` data as
- * the global tree — ensures consistent completion badges within guild context.
+ * Deep link from student home banners. Silicon stays coming-soon for everyone. Void uses
+ * `isGuildComingSoonForUser` + `canAccessVoidTile1Proto` during the Tile 1 prototype
+ * (see docs/void-tile1-prototype.md). Reuses `SkillTilesList` with `useSkillTree` data.
  */
 
 import { useMemo } from 'react'
@@ -51,6 +51,7 @@ export function GuildSkillTreePage() {
   }, [guildKeys, slug])
 
   const rawTiles = guildKey ? (tilesByGuild.get(guildKey) ?? []) : []
+  /* Void Tile 1 prototype: email gate + single-tile filter (voidProtoAccess / voidTile1Proto). */
   const voidProto = slug === 'void' && canAccessVoidTile1Proto(user)
   const tiles = voidProto ? filterVoidTilesForProto(rawTiles) : rawTiles
   const mod = slug ?? 'default'
@@ -133,6 +134,7 @@ export function GuildSkillTreePage() {
             {guildTitle}
           </h1>
           {voidProto && tiles.length === 0 ? (
+            /* Gate passed but migration 039 not applied on this Supabase project. */
             <p className="error" role="alert">
               Void Tile 1 is not in the database yet. Apply migration{' '}
               <code className="inline-code">039_void_tile1_coaster_proto.sql</code> in Supabase, then refresh.
@@ -141,6 +143,15 @@ export function GuildSkillTreePage() {
           {voidProto && tiles.length > 0 ? (
             <p className="muted void-tile1-proto-banner" role="note">
               Prototype — Tile 1 only. Visible to you while we test the Void UX.
+            </p>
+          ) : null}
+          {slug === 'void' && showComingSoon ? (
+            /* Shown only to the proto tester when unlock fails — helps debug Preview env + email. */
+            <p className="muted void-tile1-proto-debug" role="status">
+              Proto unlock: signed in as <strong>{user?.email ?? 'unknown'}</strong>.
+              {import.meta.env.VITE_VOID_TILE1_PROTO_EMAIL
+                ? ' Env var is in this build but your login email does not match — fix Vercel Preview value or sign in with that account.'
+                : ' VITE_VOID_TILE1_PROTO_EMAIL missing from this build — add it under Vercel → Environment Variables → Preview, then redeploy this branch.'}
             </p>
           ) : null}
           {showComingSoon ? (

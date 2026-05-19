@@ -2,7 +2,7 @@
  * Class-wide skill tree (`/tree`)
  *
  * Renders every guild section in `SKILL_TREE_SECTION_GUILDS` order with anchors for deep links.
- * `SkillTilesList` owns per-tile actions; this page supplies banners and “coming soon” empty states.
+ * Void/Silicon coming-soon uses `isGuildComingSoonForUser` (Void proto email gate in voidProtoAccess).
  */
 
 import { useCallback, useState } from 'react'
@@ -162,6 +162,7 @@ export function SkillTreePage() {
                     ) : (
                       <SkillTilesList
                         tiles={
+                          /* Same Void Tile 1 filter as GuildSkillTreePage — keep in sync. */
                           skillTreeGuildModifier(guildKey) === 'void' && canAccessVoidTile1Proto(user)
                             ? filterVoidTilesForProto(tilesByGuild.get(guildKey) ?? [])
                             : tilesByGuild.get(guildKey) ?? []
