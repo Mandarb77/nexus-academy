@@ -44,14 +44,14 @@ export function PatentCustomPage() {
   if (!tileId) return null
 
   return (
-    <div className="app-shell patent-game-piece-page">
+    <div className="app-shell patent-game-piece-page patent-paper-page">
       {/* ---------- Page chrome: nav, back link, sign out ---------- */}
       <header className="skill-tree-top">
         <MainNav />
         <div className="skill-tree-top-row skill-tree-top-row--guild">
           <div className="skill-tree-guild-page-head">
             <Link to={backPath} className="skill-tree-back-link">{backLabel}</Link>
-            <p className="muted skill-tree-guild-page-crumb">Quest application</p>
+            <p className="muted skill-tree-guild-page-crumb">Your quest</p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => void signOut()}>
             Sign out
@@ -64,7 +64,6 @@ export function PatentCustomPage() {
         {tile ? (
           <h1 className="page-title" style={{ marginTop: 0 }}>{tile.skill_name}</h1>
         ) : null}
-        <p className="muted page-subtitle">Plan, checklist, and final submission for this quest.</p>
 
         {!canUseDb ? (
           <p className="muted" role="alert">Connect Supabase in <code className="inline-code">.env</code> to use this page.</p>

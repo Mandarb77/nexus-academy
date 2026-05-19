@@ -2338,6 +2338,70 @@ a.btn-primary {
   font-family: ui-monospace, monospace;
 }
 
+/* ── Patent paper theme — warm cream, dark ink, all patent pages ── */
+.patent-paper-page {
+  --bg: #FAF8F3;
+  --card-bg: #F0EBE0;
+  --text: #3a3530;
+  --text-h: #1a1a1a;
+  --border: #d4cfc4;
+  --code-bg: #E8E2D8;
+  --muted-text: #6b6258;
+}
+
+@media (prefers-color-scheme: dark) {
+  .patent-paper-page {
+    --bg: #FAF8F3;
+    --card-bg: #F0EBE0;
+    --text: #3a3530;
+    --text-h: #1a1a1a;
+    --border: #d4cfc4;
+    --code-bg: #E8E2D8;
+    --muted-text: #6b6258;
+  }
+}
+
+/* Typed answer ink — override the default blue-on-dark */
+.patent-paper-page .patent-game-piece-form input[type="text"],
+.patent-paper-page .patent-game-piece-form input:not([type]),
+.patent-paper-page .patent-game-piece-form textarea {
+  color: #1a1a1a;
+}
+
+.patent-paper-page .patent-game-piece-form input[type="text"]::placeholder,
+.patent-paper-page .patent-game-piece-form input:not([type])::placeholder,
+.patent-paper-page .patent-game-piece-form textarea::placeholder {
+  color: #9a8e84;
+  opacity: 1;
+}
+
+/* Quiet submit button — small, warm dark, unassuming */
+.btn-submit-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.45rem 1.1rem;
+  border-radius: 7px;
+  border: 1px solid #3d2e1e;
+  background: #3d2e1e;
+  color: #FAF8F3;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-submit-quiet:hover:not(:disabled) {
+  background: #4e3b28;
+  border-color: #4e3b28;
+}
+
+.btn-submit-quiet:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @media (prefers-color-scheme: dark) {
   .btn-skill--complete {
     background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);

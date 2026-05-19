@@ -32,7 +32,7 @@ export function PatentStickerPage() {
   if (!tileId) return <Navigate to="/tree/folded" replace />
 
   return (
-    <div className="app-shell patent-game-piece-page">
+    <div className="app-shell patent-game-piece-page patent-paper-page">
       {/* ---------- Page chrome (always Folded Path back link) ---------- */}
       <header className="skill-tree-top">
         <MainNav />

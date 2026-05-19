@@ -44,7 +44,7 @@ export function PatentGamePiecePage() {
   }
 
   return (
-    <div className="app-shell patent-game-piece-page">
+    <div className="app-shell patent-game-piece-page patent-paper-page">
       {/* ---------- Page chrome ---------- */}
       <header className="skill-tree-top">
         <MainNav />

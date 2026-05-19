@@ -720,7 +720,6 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
 
       <div className="patent-form-wide-grid">
         <aside className="patent-form-wide-grid__rail" aria-label="Patent packet steps">
-          <p className="patent-form-rail__title">Patent packet</p>
           <div className="patent-step-tabs patent-step-tabs--rail" role="tablist" aria-label="Quest steps">
             {([
               { n: 1 as const, label: 'Opening questions' },
@@ -742,7 +741,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       {phase === 1 ? (
         <div className="card patent-phase-panel">
           <section aria-labelledby="generic-patent-phase-1">
-            <h2 id="generic-patent-phase-1" className="patent-phase-title">Step 1 — Opening questions</h2>
+            <h2 id="generic-patent-phase-1" className="patent-phase-title">Your plan</h2>
             <p className="muted" style={{ marginTop: 0 }}>
               Answer both questions, then save. Your teacher will review before the checklist unlocks.
             </p>
@@ -830,7 +829,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       {phase === 2 ? (
         <div className="card patent-phase-panel">
           <section aria-labelledby="generic-patent-phase-2">
-            <h2 id="generic-patent-phase-2" className="patent-phase-title">Step 2 — Workshop checklist</h2>
+            <h2 id="generic-patent-phase-2" className="patent-phase-title">Checklist</h2>
 
             {checklistSubmitted && !checklistApproved && !bypassApprovals ? (
               <p role="status" style={{ fontWeight: 600, margin: '0 0 0.75rem', padding: '0.55rem 0.85rem', background: 'rgba(234,179,8,0.12)', borderLeft: '4px solid #ca8a04', borderRadius: '6px' }}>
@@ -975,14 +974,11 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                 </div>
 
                 <div className="design3d-plan-actions">
-                  <button type="button" className="btn-primary"
+                  <button type="button" className="btn-submit-quiet"
                     disabled={checklistSubmitted || !canStartChecklist || !allDone || submittingChecklist}
                     onClick={() => void onSubmitChecklist()}>
-                    {submittingChecklist ? 'Submitting…' : 'Submit checklist for teacher review'}
+                    {submittingChecklist ? 'Submitting…' : 'Submit checklist'}
                   </button>
-                  <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                    After you submit, your teacher reviews your checklist. Step 3 unlocks when they approve.
-                  </p>
                 </div>
               </>
             )}
@@ -998,7 +994,7 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
       {phase === 3 ? (
         <div className="card patent-phase-panel">
           <section aria-labelledby="generic-patent-phase-3">
-            <h2 id="generic-patent-phase-3" className="patent-phase-title">Step 3 — Closing questions</h2>
+            <h2 id="generic-patent-phase-3" className="patent-phase-title">Closing questions</h2>
 
             {isFinalPending ? (
               <p role="status" style={{ fontWeight: 600, margin: '0 0 0.75rem', padding: '0.55rem 0.85rem', background: 'rgba(234,179,8,0.12)', borderLeft: '4px solid #ca8a04', borderRadius: '6px' }}>
@@ -1044,10 +1040,10 @@ export function GenericPatentContent({ tile, refresh, completionStatus }: Props)
                 {submitSuccessMessage ? <p className="muted" role="status">{submitSuccessMessage}</p> : null}
 
                 <div className="design3d-plan-actions">
-                  <button type="button" className="btn-primary"
+                  <button type="button" className="btn-submit-quiet"
                     disabled={!canUseDb || !user?.id || submittingPatent || isFinalPending || !patent.field3.trim() || !patent.field4.trim()}
                     onClick={() => void onSubmitForApproval()}>
-                    {submittingPatent ? 'Submitting…' : 'Submit for approval'}
+                    {submittingPatent ? 'Submitting…' : 'Submit'}
                   </button>
                 </div>
               </>
