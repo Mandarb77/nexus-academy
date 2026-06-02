@@ -4447,5 +4447,231 @@ a.btn-primary {
 }
 
 /* ============================================================
+ * Dispatch — Where You Are (flip cards)
+ * ============================================================ */
+
+.where-you-are-page {
+  background: #1e1c18;
+  color: #e8e4dc;
+}
+
+.where-you-are-page .student-nav {
+  background: #2a2722;
+  border-color: #3d3830;
+}
+
+.where-you-are-page .student-nav-link {
+  color: #c8c2b8;
+}
+
+.where-you-are-page .student-nav-link:hover,
+.where-you-are-page .student-nav-link--active {
+  color: #f5f2eb;
+  border-color: #8c8680;
+}
+
+.where-you-are {
+  padding-bottom: 2.5rem;
+}
+
+.where-you-are__header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.where-you-are__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #f5f2eb;
+}
+
+.where-you-are__subtitle {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9c968c;
+}
+
+.where-you-are__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .where-you-are__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.where-you-are__footer {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #3d3830;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: center;
+  color: #9c968c;
+}
+
+/* Flip card */
+.where-card {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  perspective: 1200px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.where-card:focus-visible {
+  outline: 2px solid #c8c2b8;
+  outline-offset: 3px;
+}
+
+.where-card__inner {
+  position: relative;
+  width: 100%;
+  min-height: 13.5rem;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4, 0.15, 0.2, 1);
+}
+
+.where-card--flipped .where-card__inner {
+  transform: rotateY(180deg);
+}
+
+.where-card__face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border: 2px solid var(--where-card-border);
+  border-radius: 4px;
+  background: #fdfbf7;
+  color: #1a1714;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.where-card__face--back {
+  transform: rotateY(180deg);
+}
+
+.where-card__band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  background: var(--where-card-accent);
+  color: #f5f2eb;
+}
+
+.where-card__category {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.where-card__tap {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+
+.where-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0.85rem 0.9rem 1rem;
+  min-height: 0;
+}
+
+.where-card__body--back {
+  overflow-y: auto;
+}
+
+.where-card__name {
+  margin: 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #1a1714;
+}
+
+.where-card__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: #6b6560;
+}
+
+.where-card__hook {
+  margin: auto 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0dbd2;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: #2a2622;
+}
+
+.where-card__story {
+  margin: 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #2a2622;
+}
+
+.where-card__divider {
+  margin: 0.75rem 0;
+  border: 0;
+  border-top: 1px dashed #c8c2b8;
+}
+
+.where-card__kicker {
+  margin: 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 0.88rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: #4a453f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .where-you-are-page.bench-chrome {
+    background: #1e1c18;
+    color: #e8e4dc;
+  }
+}
+
+/* ============================================================
  * END TEXTURE LAYER
  * ============================================================ */
