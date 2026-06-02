@@ -5,12 +5,8 @@
  * Void/Silicon coming-soon uses `isGuildComingSoonForUser` (Void proto email gate in voidProtoAccess).
  */
 
-import { useCallback, useState } from 'react'
-import forgeBanner from '../assets/forge-banner.png'
-import prismBanner from '../assets/prism-banner.png'
-import foldedBanner from '../assets/folded-banner.png'
-import siliconBanner from '../assets/silicon-banner.png'
-import voidBanner from '../assets/void-banner.png'
+import { useCallback, useMemo, useState } from 'react'
+import { GuildMark, type GuildMarkSlug } from '../components/GuildMark'
 import { MainNav } from '../components/MainNav'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
@@ -23,15 +19,8 @@ function guildSlugId(guildKey: string): string {
   return guildKey.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
 }
 
-function bannerForModifier(
-  mod: ReturnType<typeof skillTreeGuildModifier>,
-): string | null {
-  if (mod === 'forge') return forgeBanner
-  if (mod === 'prism') return prismBanner
-  if (mod === 'folded') return foldedBanner
-  if (mod === 'silicon') return siliconBanner
-  if (mod === 'void') return voidBanner
-  return null
+function markSlug(mod: ReturnType<typeof skillTreeGuildModifier>): GuildMarkSlug {
+  return mod === 'default' ? 'default' : mod
 }
 
 export function SkillTreePage() {
@@ -59,16 +48,28 @@ export function SkillTreePage() {
     })
   }, [])
 
+  const descByMod = useMemo(() => {
+    const d: Record<GuildMarkSlug, string> = {
+      forge: '3D printing',
+      prism: 'Laser cutter • design',
+      folded: 'Paper craft • vinyl',
+      silicon: 'Electronics • micro:bit',
+      void: 'CNC',
+      default: 'Maker skills',
+    }
+    return d
+  }, [])
+
   return (
-    <div className="app-shell skill-tree-page">
+    <div className="app-shell bench-chrome skill-tree-page">
       <header className="skill-tree-top">
         <MainNav />
-        <div className="skill-tree-top-row">
+        <div className="skill-tree-top-row bench-page-title-row">
           <div>
-            <h1 className="skill-tree-title">Skill tree</h1>
+            <h1 className="skill-tree-title bench-page-title">Guilds</h1>
             <p className="muted skill-tree-subtitle">
               Mark a skill to request credit. Your teacher approves it to add Workshop Points to your profile.
-              Click a guild banner to expand or collapse its quests.
+              Click a guild to expand or collapse its quests, or open a guild page for the full list.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>
@@ -90,12 +91,14 @@ export function SkillTreePage() {
           No guild sections configured.
         </p>
       ) : (
-        <div className="skill-tree-guilds skill-tree-guilds--accordion">
+        <div className="skill-tree-guilds skill-tree-guilds--accordion skill-tree-guilds--tiles">
           {guildKeys.map((guildKey) => {
             const mod = skillTreeGuildModifier(guildKey)
-            const bannerSrc = bannerForModifier(mod)
-            const slug = guildSlugId(guildKey)
+            const slug = markSlug(mod)
+            const treeSlug = guildSlugId(guildKey)
             const open = openGuilds.has(guildKey)
+            const shortLabel = heading(guildKey)
+            const desc = descByMod[slug] ?? descByMod.default
 
             return (
               <section
@@ -108,47 +111,32 @@ export function SkillTreePage() {
                   type="button"
                   className="skill-tree-guild-toggle"
                   aria-expanded={open}
-                  aria-controls={`guild-panel-${slug}`}
-                  id={`guild-trigger-${slug}`}
+                  aria-controls={`guild-panel-${treeSlug}`}
+                  id={`guild-trigger-${treeSlug}`}
                   onClick={() => toggleGuild(guildKey)}
                 >
-                  {bannerSrc ? (
-                    <div className="skill-tree-guild-banner skill-tree-guild-banner--accordion">
-                      <img
-                        className="skill-tree-guild-banner__img"
-                        src={bannerSrc}
-                        alt=""
-                        decoding="async"
-                      />
-                      <div className="skill-tree-guild-banner__overlay skill-tree-guild-banner__overlay--accordion">
-                        <h2
-                          className="skill-tree-guild-name skill-tree-guild-name--banner skill-tree-guild-name--accordion-toggle"
-                        >
-                          <strong>{heading(guildKey)}</strong> guild
-                        </h2>
-                        <span className="skill-tree-guild-toggle-hint" aria-hidden="true">
-                          {open ? 'Click to collapse' : 'Click to expand'}
-                        </span>
-                        <span className="skill-tree-guild-chevron" aria-hidden="true">
-                          {open ? '▼' : '▶'}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="skill-tree-guild-toggle-fallback">
-                      <h2 className="skill-tree-guild-name">{heading(guildKey)} guild</h2>
-                      <span className="skill-tree-guild-chevron" aria-hidden="true">
-                        {open ? '▼' : '▶'}
+                  <div className="skill-tree-guild-toggle-inner">
+                    <GuildMark guild={slug} label={shortLabel} size="compact" />
+                    <div className="skill-tree-guild-toggle-copy">
+                      <h2 className="skill-tree-guild-name skill-tree-guild-name--accordion-toggle">
+                        {shortLabel} guild
+                      </h2>
+                      <p className="skill-tree-guild-desc">{desc}</p>
+                      <span className="skill-tree-guild-toggle-hint" aria-hidden="true">
+                        {open ? 'Hide quests' : 'Show quests'}
                       </span>
+                    </div>
+                    <span className="skill-tree-guild-chevron" aria-hidden="true">
+                      {open ? '▼' : '▶'}
                     </span>
-                  )}
+                  </div>
                 </button>
 
                 {open ? (
                   <div
-                    id={`guild-panel-${slug}`}
+                    id={`guild-panel-${treeSlug}`}
                     role="region"
-                    aria-labelledby={`guild-trigger-${slug}`}
+                    aria-labelledby={`guild-trigger-${treeSlug}`}
                     className="skill-tree-guild-panel"
                   >
                     {isGuildComingSoonForUser(guildKey, user) ? (
@@ -162,8 +150,7 @@ export function SkillTreePage() {
                     ) : (
                       <SkillTilesList
                         tiles={
-                          /* Same Void Tile 1 filter as GuildSkillTreePage — keep in sync. */
-                          skillTreeGuildModifier(guildKey) === 'void' && canAccessVoidTile1Proto(user)
+                          mod === 'void' && canAccessVoidTile1Proto(user)
                             ? filterVoidTilesForProto(tilesByGuild.get(guildKey) ?? [])
                             : tilesByGuild.get(guildKey) ?? []
                         }

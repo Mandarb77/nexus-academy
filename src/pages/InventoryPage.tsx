@@ -103,12 +103,12 @@ export function InventoryPage() {
   }
 
   return (
-    <div className="app-shell inventory-page">
+    <div className="app-shell bench-chrome inventory-page">
       <MainNav />
       <header className="inventory-header">
-        <div className="inventory-top-row">
+        <div className="inventory-top-row bench-page-title-row">
           <div>
-            <h1 className="inventory-title">Inventory</h1>
+            <h1 className="inventory-title bench-page-title">Kit</h1>
             <p className="muted inventory-subtitle">
               Items you bought in the shop. Use an item to ask your teacher to approve it in class.
             </p>

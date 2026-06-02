@@ -289,11 +289,11 @@ export function JourneyPage() {
     'Student'
 
   return (
-    <div className="app-shell journey-page">
+    <div className="app-shell bench-chrome journey-page">
       <MainNav />
-      <header className="journey-header">
+      <header className="journey-header bench-page-title-row">
         <div>
-          <h1 className="journey-title">Your journey</h1>
+          <h1 className="journey-title bench-page-title">Record</h1>
           <p className="muted journey-intro">
             Every approved quest you have finished — a record of what you have built and earned,{' '}
             <strong>{displayName}</strong>.
@@ -401,10 +401,7 @@ export function JourneyPage() {
       ) : sorted.length === 0 ? (
         <div className="journey-empty card">
           <p className="journey-empty-lead">No approved quests yet.</p>
-          <p className="muted">
-            When you finish a quest and your teacher approves it, it will appear here — newest first,
-            organized by guild.
-          </p>
+          <p className="muted">Your approved quests will appear here.</p>
         </div>
       ) : (
         <ol className="journey-timeline" aria-label="Approved quests, most recent first">

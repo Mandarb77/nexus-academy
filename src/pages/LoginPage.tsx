@@ -30,7 +30,7 @@ export function LoginPage() {
    */
   if (authReady && user) {
     return (
-      <div className="app-shell auth-panel">
+      <div className="app-shell bench-chrome auth-panel">
         <header className="brand">
           <h1>Nexus Academy at Kents Hill</h1>
           <p className="tagline">You're already signed in</p>
@@ -70,7 +70,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="app-shell auth-panel">
+    <div className="app-shell bench-chrome auth-panel">
       <header className="brand">
         <h1>Nexus Academy at Kents Hill</h1>
         <p className="tagline">Maker class — use your school Google account</p>

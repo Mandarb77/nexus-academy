@@ -8,7 +8,7 @@
 import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
-import { StickerPatentContent } from '../components/StickerPatentContent'
+import { PatentLedger } from '../components/PatentLedger'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { isStickerQuestLocked } from '../lib/stickerTile'
@@ -49,18 +49,8 @@ export function PatentStickerPage() {
         </div>
       </header>
 
-      {/* ---------- Main: locked explainer vs `StickerPatentContent` ---------- */}
+      {/* ---------- Main: locked explainer vs `PatentLedger` ---------- */}
       <main className="page patent-game-piece-main" data-patent-page="sticker-stepped">
-        <h1 className="page-title" style={{ marginTop: 0 }}>Design Your Personal Sticker</h1>
-        {stickerLocked ? (
-          <p className="muted page-subtitle">This quest is not available yet.</p>
-        ) : (
-          <p className="muted page-subtitle">
-            Step 1: answer both plan questions and submit for teacher approval. Step 2: after approval, complete and
-            submit the checklist. Step 3: final two questions, then submit the quest.
-          </p>
-        )}
-
         {!canUseDb ? (
           <p className="muted" role="alert">
             Connect Supabase in <code className="inline-code">.env</code> to use this page.
@@ -85,7 +75,7 @@ export function PatentStickerPage() {
             </p>
           </div>
         ) : (
-          <StickerPatentContent tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
         )}
       </main>
     </div>

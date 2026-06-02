@@ -15,8 +15,9 @@ import { T_SHIRT_QUEST_SKILL_NAME, T_SHIRT_QUEST_STEPS } from './tShirtQuestStep
 /**
  * Stepped patent UX (plan gate, checklist, closing, uploads): tile **5** uses
  * `/patent-game-piece` via `isPersonalGamePieceTile`; **25** and **26** use
- * `/patent-custom` with `GenericPatentContent`. When the DB has no `steps`,
- * 25/26 get the embedded T-shirt checklist (IDs are authoritative).
+ * `/patent-custom`. All routes now render the unified `PatentLedger` (content via
+ * `patentLedgerContent.ts`). When the DB has no `steps`, 25/26 get the embedded
+ * T-shirt checklist (IDs are authoritative).
  */
 const FULL_PATENT_QUEST_TEMPLATE_TILE_IDS = new Set(['5', '25', '26'])
 
@@ -69,7 +70,7 @@ export function resolvedTileSteps(tile: TileRow): StepConfig[] {
 
 export function isCustomTile(tile: TileRow): boolean {
   if (isPopUpCardTile(tile)) return false
-  /* Routes Void Tile 1 to `/patent-custom` → GenericPatentContent (not game-piece wizard). */
+  /* Routes Void Tile 1 to `/patent-custom` → PatentLedger (not the game-piece route). */
   if (isVoidTile1Tile(tile)) return true
   return resolvedTileSteps(tile).length > 0
 }

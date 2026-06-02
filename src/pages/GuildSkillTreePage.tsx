@@ -1,28 +1,25 @@
 /*
  * Per-guild skill tree (`/tree/:guildSlug`)
  *
- * Deep link from student home banners. Silicon stays coming-soon for everyone. Void uses
+ * Deep link from student home guild marks. Silicon stays coming-soon for everyone. Void uses
  * `isGuildComingSoonForUser` + `canAccessVoidTile1Proto` during the Tile 1 prototype
  * (see docs/void-tile1-prototype.md). Reuses `SkillTilesList` with `useSkillTree` data.
  */
 
 import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import forgeBanner from '../assets/forge-banner.png'
-import prismBanner from '../assets/prism-banner.png'
-import foldedBanner from '../assets/folded-banner.png'
-import siliconBanner from '../assets/silicon-banner.png'
-import voidBanner from '../assets/void-banner.png'
+import { GuildMark, type GuildMarkSlug } from '../components/GuildMark'
 import { MainNav } from '../components/MainNav'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
+import { guildBannerSrc } from '../lib/guildBannerAssets'
 import { guildHeading, skillTreeGuildModifier } from '../lib/guildTree'
 import { GUILD_WELCOME_BY_SLUG, type GuildWelcomeSlug } from '../lib/guildWelcomeCopy'
 import { canAccessVoidTile1Proto, isGuildComingSoonForUser } from '../lib/voidProtoAccess'
 import { filterVoidTilesForProto } from '../lib/voidTile1Proto'
 
-type GuildSlug = 'forge' | 'prism' | 'folded' | 'silicon' | 'void'
+type GuildSlug = GuildMarkSlug
 
 function parseGuildSlug(raw: string | undefined): GuildSlug | null {
   const s = raw?.trim().toLowerCase()
@@ -51,7 +48,6 @@ export function GuildSkillTreePage() {
   }, [guildKeys, slug])
 
   const rawTiles = guildKey ? (tilesByGuild.get(guildKey) ?? []) : []
-  /* Void Tile 1 prototype: email gate + single-tile filter (voidProtoAccess / voidTile1Proto). */
   const voidProto = slug === 'void' && canAccessVoidTile1Proto(user)
   const tiles = voidProto ? filterVoidTilesForProto(rawTiles) : rawTiles
   const mod = slug ?? 'default'
@@ -60,15 +56,9 @@ export function GuildSkillTreePage() {
     return <Navigate to="/" replace />
   }
 
-  const BANNER_MAP: Record<GuildSlug, string | null> = {
-    forge: forgeBanner,
-    prism: prismBanner,
-    folded: foldedBanner,
-    silicon: siliconBanner,
-    void: voidBanner,
-  }
-  const bannerSrc = BANNER_MAP[slug]
+  const bannerSrc = guildBannerSrc(slug)
   const guildTitle = guildKey ? `${guildHeading(guildKey)} guild` : `${guildHeading(slug)} guild`
+  const markLabel = guildKey ? guildHeading(guildKey) : guildHeading(slug)
   const showComingSoon = Boolean(guildKey) && isGuildComingSoonForUser(guildKey ?? '', user)
   const welcomeSlug = slug as GuildWelcomeSlug
   const welcomeCopy =
@@ -81,10 +71,9 @@ export function GuildSkillTreePage() {
       <MainNav />
       <div className="skill-tree-top-row skill-tree-top-row--guild">
         <div className="skill-tree-guild-page-head">
-          <Link to="/" className="skill-tree-back-link">
-            ← Back to home
+          <Link to="/tree" className="bench-back-link">
+            ← Guilds
           </Link>
-          <p className="muted skill-tree-guild-page-crumb">Skill tree</p>
         </div>
         <button type="button" className="btn-secondary" onClick={() => signOut()}>
           Sign out
@@ -94,7 +83,9 @@ export function GuildSkillTreePage() {
   )
 
   return (
-    <div className={`app-shell skill-tree-page skill-tree-page--guild skill-tree-page--guild-${slug}`}>
+    <div
+      className={`app-shell bench-chrome skill-tree-page skill-tree-page--guild skill-tree-page--guild-${slug}`}
+    >
       {header}
 
       {!canUseDb ? (
@@ -114,11 +105,19 @@ export function GuildSkillTreePage() {
           className={`skill-tree-guild skill-tree-guild--single skill-tree-guild--${mod}`}
           aria-labelledby="guild-single-heading"
         >
-          {bannerSrc ? (
-            <div className="skill-tree-guild-banner skill-tree-guild-banner--below-title">
-              <img className="skill-tree-guild-banner__img" src={bannerSrc} alt="" decoding="async" />
-            </div>
-          ) : null}
+          <div className="guild-quest-hero">
+            <GuildMark guild={slug} label={markLabel} size="cartouche" />
+            {bannerSrc ? (
+              <div className="guild-quest-banner-thumb">
+                <img src={bannerSrc} alt="" decoding="async" />
+              </div>
+            ) : null}
+          </div>
+
+          <h1 id="guild-single-heading" className="skill-tree-guild-page-title bench-page-title">
+            {guildTitle}
+          </h1>
+
           {welcomeCopy && !showComingSoon ? (
             <div
               className={`skill-tree-guild-welcome skill-tree-guild-welcome--${mod}`}
@@ -130,11 +129,8 @@ export function GuildSkillTreePage() {
               <p className="skill-tree-guild-welcome__text">{welcomeCopy.sentences[1]}</p>
             </div>
           ) : null}
-          <h1 id="guild-single-heading" className="skill-tree-guild-page-title">
-            {guildTitle}
-          </h1>
+
           {voidProto && tiles.length === 0 ? (
-            /* Gate passed but migration 039 not applied on this Supabase project. */
             <p className="error" role="alert">
               Void Tile 1 is not in the database yet. Apply migration{' '}
               <code className="inline-code">039_void_tile1_coaster_proto.sql</code> in Supabase, then refresh.
@@ -146,7 +142,6 @@ export function GuildSkillTreePage() {
             </p>
           ) : null}
           {slug === 'void' && showComingSoon ? (
-            /* Shown only to the proto tester when unlock fails — helps debug Preview env + email. */
             <p className="muted void-tile1-proto-debug" role="status">
               Proto unlock: signed in as <strong>{user?.email ?? 'unknown'}</strong>.
               {import.meta.env.VITE_VOID_TILE1_PROTO_EMAIL

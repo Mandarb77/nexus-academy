@@ -48,11 +48,11 @@ const SECTIONS: ResourceSection[] = [
 
 export function ResourcesPage() {
   return (
-    <div className="app-shell">
+    <div className="app-shell bench-chrome">
       <MainNav />
       <main className="page">
-        <header className="page-header">
-          <h1 className="page-title">Resources</h1>
+        <header className="page-header bench-page-title-row">
+          <h1 className="page-title bench-page-title">Archive</h1>
           <p className="muted page-subtitle">
             Quick references, links, and videos (we’ll add the real content over time).
           </p>
@@ -61,24 +61,15 @@ export function ResourcesPage() {
         <div className="stack">
           {SECTIONS.map((s) => (
             <section key={s.title} className="card" aria-label={`${s.title} resources`}>
-              <h2 style={{ marginTop: 0 }}>{s.title}</h2>
-              <p className="muted" style={{ marginTop: '0.35rem' }}>
-                {s.description}
-              </p>
+              <h2 className="bench-card-heading">{s.title}</h2>
+              <p className="muted bench-card-lead">{s.description}</p>
               <div
-                className="card"
-                style={{
-                  marginTop: '0.9rem',
-                  padding: '0.85rem',
-                  background: 'rgba(148, 163, 184, 0.10)',
-                }}
+                className="card bench-inset-card"
                 role="note"
                 aria-label={`${s.title} placeholder area`}
               >
-                <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
-                  Links & videos (coming soon)
-                </strong>
-                <p style={{ margin: 0 }}>
+                <strong className="bench-inset-card__title">Links & videos (coming soon)</strong>
+                <p className="bench-inset-card__body">
                   We’ll add curated links, short videos, and examples here.
                 </p>
               </div>

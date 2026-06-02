@@ -2,20 +2,12 @@
  * Student landing hub after sign-in (`/` via `HomeRoute`)
  *
  * Surfaces guild entry points (deep links to `/tree/:slug`), WP/gold summary, and rank
- * progress toward Apprentice Mage. Void banner uses `canAccessVoidTile1Proto` during the
- * Tile 1 prototype — Prototype badge requires `position: relative` on banner links (App.css).
+ * progress toward Apprentice Mage. Guild cartouche marks link to each guild quest home.
  */
 
-import { Link } from 'react-router-dom'
-import forgeBanner from '../assets/forge-banner.png'
-import prismBanner from '../assets/prism-banner.png'
-import foldedBanner from '../assets/folded-banner.png'
-import siliconBanner from '../assets/silicon-banner.png'
-import voidBanner from '../assets/void-banner.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { progressToApprenticeMage } from '../lib/rankProgress'
-import { canAccessVoidTile1Proto } from '../lib/voidProtoAccess'
 
 export function StudentHomePage() {
   const { profile, user, signOut } = useAuth()
@@ -31,33 +23,32 @@ export function StudentHomePage() {
   const gold = profile?.gold ?? 0
   const rank = profile?.rank?.trim() || 'Initiate'
   const progress = progressToApprenticeMage(wpTotal)
-  /* Same email gate as `/tree/void` — see voidProtoAccess.ts */
-  const voidProtoUnlocked = canAccessVoidTile1Proto(user)
 
   return (
-    <div className="app-shell student-home">
+    <div className="app-shell bench-chrome student-home">
       <MainNav />
-      <header className="student-home-header">
-        <div>
-          <p className="student-home-label">Welcome back</p>
-          <h1 className="student-home-name">{displayName}</h1>
-        </div>
+      <div className="student-home-page-title-row">
+        <h1 className="student-home-page-title">Workshop</h1>
         <button type="button" className="btn-secondary" onClick={() => signOut()}>
           Sign out
         </button>
+      </div>
+
+      <header className="student-home-header">
+        <div>
+          <p className="student-home-label">Welcome back</p>
+          <p className="student-home-name">{displayName}</p>
+        </div>
       </header>
 
       <section className="student-home-guilds" aria-labelledby="student-home-guilds-heading">
         <h2 id="student-home-guilds-heading" className="student-home-guilds-heading">
-          Guilds
+          Your status
         </h2>
-        <p className="muted student-home-guilds-intro">
-          Open a guild to view skills and request credit from your teacher.
-        </p>
 
-        <div className="student-home-main-layout" role="group" aria-label="Your progress and guild shortcuts">
+        <div className="student-home-main-layout" role="group" aria-label="Your status">
           <section className="card student-home-card" aria-labelledby="student-home-stats-heading">
-            <h2 id="student-home-stats-heading" className="visually-hidden">Your progress</h2>
+            <h2 id="student-home-stats-heading" className="visually-hidden">Your status</h2>
 
             <div className="student-home-stat student-home-stat--hero">
               <span className="student-home-stat-label">Workshop Points</span>
@@ -100,51 +91,6 @@ export function StudentHomePage() {
               <span className="student-home-stat-value">{gold}</span>
             </div>
           </section>
-
-          <div className="student-home-guild-grid">
-            <Link to="/tree/forge" className="student-home-guild-banner-link student-home-guild-banner-link--forge">
-              <img src={forgeBanner} alt="Forge guild — view skills and mark complete"
-                className="student-home-guild-banner-img" decoding="async" />
-            </Link>
-            <Link to="/tree/prism" className="student-home-guild-banner-link student-home-guild-banner-link--prism">
-              <img src={prismBanner} alt="Prism guild — view skills and mark complete"
-                className="student-home-guild-banner-img" decoding="async" />
-            </Link>
-            <Link to="/tree/folded" className="student-home-guild-banner-link student-home-guild-banner-link--folded">
-              <img src={foldedBanner} alt="Folded Path guild — view skills and mark complete"
-                className="student-home-guild-banner-img" decoding="async" />
-            </Link>
-            <Link to="/tree/silicon" className="student-home-guild-banner-link student-home-guild-banner-link--silicon student-home-guild-banner-link--coming-soon">
-              <img src={siliconBanner} alt="Silicon Covenant guild — coming soon"
-                className="student-home-guild-banner-img" decoding="async" />
-              <span className="student-home-guild-coming-soon-badge">Coming soon</span>
-            </Link>
-            {/* Void: coming-soon styling drops when proto email matches; badge is on this link only. */}
-            <Link
-              to="/tree/void"
-              className={`student-home-guild-banner-link student-home-guild-banner-link--void${
-                voidProtoUnlocked ? '' : ' student-home-guild-banner-link--coming-soon'
-              }`}
-            >
-              <img
-                src={voidBanner}
-                alt={
-                  voidProtoUnlocked
-                    ? 'Void Navigators guild — view prototype quest'
-                    : 'Void Navigators guild — coming soon'
-                }
-                className="student-home-guild-banner-img"
-                decoding="async"
-              />
-              {voidProtoUnlocked ? (
-                <span className="student-home-guild-coming-soon-badge student-home-guild-proto-badge">
-                  Prototype
-                </span>
-              ) : (
-                <span className="student-home-guild-coming-soon-badge">Coming soon</span>
-              )}
-            </Link>
-          </div>
         </div>
       </section>
     </div>

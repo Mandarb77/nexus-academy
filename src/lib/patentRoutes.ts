@@ -17,7 +17,7 @@ import { isCustomTile } from './customTile'
 // =============================================================================
 
 export function getPatentRoute(tile: TileRow): string | null {
-  /* Forge flagship build — dedicated `PersonalGamePiecePatentContent` wizard. */
+  /* All patent routes render the unified `PatentLedger`; the page shell differs by guild/back-link. */
   if (isPersonalGamePieceTile(tile)) return `/patent-game-piece/${encodeURIComponent(tile.id)}`
   /* Intentionally the same URL as game piece: one React page branches on tile id for Prism pop-up vs Forge piece. */
   if (isPopUpCardTile(tile)) return `/patent-game-piece/${encodeURIComponent(tile.id)}`

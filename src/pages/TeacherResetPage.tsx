@@ -11,7 +11,7 @@ import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
-type ResetType = 'skill_completions' | 'inventory_and_purchases' | 'redemption_requests'
+type ResetType = 'skill_completions' | 'inventory_and_purchases' | 'redemption_requests' | 'patents'
 
 type StudentRow = {
   id: string
@@ -285,7 +285,9 @@ export function TeacherResetPage() {
         ? 'Skill Completions'
         : studentResetType === 'inventory_and_purchases'
           ? 'Inventory and Purchases'
-          : 'Redemption Requests'
+          : studentResetType === 'patents'
+            ? 'Patent progress (all patent tiles)'
+            : 'Redemption Requests'
     const ok = window.confirm(
       `This will delete ${label} for ${name}. This cannot be undone. Are you sure?`,
     )
@@ -297,6 +299,31 @@ export function TeacherResetPage() {
       if (error) {
         console.error('student reset by type: skill_completions delete failed:', error)
         setMessage(`Reset failed: ${error.message}`)
+        setBusy(false)
+        return
+      }
+    } else if (studentResetType === 'patents') {
+      /*
+       * Patent-only reset: clears the full ledger flow (plan + checklist + final) so each tile
+       * can be re-tested from scratch, without touching inventory/gold/non-patent quests.
+       * Delete patent-linked completions FIRST (skill_completions.patent_id → patents.id), then
+       * every patents row for the student (covers in-progress rows that have no completion yet).
+       */
+      const { error: cErr } = await supabase
+        .from('skill_completions')
+        .delete()
+        .eq('student_id', studentId)
+        .not('patent_id', 'is', null)
+      if (cErr) {
+        console.error('student reset by type: patent completions delete failed:', cErr)
+        setMessage(`Reset failed deleting patent completions: ${cErr.message}`)
+        setBusy(false)
+        return
+      }
+      const { error: pErr } = await supabase.from('patents').delete().eq('student_id', studentId)
+      if (pErr) {
+        console.error('student reset by type: patents delete failed:', pErr)
+        setMessage(`Reset failed deleting patents: ${pErr.message}`)
         setBusy(false)
         return
       }
@@ -543,6 +570,7 @@ export function TeacherResetPage() {
                 >
                   <option value="">Choose…</option>
                   <option value="skill_completions">Skill Completions</option>
+                  <option value="patents">Patent progress (all patent tiles)</option>
                   <option value="inventory_and_purchases">Inventory and Purchases</option>
                   <option value="redemption_requests">Redemption Requests</option>
                 </select>

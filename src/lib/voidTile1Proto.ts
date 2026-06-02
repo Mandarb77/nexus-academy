@@ -5,7 +5,7 @@
  * aligned with `039_void_tile1_coaster_proto.sql` (`guild` + `skill_name`). Detection is
  * by name, not tile id, so the migration can use any UUID in Supabase.
  *
- * Student flow: skill tree → `/patent-custom/:tileId` → GenericPatentContent (plan,
+ * Student flow: skill tree → `/patent-custom/:tileId` → PatentLedger (plan,
  * checklist, final packet). Full handoff + deployment pitfalls: docs/void-tile1-prototype.md
  */
 

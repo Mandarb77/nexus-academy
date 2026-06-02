@@ -4,17 +4,16 @@
  * Fetches active `shop_items` with tier embeds, groups by tier, and calls purchase RPCs that
  * enforce gold balance, rank locks, and `max_purchases_per_chicago_school_day` using
  * `isSameEasternCalendarDay` so “one per day” matches Kents Hill’s instructional timezone, not
- * the laptop’s local midnight. Loads `makersShop.css` for the trading-post theme only on this route.
+ * the laptop’s local midnight.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
-import { MakersShopHeader, ShopTierBoard } from '../components/makersShop'
+import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { isSameEasternCalendarDay } from '../lib/schoolDayEastern'
 import type { ShopCatalogItem, ShopTierEmbed } from '../types/shopCatalog'
-import '../makersShop.css'
 
 type RpcResult = {
   ok?: boolean
@@ -60,11 +59,22 @@ export function GoldShopPage() {
   const [buyingKey, setBuyingKey] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
+  const [openTiers, setOpenTiers] = useState<Set<string>>(() => new Set())
 
   const gold = profile?.gold ?? 0
 
   const sortedCatalog = useMemo(() => sortCatalogRows(catalog), [catalog])
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
+
+  const toggleTier = useCallback((tierId: string) => {
+    setOpenTiers((prev) => {
+      const next = new Set(prev)
+      if (next.has(tierId)) next.delete(tierId)
+      else next.add(tierId)
+      return next
+    })
+  }, [])
+
   const refreshDailyLimits = useCallback(
     async (rows: ShopCatalogItem[]) => {
       if (!user?.id || !isSupabaseConfigured) {
@@ -197,26 +207,44 @@ export function GoldShopPage() {
   }
 
   return (
-    <div className="app-shell makers-shop">
-      <MainNav />
-      <MakersShopHeader gold={gold} onSignOut={signOut} />
+    <div className="app-shell bench-chrome bench-chrome--shop shop-page">
+      <header className="shop-top">
+        <MainNav />
+        <div className="shop-top-row bench-page-title-row">
+          <div>
+            <h1 className="bench-page-title">Supply</h1>
+            <p className="muted shop-subtitle">
+              Trade gold for workshop rewards. Open a shelf to see what you can buy.
+            </p>
+          </div>
+          <div className="shop-header-actions">
+            <div className="shop-gold-stat" aria-live="polite">
+              <span className="shop-gold-stat__label">Gold</span>
+              <span className="shop-gold-stat__value">{gold}</span>
+            </div>
+            <button type="button" className="btn-secondary" onClick={() => void signOut()}>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </header>
 
       {!isSupabaseConfigured ? (
-        <p className="makers-shop-muted makers-shop-alert" role="alert">
+        <p className="muted shop-alert" role="alert">
           Connect Supabase in <code className="inline-code">.env</code> to use the shop.
         </p>
       ) : null}
 
       {catalogLoading ? (
-        <p className="makers-shop-muted makers-shop-alert">Loading catalog…</p>
+        <p className="muted shop-alert">Loading catalog…</p>
       ) : catalogError ? (
-        <p className="makers-shop-alert" role="alert">
+        <p className="shop-alert error" role="alert">
           {catalogError}
         </p>
       ) : null}
 
       {message ? (
-        <p className="makers-shop-alert" role="status">
+        <p className="shop-alert" role="status">
           {message === 'Not enough gold.' ? (
             <>
               Not enough <span className="gold-currency-text">gold</span>.
@@ -227,18 +255,28 @@ export function GoldShopPage() {
         </p>
       ) : null}
 
-      {tierGroups.map((group) => (
-        <ShopTierBoard
-          key={group.tier.id}
-          group={group}
-          gold={gold}
-          buyingKey={buyingKey}
-          dailyBlockedIds={dailyBlockedIds}
-          isSupabaseConfigured={isSupabaseConfigured}
-          catalogLoading={catalogLoading}
-          onBuy={buy}
-        />
-      ))}
+      {!catalogLoading && tierGroups.length > 0 ? (
+        <div className="shop-shelves shop-shelves--tiles">
+          {tierGroups.map((group) => (
+            <ShopTierBoard
+              key={group.tier.id}
+              group={group}
+              open={openTiers.has(group.tier.id)}
+              onToggle={() => toggleTier(group.tier.id)}
+              gold={gold}
+              buyingKey={buyingKey}
+              dailyBlockedIds={dailyBlockedIds}
+              isSupabaseConfigured={isSupabaseConfigured}
+              catalogLoading={catalogLoading}
+              onBuy={buy}
+            />
+          ))}
+        </div>
+      ) : !catalogLoading && !catalogError ? (
+        <p className="muted" role="status">
+          No items in the catalog yet.
+        </p>
+      ) : null}
     </div>
   )
 }

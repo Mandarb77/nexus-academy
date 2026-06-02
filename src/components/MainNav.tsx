@@ -112,7 +112,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Home
+          Workshop
         </NavLink>
         <NavLink
           to="/journey"
@@ -120,7 +120,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Journey
+          Record
         </NavLink>
         <NavLink
           to="/tree"
@@ -128,7 +128,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Skills
+          Guilds
         </NavLink>
         <NavLink
           to="/shop"
@@ -136,7 +136,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Shop
+          Supply
         </NavLink>
         <NavLink
           to="/inventory"
@@ -144,7 +144,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Items
+          Kit
         </NavLink>
         <NavLink
           to="/resources"
@@ -152,7 +152,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Library
+          Archive
         </NavLink>
         <NavLink
           to="/powerups"
@@ -160,7 +160,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Bonuses
+          Dispatch
         </NavLink>
         {teacher && !studentPreviewMode ? (
           /* Teachers keep a quick escape hatch to approvals without memorizing `/teacher`. Hidden during student preview to reduce clutter. */

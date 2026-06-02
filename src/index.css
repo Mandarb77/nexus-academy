@@ -35,6 +35,30 @@
   --sans: 'Segoe UI', system-ui, sans-serif;
   --heading: 'Segoe UI', system-ui, sans-serif;
 
+  /*
+   * Machinist's Bench redesign tokens (warm shop chrome).
+   * Additive only — the legacy --bg/--text/--accent palette above is untouched so pages
+   * outside the redesign scope keep their current look. Consumed by `.bench-chrome`
+   * student pages and shared nav (not Patent ledger). Intentionally NOT overridden in
+   * the dark-mode block below: the bench
+   * stays warm regardless of OS theme.
+   */
+  --color-ground: #C8BFB0;
+  --color-panel: #F0EBE1;
+  --color-rule-light: #D6D2C8;
+  --color-rule-strong: #B8B2A6;
+  --color-ink-primary: #1A1714;
+  --color-ink-secondary: #4A453F;
+  --color-ink-tertiary: #8C8680;
+  --color-forge: #C47B2B;
+  --color-prism: #3D5A8A;
+  --color-void: #2A6B6B;
+  --color-silicon: #6B5B8A;
+  --color-folded: #B85C3A;
+  --font-ui: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --font-display: 'Cinzel', Georgia, serif;
+
   font: 17px/150% var(--sans);
   color: var(--text);
   background: var(--bg);

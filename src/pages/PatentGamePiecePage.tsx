@@ -1,14 +1,14 @@
 /*
  * Patent route shell — game piece + pop-up card (`/patent-game-piece/:tileId`)
  *
- * Wraps `PersonalGamePiecePatentContent` with tile lookup and guild-aware back navigation
+ * Wraps the unified `PatentLedger` with tile lookup and guild-aware back navigation
  * (`/tree/forge` vs `/tree/prism`). Redirects away if the tile is not part of this flow.
  */
 
 import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
-import { PersonalGamePiecePatentContent } from '../components/PersonalGamePiecePatentContent'
+import { PatentLedger } from '../components/PatentLedger'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { skillTreeGuildModifier } from '../lib/guildTree'
@@ -61,16 +61,8 @@ export function PatentGamePiecePage() {
         </div>
       </header>
 
-      {/* ---------- Main: Supabase gate → loading / not found → wizard ---------- */}
+      {/* ---------- Main: Supabase gate → loading / not found → ledger ---------- */}
       <main className="page patent-game-piece-main" data-patent-page="game-piece-stepped">
-        <h1 className="page-title" style={{ marginTop: 0 }}>
-          {tile?.skill_name ?? 'Patent application'}
-        </h1>
-        <p className="muted page-subtitle">
-          Step 1: answer both plan questions and submit for teacher approval. Step 2: after approval, complete and
-          submit the checklist. Step 3: final two questions, then submit the quest.
-        </p>
-
         {!canUseDb ? (
           <p className="muted" role="alert">
             Connect Supabase in <code className="inline-code">.env</code> to use this page.
@@ -84,11 +76,7 @@ export function PatentGamePiecePage() {
             Quest tile not found. <Link to="/tree">← Back to skill tree</Link>
           </p>
         ) : (
-          <PersonalGamePiecePatentContent
-            tile={tile}
-            refresh={refresh}
-            completionStatus={completion?.status}
-          />
+          <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
         )}
       </main>
     </div>

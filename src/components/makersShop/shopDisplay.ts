@@ -22,6 +22,21 @@ export function displayShelfTitle(tierName: string): string {
   return tierName.trim()
 }
 
+/** One-line shelf blurb for tiled tier headers (falls back when DB subtitle is empty). */
+export function tierShortDescription(tierName: string, subtitle?: string | null): string {
+  const sub = subtitle?.trim()
+  if (sub) return sub
+  const n = tierName.trim().toLowerCase()
+  if (n === 'convenience') return 'Quick perks & daily trades'
+  if (n === 'craft') return 'Tools, materials & making'
+  if (n === 'legacy') return 'Lasting workshop honors'
+  return 'Workshop rewards'
+}
+
+export function tierSlugId(tierName: string): string {
+  return tierName.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
+}
+
 export function iconVariantForItemKey(itemKey: string): string {
   const k = itemKey.toLowerCase()
   if (k.includes('phone')) return 'phone'

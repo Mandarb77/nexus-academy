@@ -1,0 +1,656 @@
+/*
+ * Patent ledger — workshop register aesthetic (paper-cream / warm-ink)
+ *
+ * Source design authored as standalone HTML; ported here scoped under `.patent-ledger-root`
+ * so the bare `textarea` / `input[type="text"]` rules do NOT leak into the rest of the SPA.
+ * Three tab-switched panels (Plan / Work / Record), Roman-numeral side tabs, ruled-underline
+ * inputs on transparent paper. Typefaces loaded in index.html: Cinzel, Crimson Pro, IM Fell English.
+ */
+
+.patent-ledger-root {
+  --cream:        #F2EDE0;
+  --cream-mid:    #EDE7D4;
+  --ink:          #1E1A12;
+  --ink-light:    #2E2008;
+  --ink-faint:    #6E5D2C;
+  --ink-ghost:    #9A8848;
+  --gold:         #8B6914;
+  --gold-light:   #C4A84A;
+  --rust:         #5C3210;
+  --rust-mid:     #8B4A1A;
+  --pl-border:    #C8BC9E;
+  --border-dark:  #A89060;
+  --tab-inactive: #D8CEAE;
+
+  display: flex;
+  justify-content: center;
+  padding: 2rem 3rem 2rem 2rem; /* extra right for tabs */
+  background: #E8E2D4;
+  font-family: 'Crimson Pro', Georgia, serif;
+}
+
+.patent-ledger-root *,
+.patent-ledger-root *::before,
+.patent-ledger-root *::after { box-sizing: border-box; }
+
+/* ── Outer wrapper — positions page + side tabs together ──────────────── */
+.patent-ledger-root .patent-outer {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+}
+
+/* ── Side tabs — tuck behind page right border; active surfaces flush ─── */
+.patent-ledger-root .side-tabs {
+  position: absolute;
+  right: -26px;
+  top: 120px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.patent-ledger-root .side-tab {
+  position: relative;
+  width: 26px;
+  height: 68px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.patent-ledger-root .side-tab:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.patent-ledger-root .tab-body {
+  position: absolute;
+  inset: 0;
+  background: var(--tab-inactive);
+  border: 1px solid var(--border-dark);
+  border-left: none;
+  border-radius: 0 3px 4px 0;
+  clip-path: polygon(0 1px, calc(100% - 1px) 0, 100% 2px, 100% calc(100% - 3px), calc(100% - 2px) 100%, 1px 100%, 0 calc(100% - 1px));
+  box-shadow: inset -2px 0 4px rgba(0,0,0,0.08), 2px 1px 3px rgba(0,0,0,0.1);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.patent-ledger-root .side-tab.active .tab-body {
+  background: var(--cream);
+  border-color: var(--gold);
+  clip-path: polygon(0 0, calc(100% - 1px) 0, 100% 2px, 100% calc(100% - 3px), calc(100% - 2px) 100%, 0 100%);
+  box-shadow: 2px 0 6px rgba(0,0,0,0.12);
+}
+
+.patent-ledger-root .tab-num {
+  position: relative;
+  z-index: 2;
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-faint);
+  user-select: none;
+  transition: color 0.12s, font-size 0.12s;
+}
+
+.patent-ledger-root .side-tab.active .tab-num { color: var(--rust); font-size: 14px; }
+
+/* ── Page ────────────────────────────────────────────────────────────── */
+.patent-ledger-root .patent-page {
+  background: var(--cream);
+  color: var(--ink);
+  border-left: 4px solid var(--gold);
+  border-top: 1px solid var(--pl-border);
+  border-bottom: 1px solid var(--pl-border);
+  border-right: 1px solid var(--pl-border);
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+}
+
+/* dot grid — ledger paper texture */
+.patent-ledger-root .patent-page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--border-dark) 0.5px, transparent 0.5px);
+  background-size: 18px 18px;
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* guild mark watermark — per-guild via [data-guild]; default = Forge hammer octagon */
+.patent-ledger-root .patent-page::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 260px; height: 260px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cpolygon points='36,4 56,14 68,34 58,56 36,68 14,58 4,36 14,14' fill='none' stroke='%238B6914' stroke-width='1.5'/%3E%3Crect x='32' y='29' width='8' height='17' rx='1' fill='%238B6914'/%3E%3Crect x='26' y='22' width='20' height='9' rx='1.5' fill='%238B6914'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Void Navigators — drafting compass over square + circle, central baluster */
+.patent-ledger-root .patent-page[data-guild='void']::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 172'%3E%3Cg fill='none' stroke='%238B6914' stroke-width='3'%3E%3Cellipse cx='60' cy='88' rx='54' ry='80'/%3E%3Crect x='26' y='60' width='68' height='68'/%3E%3Ccircle cx='60' cy='94' r='34'/%3E%3Cline x1='60' y1='51' x2='33' y2='128'/%3E%3Cline x1='60' y1='51' x2='87' y2='128'/%3E%3Ccircle cx='60' cy='40' r='11'/%3E%3C/g%3E%3Cpolygon points='60,74 66,78 62,86 69,98 62,112 64,122 60,152 56,122 58,112 51,98 58,86 54,78' fill='%238B6914'/%3E%3C/svg%3E");
+}
+
+.patent-ledger-root .patent-page[data-guild='silicon']::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 172'%3E%3Cg fill='none' stroke='%238B6914' stroke-width='3'%3E%3Cellipse cx='60' cy='86' rx='52' ry='78'/%3E%3Cline x1='60' y1='30' x2='60' y2='152'/%3E%3Cline x1='60' y1='64' x2='40' y2='46'/%3E%3Cline x1='60' y1='80' x2='28' y2='62'/%3E%3Cline x1='60' y1='104' x2='32' y2='92'/%3E%3Cline x1='60' y1='130' x2='40' y2='116'/%3E%3Cline x1='60' y1='64' x2='80' y2='46'/%3E%3Cline x1='60' y1='80' x2='92' y2='62'/%3E%3Cline x1='60' y1='104' x2='88' y2='92'/%3E%3Cline x1='60' y1='130' x2='80' y2='116'/%3E%3Ccircle cx='60' cy='30' r='7'/%3E%3Ccircle cx='60' cy='62' r='7'/%3E%3Ccircle cx='60' cy='158' r='6'/%3E%3Ccircle cx='40' cy='44' r='5'/%3E%3Ccircle cx='28' cy='62' r='5'/%3E%3Ccircle cx='32' cy='92' r='5'/%3E%3Ccircle cx='40' cy='116' r='5'/%3E%3Ccircle cx='80' cy='44' r='5'/%3E%3Ccircle cx='92' cy='62' r='5'/%3E%3Ccircle cx='88' cy='92' r='5'/%3E%3Ccircle cx='80' cy='116' r='5'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.patent-ledger-root .patent-page[data-guild='prism']::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 172'%3E%3Cg fill='none' stroke='%238B6914' stroke-width='3'%3E%3Cellipse cx='60' cy='86' rx='52' ry='78'/%3E%3Cline x1='68' y1='86' x2='106' y2='86'/%3E%3Cline x1='66' y1='81' x2='100' y2='51'/%3E%3Cline x1='63' y1='79' x2='83' y2='25'/%3E%3Cline x1='57' y1='79' x2='37' y2='25'/%3E%3Cline x1='54' y1='81' x2='20' y2='51'/%3E%3Cline x1='52' y1='86' x2='14' y2='86'/%3E%3Cline x1='54' y1='91' x2='20' y2='121'/%3E%3Cline x1='57' y1='93' x2='37' y2='147'/%3E%3Cline x1='63' y1='93' x2='83' y2='147'/%3E%3Cline x1='66' y1='91' x2='100' y2='121'/%3E%3Cline x1='58.5' y1='78' x2='58.5' y2='18'/%3E%3Cline x1='61.5' y1='78' x2='61.5' y2='18'/%3E%3Cline x1='58.5' y1='94' x2='58.5' y2='154'/%3E%3Cline x1='61.5' y1='94' x2='61.5' y2='154'/%3E%3Ccircle cx='60' cy='86' r='8'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.patent-ledger-root .patent-page[data-guild='forge']::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 172'%3E%3Cg fill='none' stroke='%238B6914' stroke-width='3'%3E%3Cellipse cx='60' cy='86' rx='52' ry='78'/%3E%3Cline x1='44' y1='26' x2='76' y2='26'/%3E%3Cline x1='44' y1='26' x2='50' y2='56'/%3E%3Cline x1='76' y1='26' x2='70' y2='56'/%3E%3Cline x1='50' y1='56' x2='70' y2='56'/%3E%3Cline x1='50' y1='56' x2='57' y2='76'/%3E%3Cline x1='70' y1='56' x2='63' y2='76'/%3E%3Cline x1='57' y1='76' x2='60' y2='82'/%3E%3Cline x1='63' y1='76' x2='60' y2='82'/%3E%3Cline x1='60' y1='82' x2='60' y2='96'/%3E%3Ccircle cx='60' cy='96' r='2'/%3E%3Cellipse cx='60' cy='96' rx='20' ry='5'/%3E%3Cline x1='40' y1='96' x2='40' y2='110'/%3E%3Cline x1='80' y1='96' x2='80' y2='110'/%3E%3Cpath d='M40 110 A20 5 0 0 1 80 110'/%3E%3Cellipse cx='60' cy='114' rx='28' ry='6'/%3E%3Cline x1='32' y1='114' x2='32' y2='128'/%3E%3Cline x1='88' y1='114' x2='88' y2='128'/%3E%3Cpath d='M32 128 A28 6 0 0 1 88 128'/%3E%3Cellipse cx='60' cy='132' rx='36' ry='7'/%3E%3Cline x1='24' y1='132' x2='24' y2='146'/%3E%3Cline x1='96' y1='132' x2='96' y2='146'/%3E%3Cpath d='M24 146 A36 7 0 0 1 96 146'/%3E%3Cellipse cx='60' cy='150' rx='46' ry='8'/%3E%3Cpath d='M14 150 A46 14 0 0 1 106 150'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.patent-ledger-root .patent-page[data-guild='folded']::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 172'%3E%3Cg fill='none' stroke='%238B6914' stroke-width='3'%3E%3Cellipse cx='60' cy='86' rx='52' ry='78'/%3E%3Cline x1='16' y1='84' x2='32' y2='79'/%3E%3Cline x1='16' y1='84' x2='33' y2='92'/%3E%3Cline x1='32' y1='79' x2='33' y2='92'/%3E%3Cline x1='33' y1='92' x2='54' y2='110'/%3E%3Cline x1='40' y1='88' x2='56' y2='108'/%3E%3Cline x1='54' y1='110' x2='98' y2='55'/%3E%3Cline x1='98' y1='55' x2='103' y2='113'/%3E%3Cline x1='54' y1='110' x2='103' y2='113'/%3E%3Cline x1='54' y1='110' x2='26' y2='112'/%3E%3Cline x1='26' y1='112' x2='66' y2='137'/%3E%3Cline x1='66' y1='137' x2='103' y2='113'/%3E%3Cline x1='54' y1='110' x2='66' y2='137'/%3E%3Cline x1='66' y1='137' x2='52' y2='141'/%3E%3Cline x1='66' y1='137' x2='72' y2='141'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* right border overlay — covers tab left edges */
+.patent-ledger-root .page-right-border {
+  position: absolute;
+  top: 0; right: -1px;
+  width: 2px;
+  height: 100%;
+  background: var(--pl-border);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.patent-ledger-root .patent-page > *:not(.page-right-border) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Guild mark header ───────────────────────────────────────────────── */
+.patent-ledger-root .guild-mark {
+  text-align: center;
+  padding: 1.75rem 2rem 1rem;
+  border-bottom: 1px solid var(--border-dark);
+}
+
+.patent-ledger-root .guild-svg { display: block; margin: 0 auto 0.6rem; }
+
+/* ── Identity band (autopopulated) ───────────────────────────────────── */
+.patent-ledger-root .identity-band {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  padding: 0.6rem 2rem;
+  border-bottom: 1px solid var(--pl-border);
+  background: var(--cream-mid);
+  gap: 1rem;
+}
+
+.patent-ledger-root .id-field { display: flex; flex-direction: column; gap: 2px; }
+.patent-ledger-root .id-field.right { align-items: flex-end; }
+
+.patent-ledger-root .id-lbl {
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+.patent-ledger-root .id-value {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--pl-border);
+  padding: 0.1rem 0;
+  min-width: 120px;
+}
+
+.patent-ledger-root .id-value.placeholder { color: var(--ink-ghost); }
+.patent-ledger-root .id-center { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.2em; color: var(--ink-ghost); }
+
+/* ── Quest band ──────────────────────────────────────────────────────── */
+.patent-ledger-root .quest-band {
+  padding: 0.75rem 2rem;
+  border-bottom: 1px solid var(--pl-border);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.patent-ledger-root .quest-name { font-family: 'IM Fell English', serif; font-size: 17px; color: var(--ink); }
+.patent-ledger-root .entry-num { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 11px; color: var(--border-dark); white-space: nowrap; }
+
+/* ── Panels ──────────────────────────────────────────────────────────── */
+.patent-ledger-root .panel { display: none; padding: 1.5rem 2rem; }
+.patent-ledger-root .panel.active { display: block; }
+
+/* ── Ledger rows ─────────────────────────────────────────────────────── */
+.patent-ledger-root .ledger-row {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  border-bottom: 1px solid #D4C8A8;
+  padding: 0.9rem 0;
+  align-items: start;
+}
+
+.patent-ledger-root .ledger-row:last-of-type { border-bottom: none; }
+
+.patent-ledger-root .row-num {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-ghost);
+  padding-top: 0.15rem;
+}
+
+.patent-ledger-root .row-body { padding-left: 0.2rem; }
+
+.patent-ledger-root .row-q {
+  font-family: 'Crimson Pro', serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.35;
+  margin-bottom: 0.15rem;
+  display: block;
+}
+
+.patent-ledger-root .row-q .req { color: #8B3A1A; margin-left: 2px; }
+
+.patent-ledger-root .row-hint {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+/* ── Inputs — ruled underline only, transparent (scoped!) ────────────── */
+.patent-ledger-root textarea,
+.patent-ledger-root input[type="text"] {
+  width: 100%;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--pl-border) !important;
+  border-radius: 0;
+  padding: 0.35rem 0.15rem !important;
+  font-family: 'Crimson Pro', serif !important;
+  font-size: 16px !important;
+  color: var(--ink) !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  resize: none;
+  outline: none;
+  line-height: 1.55;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.patent-ledger-root textarea:focus,
+.patent-ledger-root input[type="text"]:focus {
+  border-bottom-color: var(--gold) !important;
+}
+
+.patent-ledger-root textarea::placeholder,
+.patent-ledger-root input[type="text"]::placeholder {
+  color: var(--ink-ghost) !important;
+  -webkit-text-fill-color: var(--ink-ghost) !important;
+  font-style: italic;
+}
+
+.patent-ledger-root textarea { min-height: 52px; overflow: hidden; }
+
+.patent-ledger-root textarea:disabled,
+.patent-ledger-root input[type="text"]:disabled {
+  color: var(--ink-light) !important;
+  -webkit-text-fill-color: var(--ink-light) !important;
+  border-bottom-style: dotted !important;
+  opacity: 0.9;
+}
+
+/* ── Empathy footnote — marginal note, not a form element ────────────── */
+.patent-ledger-root .ways-hint {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+  border-top: 1px dotted var(--pl-border);
+  line-height: 1.7;
+}
+
+/* ── Submit button ───────────────────────────────────────────────────── */
+.patent-ledger-root .submit-btn {
+  display: block;
+  width: 100%;
+  margin: 1.25rem 0 0.4rem;
+  background: var(--rust);
+  color: var(--cream);
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border: none;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.patent-ledger-root .submit-btn:hover:not(:disabled) { background: var(--rust-mid); }
+.patent-ledger-root .submit-btn:disabled { background: var(--border-dark); cursor: not-allowed; }
+
+/* ── Gate notice ─────────────────────────────────────────────────────── */
+.patent-ledger-root .gate-note {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  color: var(--border-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+/* ── Status banner ───────────────────────────────────────────────────── */
+.patent-ledger-root .status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--pl-border);
+  border-left: 3px solid var(--gold);
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-light);
+  margin-bottom: 1rem;
+}
+
+.patent-ledger-root .status-banner.returned { border-left-color: #8B3A1A; }
+.patent-ledger-root .status-banner.success { border-left-color: var(--gold); }
+
+/* ── Checklist (Panel ii) ────────────────────────────────────────────── */
+.patent-ledger-root .cl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--pl-border);
+}
+
+.patent-ledger-root .cl-progress {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.patent-ledger-root .cl-status {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.patent-ledger-root .steps { list-style: none; }
+
+.patent-ledger-root .steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #E4DAC0;
+  font-family: 'Crimson Pro', serif;
+  font-size: 15px;
+  color: var(--ink-light);
+  line-height: 1.45;
+}
+
+.patent-ledger-root .steps li:last-child { border-bottom: none; }
+
+.patent-ledger-root .steps li.done {
+  color: var(--border-dark);
+  text-decoration: line-through;
+  text-decoration-color: var(--pl-border);
+}
+
+.patent-ledger-root .cb {
+  width: 13px; height: 13px; min-width: 13px;
+  border: 1px solid var(--border-dark);
+  background: transparent;
+  margin-top: 3px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.patent-ledger-root .cb:disabled { cursor: not-allowed; opacity: 0.5; }
+.patent-ledger-root .cb.checked { background: var(--rust); border-color: var(--rust); }
+.patent-ledger-root .cb.checked::after { content: '✓'; color: var(--cream); font-size: 8px; line-height: 1; }
+
+.patent-ledger-root .step-num {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-ghost);
+  min-width: 14px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.patent-ledger-root .step-main { flex: 1; }
+
+.patent-ledger-root .res-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.85rem 0 0.25rem; }
+
+.patent-ledger-root .res-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--rust);
+  border: 1px solid var(--border-dark);
+  background: transparent;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: border-color 0.1s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.patent-ledger-root .res-btn:hover { border-color: var(--rust); }
+
+.patent-ledger-root .upload-block {
+  border: 1px dashed var(--border-dark);
+  background: transparent;
+  padding: 0.8rem 1rem;
+  text-align: center;
+  margin-top: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.1s;
+  display: block;
+  width: 100%;
+}
+
+.patent-ledger-root .upload-block:hover { border-color: var(--rust); }
+
+.patent-ledger-root .upload-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+.patent-ledger-root .upload-preview {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 2px;
+  margin-bottom: 0.6rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Signoff block (Panel iii) ───────────────────────────────────────── */
+.patent-ledger-root .signoff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--border-dark);
+  margin-top: 1.5rem;
+}
+
+.patent-ledger-root .sc { padding: 1rem 0; }
+.patent-ledger-root .sc:first-child { padding-right: 1.25rem; border-right: 1px solid var(--pl-border); }
+.patent-ledger-root .sc:last-child { padding-left: 1.25rem; }
+
+.patent-ledger-root .sc-label {
+  font-family: 'Cinzel', serif;
+  font-size: 7.5px;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.patent-ledger-root .sig-wrap { position: relative; }
+
+.patent-ledger-root .sig-canvas {
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+  background: transparent;
+  border-bottom: 1px solid var(--pl-border);
+  width: 100%;
+}
+
+.patent-ledger-root .sig-prompt {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--pl-border);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.patent-ledger-root .sig-actions {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+  align-items: center;
+}
+
+.patent-ledger-root .sig-act-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.patent-ledger-root .sig-act-btn:hover { color: var(--rust); }
+
+.patent-ledger-root .sig-preview {
+  width: 100%;
+  max-height: 64px;
+  object-fit: contain;
+  border-bottom: 1px solid var(--pl-border);
+  display: block;
+}
+
+.patent-ledger-root .wp-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; }
+.patent-ledger-root .wp-f { flex: 1; }
+
+.patent-ledger-root .wp-lbl {
+  font-family: 'Cinzel', serif;
+  font-size: 7.5px;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.patent-ledger-root .wp-f input {
+  width: 100%;
+  border: none !important;
+  border-bottom: 1px solid var(--pl-border) !important;
+  background: transparent !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 15px !important;
+  color: var(--ink) !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  padding: 0.1rem 0;
+  outline: none;
+}
+
+.patent-ledger-root .ret-lbl {
+  font-family: 'Cinzel', serif;
+  font-size: 7.5px;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  margin-top: 0.75rem;
+}
+
+.patent-ledger-root .ret-input {
+  width: 100%;
+  border: none !important;
+  border-bottom: 1px solid var(--pl-border) !important;
+  background: transparent !important;
+  font-family: 'IM Fell English', serif !important;
+  font-style: italic;
+  font-size: 13px !important;
+  color: var(--ink-light) !important;
+  -webkit-text-fill-color: var(--ink-light) !important;
+  padding: 0.1rem 0;
+  outline: none;
+}
+
+/* ── Closing quote ───────────────────────────────────────────────────── */
+.patent-ledger-root .closing {
+  text-align: center;
+  padding: 1.1rem 2rem 1.5rem;
+  border-top: 1px solid var(--pl-border);
+  margin: 1.5rem 2rem 0;
+}
+
+.patent-ledger-root .closing-mark { color: var(--gold); font-size: 14px; display: block; margin-bottom: 0.35rem; }
+
+.patent-ledger-root .closing-text {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--border-dark);
+  line-height: 1.7;
+}
+
+/* ── Loading / approved states ───────────────────────────────────────── */
+.patent-ledger-root .pl-loading {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  color: var(--ink-light);
+  padding: 2rem;
+  text-align: center;
+}

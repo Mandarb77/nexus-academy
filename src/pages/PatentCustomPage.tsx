@@ -2,13 +2,13 @@
  * Patent route shell for Quest Builder tiles (`/patent-custom/:tileId`)
  *
  * Resolves `tileId` from the URL, finds the matching row from `useSkillTree`, and mounts
- * `GenericPatentContent`. Void Tile 1 prototype lands here via `isCustomTile` in customTile.ts.
+ * the unified `PatentLedger`. Void Tile 1 prototype lands here via `isCustomTile` in customTile.ts.
  */
 
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
-import { GenericPatentContent } from '../components/GenericPatentContent'
+import { PatentLedger } from '../components/PatentLedger'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { skillTreeGuildModifier } from '../lib/guildTree'
@@ -59,12 +59,8 @@ export function PatentCustomPage() {
         </div>
       </header>
 
-      {/* ---------- Main: loading / error / `GenericPatentContent` ---------- */}
+      {/* ---------- Main: loading / error / `PatentLedger` (self-contained header) ---------- */}
       <main className="page patent-game-piece-main">
-        {tile ? (
-          <h1 className="page-title" style={{ marginTop: 0 }}>{tile.skill_name}</h1>
-        ) : null}
-
         {!canUseDb ? (
           <p className="muted" role="alert">Connect Supabase in <code className="inline-code">.env</code> to use this page.</p>
         ) : null}
@@ -74,7 +70,7 @@ export function PatentCustomPage() {
         ) : !tile ? (
           <p className="error" role="alert">Quest tile not found. <Link to="/tree">← Back to skill tree</Link></p>
         ) : (
-          <GenericPatentContent tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
         )}
       </main>
     </div>

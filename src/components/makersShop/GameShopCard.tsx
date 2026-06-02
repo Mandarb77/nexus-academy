@@ -1,9 +1,5 @@
 /*
- * Single catalog card in the Makers Shop — price, lock state, purchase CTA
- *
- * Composes `ShopAccordion` + `ShopItemGlyph`. `dailyBlocked` and `catalogLocked` come from
- * `GoldShopPage` RPC results and Eastern-calendar limits so the button label explains *why*
- * a purchase is disabled (affordability vs rank vs daily cap vs inactive item).
+ * Single catalog card in Supply — trading-post (legacy) or bench tile (compact grid).
  */
 
 import type { ShopCatalogItem } from '../../types/shopCatalog'
@@ -12,6 +8,7 @@ import { ShopItemGlyph } from './ShopItemGlyph'
 import { iconVariantForItemKey } from './shopDisplay'
 
 type GameShopCardProps = {
+  layout?: 'legacy' | 'bench'
   item: ShopCatalogItem
   shelfAccent: 'forge' | 'prism' | 'folded'
   catalogLocked: boolean
@@ -25,6 +22,7 @@ type GameShopCardProps = {
 }
 
 function PurchaseButton({
+  layout,
   item,
   catalogLocked,
   dailyBlocked,
@@ -36,6 +34,7 @@ function PurchaseButton({
   onBuy,
 }: Pick<
   GameShopCardProps,
+  | 'layout'
   | 'item'
   | 'catalogLocked'
   | 'dailyBlocked'
@@ -46,11 +45,17 @@ function PurchaseButton({
   | 'catalogLoading'
   | 'onBuy'
 >) {
+  const bench = layout === 'bench'
+
   return (
-    <div className="makers-shop-card__actions">
+    <div className={bench ? 'shop-item__actions' : 'makers-shop-card__actions'}>
       <button
         type="button"
-        className={`makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`}
+        className={
+          bench
+            ? `btn-secondary shop-item__buy${canBuy ? ' shop-item__buy--ready' : ''}`
+            : `makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`
+        }
         disabled={!isSupabaseConfigured || catalogLocked || !canBuy || busy || catalogLoading}
         onClick={() => onBuy(item)}
       >
@@ -72,18 +77,87 @@ function PurchaseButton({
   )
 }
 
-export function GameShopCard({
-  item,
-  shelfAccent,
-  catalogLocked,
-  dailyBlocked,
-  canAfford,
-  canBuy,
-  busy,
-  isSupabaseConfigured,
-  catalogLoading,
-  onBuy,
-}: GameShopCardProps) {
+function BenchShopCard(props: GameShopCardProps) {
+  const {
+    item,
+    shelfAccent,
+    catalogLocked,
+    dailyBlocked,
+    canAfford,
+    canBuy,
+    busy,
+    isSupabaseConfigured,
+    catalogLoading,
+    onBuy,
+  } = props
+  const price = item.price_gold
+  const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
+  const hasFlavor = Boolean(item.flavor_text?.trim())
+
+  const purchaseProps = {
+    layout: 'bench' as const,
+    item,
+    catalogLocked,
+    dailyBlocked,
+    canAfford,
+    canBuy,
+    busy,
+    isSupabaseConfigured,
+    catalogLoading,
+    onBuy,
+  }
+
+  return (
+    <li
+      className={`shop-item card shop-item--${shelfAccent}${
+        catalogLocked ? ' shop-item--locked' : ''
+      }${canBuy ? ' shop-item--ready' : ''}`}
+    >
+      <div className="shop-item__head">
+        <div className="shop-item__glyph-wrap" aria-hidden>
+          <ShopItemGlyph variant={variant} className="shop-item-glyph" />
+        </div>
+        <div className="shop-item__main">
+          <h3 className="shop-item__title">{item.name}</h3>
+          <p className="shop-item__desc muted">{item.description}</p>
+          {hasFlavor ? (
+            <p className="shop-item__flavor muted">
+              <em>{item.flavor_text}</em>
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="shop-item__foot">
+        {catalogLocked ? (
+          <span className="shop-item__price shop-item__price--locked">Sealed</span>
+        ) : (
+          <span className="shop-item__price">
+            <span className="shop-item__price-value">{price}</span>{' '}
+            <span className="gold-currency-text">gold</span>
+          </span>
+        )}
+        <PurchaseButton {...purchaseProps} />
+      </div>
+      {dailyBlocked && !catalogLocked ? (
+        <p className="shop-item__note muted">Already purchased today.</p>
+      ) : null}
+    </li>
+  )
+}
+
+function LegacyShopCard(props: GameShopCardProps) {
+  const {
+    item,
+    shelfAccent,
+    catalogLocked,
+    dailyBlocked,
+    canAfford,
+    canBuy,
+    busy,
+    isSupabaseConfigured,
+    catalogLoading,
+    onBuy,
+  } = props
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
   const purchaseBlocked = !catalogLocked && price != null && (!canAfford || dailyBlocked)
@@ -109,6 +183,7 @@ export function GameShopCard({
     .join(' ')
 
   const purchaseProps = {
+    layout: 'legacy' as const,
     item,
     catalogLocked,
     dailyBlocked,
@@ -171,4 +246,9 @@ export function GameShopCard({
       </div>
     </li>
   )
+}
+
+export function GameShopCard(props: GameShopCardProps) {
+  if (props.layout === 'bench') return <BenchShopCard {...props} />
+  return <LegacyShopCard {...props} />
 }

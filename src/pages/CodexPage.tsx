@@ -12,11 +12,11 @@ export function CodexPage() {
   const { signOut } = useAuth()
 
   return (
-    <div className="app-shell">
+    <div className="app-shell bench-chrome">
       <MainNav />
       <main className="page">
-        <header className="page-header">
-          <h1 className="page-title">Quest archive</h1>
+        <header className="page-header bench-page-title-row">
+          <h1 className="page-title bench-page-title">Quest archive</h1>
           <p className="muted page-subtitle">
             Use Journey for your approved completion timeline and workshop history.
           </p>
