@@ -7,11 +7,13 @@
  * student+tile so stray duplicate inserts cannot leave one row forever stuck in limbo.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
+import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
+import type { TeacherSubmissionAlert } from '../lib/teacherSubmissionAlert'
 
 // =============================================================================
 // Types — Supabase row shapes + UI “acting” state for button spinners
@@ -167,13 +169,6 @@ export function TeacherPanelPage() {
   const [checklistRows, setChecklistRows] = useState<PendingChecklistRow[]>([])
 
   // ---------------------------------------------------------------------------
-  // New final submissions — flash notice when pending `skill_completions` set grows
-  // ---------------------------------------------------------------------------
-  const prevPendingSkillIdsRef = useRef<Set<string>>(new Set())
-  const [finalSubmitNotice, setFinalSubmitNotice] = useState<string | null>(null)
-  const finalSubmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // ---------------------------------------------------------------------------
   // Student roster + drill-down (selected learner’s profile / skills / shop activity)
   // ---------------------------------------------------------------------------
   const [students, setStudents] = useState<StudentSummary[]>([])
@@ -278,21 +273,6 @@ export function TeacherPanelPage() {
     const redemptions = redRes.data ?? []
     const plans = planRes.data ?? []
     const checklists = checklistRes.data ?? []
-
-    /*
-     * Surface a one-time banner when the pending-final queue grows — distinct from plan/checklist
-     * panels because final approval fires WP/gold on `skill_completions`, not `patents` alone.
-     */
-    const nextPendingSkillIds = new Set<string>(completions.map((r) => r.id as string))
-    const prevPendingSkillIds = prevPendingSkillIdsRef.current
-    const hasNewFinalSubmissions =
-      [...nextPendingSkillIds].some((id) => !prevPendingSkillIds.has(id)) && nextPendingSkillIds.size > 0
-    prevPendingSkillIdsRef.current = nextPendingSkillIds
-    if (hasNewFinalSubmissions) {
-      setFinalSubmitNotice('New final submissions just arrived — review the Skill completions panel.')
-      if (finalSubmitTimerRef.current) clearTimeout(finalSubmitTimerRef.current)
-      finalSubmitTimerRef.current = setTimeout(() => setFinalSubmitNotice(null), 12000)
-    }
 
     const studentIds = [
       ...new Set([
@@ -461,6 +441,49 @@ export function TeacherPanelPage() {
       })),
     )
 
+    const pendingAlerts: TeacherSubmissionAlert[] = [
+      ...plans.map((r) => {
+        const sid = r.student_id as string
+        const tid = r.tile_id as string
+        return {
+          alertId: `plan:${r.id as string}`,
+          kind: 'plan' as const,
+          studentName: nameById.get(sid) ?? null,
+          detail: planTileById.get(tid)?.skill_name ?? 'Quest plan',
+        }
+      }),
+      ...checklists.map((r) => {
+        const sid = r.student_id as string
+        const tid = r.tile_id as string
+        return {
+          alertId: `checklist:${r.id as string}`,
+          kind: 'checklist' as const,
+          studentName: nameById.get(sid) ?? null,
+          detail: planTileById.get(tid)?.skill_name ?? 'Quest checklist',
+        }
+      }),
+      ...completions.map((r) => {
+        const sid = r.student_id as string
+        const tid = r.tile_id as string
+        return {
+          alertId: `skill:${r.id as string}`,
+          kind: 'skill' as const,
+          studentName: nameById.get(sid) ?? null,
+          detail: tileById.get(tid)?.skill_name ?? 'Skill completion',
+        }
+      }),
+      ...redemptions.map((r) => {
+        const sid = r.student_id as string
+        return {
+          alertId: `redemption:${r.id as string}`,
+          kind: 'redemption' as const,
+          studentName: nameById.get(sid) ?? null,
+          detail: ((r.item_name as string) ?? 'Shop item').trim() || 'Shop item',
+        }
+      }),
+    ]
+    applyTeacherPendingSnapshot(pendingAlerts)
+
     setLoading(false)
   }, [])
 
@@ -497,6 +520,16 @@ export function TeacherPanelPage() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'skill_completions' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'redemption_requests' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'redemption_requests' },
         () => { void loadPending() },
       )
       .subscribe()
@@ -929,24 +962,6 @@ export function TeacherPanelPage() {
         <p className="muted" role="status">
           {adminMessage}
         </p>
-      ) : null}
-
-      {finalSubmitNotice ? (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            margin: '0.75rem 0 1rem',
-            padding: '0.65rem 0.9rem',
-            borderRadius: '10px',
-            fontWeight: 800,
-            border: '2px solid rgba(185, 28, 28, 0.55)',
-            background: 'rgba(239, 68, 68, 0.12)',
-            color: '#991b1b',
-          }}
-        >
-          {finalSubmitNotice}
-        </div>
       ) : null}
 
       {loadError ? (

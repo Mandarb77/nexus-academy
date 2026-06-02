@@ -4783,6 +4783,116 @@ body:has(.bench-chrome) {
   padding-top: 0.5rem;
 }
 
+/* ── Teacher: new submission alert (global, bench-styled) ── */
+@keyframes teacher-alert-slide-in {
+  from {
+    transform: translateY(-110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes teacher-alert-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(196, 123, 43, 0.55);
+  }
+  60% {
+    box-shadow: 0 0 0 14px rgba(196, 123, 43, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(196, 123, 43, 0);
+  }
+}
+
+.teacher-submission-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1250;
+  width: min(94vw, 30rem);
+  padding: 1.1rem 1.25rem;
+  border-radius: 2px;
+  background: var(--color-panel);
+  border: 2px solid var(--color-forge);
+  color: var(--color-ink-primary);
+  font-family: var(--font-ui);
+  text-align: left;
+  box-shadow: none;
+  animation:
+    teacher-alert-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    teacher-alert-pulse 1.5s ease-out 0.35s 3;
+}
+
+.teacher-submission-banner__title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
+}
+
+.teacher-submission-banner__message {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary);
+}
+
+.teacher-submission-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.teacher-submission-banner__open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-panel);
+  background: var(--color-ink-primary);
+  border: 1px solid var(--color-ink-primary);
+  border-radius: 2px;
+}
+
+.teacher-submission-banner__open:hover {
+  background: var(--color-ink-secondary);
+  border-color: var(--color-ink-secondary);
+  color: var(--color-panel);
+}
+
+.teacher-submission-banner__dismiss {
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  background: transparent;
+  border: 1px solid var(--color-rule-strong);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.teacher-submission-banner__dismiss:hover {
+  border-color: var(--color-ink-primary);
+  color: var(--color-ink-primary);
+}
+
 /* ============================================================
  * Dispatch — Where You Are (flip cards)
  * ============================================================ */

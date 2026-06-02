@@ -36,6 +36,8 @@ import { PatentCustomPage } from './pages/PatentCustomPage'
 import { JoinPage } from './pages/JoinPage'
 import { ApprovalCelebrationHost } from './components/ApprovalCelebrationHost'
 import { ApprovalCelebrationSync } from './components/ApprovalCelebrationSync'
+import { TeacherSubmissionAlertHost } from './components/TeacherSubmissionAlertHost'
+import { TeacherSubmissionAlertSync } from './components/TeacherSubmissionAlertSync'
 import './App.css'
 
 export default function App() {
@@ -55,6 +57,8 @@ export default function App() {
         {/* ========== Global: quest-approval toast + Realtime → localStorage bridge ========== */}
         <ApprovalCelebrationHost />
         <ApprovalCelebrationSync />
+        <TeacherSubmissionAlertHost />
+        <TeacherSubmissionAlertSync />
         <Routes>
           {/* ========== Public / entry ========== */}
           <Route path="/" element={<HomeRoute />} />

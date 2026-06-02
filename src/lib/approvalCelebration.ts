@@ -11,6 +11,8 @@
  * the mounted host’s `setToast` without requiring a full page reload.
  */
 
+import { playApprovalChime } from './alertSound'
+
 export const APPROVAL_CELEBRATION_EVENT = 'nexus-pending-approval-celebration'
 
 const PENDING_KEY = 'nexus:pending-approval-celebration'
@@ -44,6 +46,7 @@ export function queueApprovalCelebration(c: PendingApprovalCelebration) {
   localStorage.setItem(PENDING_KEY, JSON.stringify(c))
   liveNotifier?.(c)
   dispatchCelebrationEvent()
+  playApprovalChime()
 }
 
 export function peekPendingCelebration(): PendingApprovalCelebration | null {
