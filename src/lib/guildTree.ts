@@ -3,8 +3,8 @@
  *
  * `SKILL_TREE_SECTION_GUILDS` defines nav/section order on `/tree`. Strings are matched
  * case-insensitively against `tiles.guild` so live quests land under the right banner.
- * Placeholder guilds (Silicon Covenant, Void Navigators) show “coming soon” tiles until
- * you add real quests — keeps freshmen excited about future pathways without dead links.
+ * Silicon Covenant shows “coming soon” until electronics quests ship; Void Navigators
+ * uses live tiles from the database.
  */
 
 export const SKILL_TREE_SECTION_GUILDS = [
@@ -16,12 +16,11 @@ export const SKILL_TREE_SECTION_GUILDS = [
 ] as const
 
 /*
- * Legacy always-lock check. Student pages should use `isGuildComingSoonForUser` (voidProtoAccess.ts)
- * so Void can unlock for the Tile 1 prototype tester email.
+ * Legacy always-lock check. Student pages should use `isGuildComingSoonForUser` (voidProtoAccess.ts).
  */
 export function isComingSoonGuildSection(guildKey: string): boolean {
   const k = guildKey.trim().toLowerCase()
-  return k === 'silicon covenant' || k === 'void navigators'
+  return k === 'silicon covenant'
 }
 
 /** Normalize DB guild label to a URL-safe CSS modifier slug. */

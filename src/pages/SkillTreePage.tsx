@@ -2,7 +2,7 @@
  * Class-wide skill tree (`/tree`)
  *
  * Renders every guild section in `SKILL_TREE_SECTION_GUILDS` order with anchors for deep links.
- * Void/Silicon coming-soon uses `isGuildComingSoonForUser` (Void proto email gate in voidProtoAccess).
+ * Silicon coming-soon uses `isGuildComingSoonForUser` (voidProtoAccess.ts).
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -12,8 +12,7 @@ import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { skillTreeGuildModifier } from '../lib/guildTree'
-import { canAccessVoidTile1Proto, isGuildComingSoonForUser } from '../lib/voidProtoAccess'
-import { filterVoidTilesForProto } from '../lib/voidTile1Proto'
+import { isGuildComingSoonForUser } from '../lib/voidProtoAccess'
 
 function guildSlugId(guildKey: string): string {
   return guildKey.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
@@ -149,11 +148,7 @@ export function SkillTreePage() {
                       </div>
                     ) : (
                       <SkillTilesList
-                        tiles={
-                          mod === 'void' && canAccessVoidTile1Proto(user)
-                            ? filterVoidTilesForProto(tilesByGuild.get(guildKey) ?? [])
-                            : tilesByGuild.get(guildKey) ?? []
-                        }
+                        tiles={tilesByGuild.get(guildKey) ?? []}
                         completionByTileId={completionByTileId}
                         patentProgressByTileId={patentProgressByTileId}
                         submittingTileId={submittingTileId}

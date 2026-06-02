@@ -1,9 +1,8 @@
 /*
  * Per-guild skill tree (`/tree/:guildSlug`)
  *
- * Deep link from student home guild marks. Silicon stays coming-soon for everyone. Void uses
- * `isGuildComingSoonForUser` + `canAccessVoidTile1Proto` during the Tile 1 prototype
- * (see docs/void-tile1-prototype.md). Reuses `SkillTilesList` with `useSkillTree` data.
+ * Deep link from student home guild marks. Silicon stays coming-soon; Void shows live DB quests.
+ * Reuses `SkillTilesList` with `useSkillTree` data.
  */
 
 import { useMemo } from 'react'
@@ -16,8 +15,7 @@ import { useSkillTree } from '../hooks/useSkillTree'
 import { guildBannerSrc } from '../lib/guildBannerAssets'
 import { guildHeading, skillTreeGuildModifier } from '../lib/guildTree'
 import { GUILD_WELCOME_BY_SLUG, type GuildWelcomeSlug } from '../lib/guildWelcomeCopy'
-import { canAccessVoidTile1Proto, isGuildComingSoonForUser } from '../lib/voidProtoAccess'
-import { filterVoidTilesForProto } from '../lib/voidTile1Proto'
+import { isGuildComingSoonForUser } from '../lib/voidProtoAccess'
 
 type GuildSlug = GuildMarkSlug
 
@@ -30,7 +28,7 @@ function parseGuildSlug(raw: string | undefined): GuildSlug | null {
 export function GuildSkillTreePage() {
   const { guildSlug } = useParams<{ guildSlug: string }>()
   const slug = parseGuildSlug(guildSlug)
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
   const {
     guildKeys,
     tilesByGuild,
@@ -47,9 +45,7 @@ export function GuildSkillTreePage() {
     return guildKeys.find((k) => skillTreeGuildModifier(k) === slug) ?? null
   }, [guildKeys, slug])
 
-  const rawTiles = guildKey ? (tilesByGuild.get(guildKey) ?? []) : []
-  const voidProto = slug === 'void' && canAccessVoidTile1Proto(user)
-  const tiles = voidProto ? filterVoidTilesForProto(rawTiles) : rawTiles
+  const tiles = guildKey ? (tilesByGuild.get(guildKey) ?? []) : []
   const mod = slug ?? 'default'
 
   if (!slug) {
@@ -59,7 +55,7 @@ export function GuildSkillTreePage() {
   const bannerSrc = guildBannerSrc(slug)
   const guildTitle = guildKey ? `${guildHeading(guildKey)} guild` : `${guildHeading(slug)} guild`
   const markLabel = guildKey ? guildHeading(guildKey) : guildHeading(slug)
-  const showComingSoon = Boolean(guildKey) && isGuildComingSoonForUser(guildKey ?? '', user)
+  const showComingSoon = Boolean(guildKey) && isGuildComingSoonForUser(guildKey ?? '', null)
   const welcomeSlug = slug as GuildWelcomeSlug
   const welcomeCopy =
     welcomeSlug === 'forge' || welcomeSlug === 'prism' || welcomeSlug === 'folded' || welcomeSlug === 'void'
@@ -130,23 +126,11 @@ export function GuildSkillTreePage() {
             </div>
           ) : null}
 
-          {voidProto && tiles.length === 0 ? (
+          {slug === 'void' && !showComingSoon && tiles.length === 0 ? (
             <p className="error" role="alert">
-              Void Tile 1 is not in the database yet. Apply migration{' '}
-              <code className="inline-code">039_void_tile1_coaster_proto.sql</code> in Supabase, then refresh.
-            </p>
-          ) : null}
-          {voidProto && tiles.length > 0 ? (
-            <p className="muted void-tile1-proto-banner" role="note">
-              Prototype — Void Navigators quests. Visible to you while we test the Void UX.
-            </p>
-          ) : null}
-          {slug === 'void' && showComingSoon ? (
-            <p className="muted void-tile1-proto-debug" role="status">
-              Proto unlock: signed in as <strong>{user?.email ?? 'unknown'}</strong>.
-              {import.meta.env.VITE_VOID_TILE1_PROTO_EMAIL
-                ? ' Env var is in this build but your login email does not match — fix Vercel Preview value or sign in with that account.'
-                : ' VITE_VOID_TILE1_PROTO_EMAIL missing from this build — add it under Vercel → Environment Variables → Preview, then redeploy this branch.'}
+              No Void quests in the database yet. Apply migrations{' '}
+              <code className="inline-code">039_void_tile1_coaster_proto.sql</code> and{' '}
+              <code className="inline-code">040_void_tile2_holder_quest.sql</code> in Supabase, then refresh.
             </p>
           ) : null}
           {showComingSoon ? (

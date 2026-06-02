@@ -25,11 +25,10 @@ export function canAccessVoidTile1Proto(user: ProtoUser): boolean {
 }
 
 /**
- * Replaces `isComingSoonGuildSection` for user-aware pages. Silicon is always locked;
- * Void unlocks only when `canAccessVoidTile1Proto` passes (see above).
+ * Replaces `isComingSoonGuildSection` for user-aware pages.
+ * Silicon Covenant stays locked; Void Navigators shows quests from the database for everyone.
  */
-export function isGuildComingSoonForUser(guildKey: string, user: ProtoUser): boolean {
-  const k = guildKey.trim().toLowerCase()
-  if (k === 'void navigators' && canAccessVoidTile1Proto(user)) return false
-  return k === 'silicon covenant' || k === 'void navigators'
+export function isGuildComingSoonForUser(_guildKey: string, _user: ProtoUser): boolean {
+  const k = _guildKey.trim().toLowerCase()
+  return k === 'silicon covenant'
 }
