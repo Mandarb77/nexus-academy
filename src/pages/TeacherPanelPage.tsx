@@ -917,14 +917,6 @@ export function TeacherPanelPage() {
         <div className="teacher-panel-top-row">
           <div>
             <h1 className="teacher-panel-title bench-page-title">Teacher panel</h1>
-            <p className="muted teacher-panel-subtitle">
-              Review pending skill completions and inventory redemptions.               For patent quests, approving
-              the plan or checklist does not award WP or gold — rewards are added only when you approve
-              the student in <strong>Skill completions</strong> (final packet check). Award amounts always
-              match each quest’s tile (WP and gold shown on the skill tree). For other quests, approving
-              the skill pays those amounts once. Return sends work back for resubmit. Approve a
-              redemption when the student has used their shop item; return if they need to try again.
-            </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>
             Sign out
