@@ -125,13 +125,27 @@ function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
   const hasContent = e.who || e.why || e.what_changed || e.how_learned.length > 0
   if (!hasContent) return null
   return (
-    <div style={{ margin: '0.65rem 0', padding: '0.65rem 0.85rem', background: 'rgba(99,102,241,0.06)', borderLeft: '3px solid rgba(99,102,241,0.4)', borderRadius: '4px', fontSize: '0.88rem' }}>
-      <p style={{ margin: '0 0 0.2rem', fontWeight: 700, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7 }}>Empathy</p>
-      {e.who ? <p style={{ margin: '0.15rem 0' }}><strong>Who:</strong> {e.who}</p> : null}
-      {e.why ? <p style={{ margin: '0.15rem 0' }}><strong>Why it matters:</strong> {e.why}</p> : null}
-      {e.what_changed ? <p style={{ margin: '0.15rem 0' }}><strong>Changed their design because:</strong> {e.what_changed}</p> : null}
+    <div className="bench-inset-card bench-empathy-readout" role="note">
+      <strong className="bench-inset-card__title">Empathy</strong>
+      {e.who ? (
+        <p className="bench-inset-card__body">
+          <strong>Who:</strong> {e.who}
+        </p>
+      ) : null}
+      {e.why ? (
+        <p className="bench-inset-card__body">
+          <strong>Why it matters:</strong> {e.why}
+        </p>
+      ) : null}
+      {e.what_changed ? (
+        <p className="bench-inset-card__body">
+          <strong>Changed their design because:</strong> {e.what_changed}
+        </p>
+      ) : null}
       {e.how_learned.length > 0 ? (
-        <p style={{ margin: '0.15rem 0' }}><strong>How they learned:</strong> {e.how_learned.join(' · ')}</p>
+        <p className="bench-inset-card__body">
+          <strong>How they learned:</strong> {e.how_learned.join(' · ')}
+        </p>
       ) : null}
     </div>
   )
@@ -896,13 +910,13 @@ export function TeacherPanelPage() {
   // Render — chrome, banners, four approval panels, student inspector
   // ---------------------------------------------------------------------------
   return (
-    <div className="app-shell teacher-panel-page">
+    <div className="app-shell bench-chrome teacher-panel-page">
       {/* ---------- Header + teacher nav ---------- */}
       <header className="teacher-panel-header">
         <MainNav variant="teacher" />
         <div className="teacher-panel-top-row">
           <div>
-            <h1 className="teacher-panel-title">Teacher panel</h1>
+            <h1 className="teacher-panel-title bench-page-title">Teacher panel</h1>
             <p className="muted teacher-panel-subtitle">
               Review pending skill completions and inventory redemptions.               For patent quests, approving
               the plan or checklist does not award WP or gold — rewards are added only when you approve
@@ -954,8 +968,8 @@ export function TeacherPanelPage() {
       ) : loadError ? null : (
         <>
           {/* ========== Patent gates (no WP/gold until final skill approval) ========== */}
-          <div className="teacher-panel-approvals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-plans-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
+          <div className="teacher-panel-approvals-grid">
+          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-plans-heading">
             <h2 id="teacher-panel-plans-heading" className="teacher-panel-section-title">
               Plan approvals
             </h2>
@@ -1014,7 +1028,7 @@ export function TeacherPanelPage() {
             )}
           </section>
 
-          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-checklists-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
+          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-checklists-heading">
             <h2 id="teacher-panel-checklists-heading" className="teacher-panel-section-title">
               Checklist approvals
             </h2>
@@ -1095,8 +1109,8 @@ export function TeacherPanelPage() {
           </div>{/* end patent gates grid */}
 
           {/* ========== Final payouts + shop queue (WP/gold triggers on skill approve) ========== */}
-          <div className="teacher-panel-approvals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-skills-heading" style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}>
+          <div className="teacher-panel-approvals-grid">
+          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-skills-heading">
             <h2 id="teacher-panel-skills-heading" className="teacher-panel-section-title">
               Skill completions
             </h2>
@@ -1181,7 +1195,6 @@ export function TeacherPanelPage() {
           <section
             className="teacher-panel-approval-box"
             aria-labelledby="teacher-panel-redemptions-heading"
-            style={{ border: '1px solid rgba(128,128,128,0.3)', borderRadius: '12px', padding: '1rem' }}
           >
             <h2 id="teacher-panel-redemptions-heading" className="teacher-panel-section-title">
               Pending redemptions

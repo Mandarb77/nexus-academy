@@ -485,12 +485,12 @@ export function TeacherResetPage() {
   }
 
   return (
-    <div className="app-shell teacher-panel-page">
+    <div className="app-shell bench-chrome teacher-panel-page">
       <header className="teacher-panel-header">
         <MainNav variant="teacher" />
         <div className="teacher-panel-top-row">
           <div>
-            <h1 className="teacher-panel-title">Teacher reset</h1>
+            <h1 className="teacher-panel-title bench-page-title">Teacher reset</h1>
             <p className="muted teacher-panel-subtitle">
               Destructive tools for clearing student progress and shop data.
             </p>

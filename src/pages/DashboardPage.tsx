@@ -116,11 +116,11 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell bench-chrome teacher-panel-page">
       <MainNav variant="teacher" />
-      <header className="dash-header teacher-dash-header">
+      <header className="dash-header teacher-dash-header bench-page-title-row">
         <div>
-          <h1>Nexus Academy at Kents Hill</h1>
+          <h1 className="bench-page-title">Nexus Academy at Kents Hill</h1>
           <p className="muted">
             Signed in as <strong>{displayName}</strong>
             <span className="role-pill role-teacher">Teacher</span>
@@ -208,14 +208,14 @@ export function DashboardPage() {
         ) : null}
 
         {inviteLink ? (
-          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', padding: '1rem', background: 'rgba(99,102,241,0.07)', border: '1.5px solid rgba(99,102,241,0.3)', borderRadius: '10px' }}>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.92rem' }}>
-              ✅ Ready — copy and send this link:
+          <div className="bench-invite-panel">
+            <p className="bench-invite-panel__lead">
+              Ready — copy and send this link:
             </p>
 
             {/* Visible selectable text */}
             <p
-              style={{ margin: 0, wordBreak: 'break-all', fontSize: '0.87rem', fontFamily: 'monospace', background: 'var(--card-bg,#fff)', border: '1px solid rgba(0,0,0,0.12)', padding: '0.55rem 0.75rem', borderRadius: '6px', userSelect: 'all', cursor: 'text' }}
+              className="bench-invite-panel__url"
               onClick={() => {
                 const sel = window.getSelection()
                 if (sel && inviteLinkRef.current) {

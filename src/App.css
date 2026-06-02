@@ -3241,9 +3241,29 @@ a.btn-primary {
 
 /* ── Bench shell: warm ground, workshop type, flat panels ── */
 .bench-chrome {
+  /*
+   * Lock legacy :root tokens so OS dark mode cannot re-tint teacher/student chrome
+   * purple-black (var(--card-bg), .btn-primary gradients, etc.).
+   */
+  --bg: var(--color-ground);
+  --card-bg: var(--color-panel);
+  --text: var(--color-ink-secondary);
+  --text-h: var(--color-ink-primary);
+  --border: var(--color-rule-light);
+  --code-bg: var(--color-ground);
+  --accent: var(--color-forge);
+  --accent-strong: var(--color-forge);
+  --accent-bg: rgba(196, 123, 43, 0.14);
+  --accent-border: rgba(196, 123, 43, 0.45);
+  --shadow: none;
   background: var(--color-ground);
   color: var(--color-ink-primary);
   font-family: var(--font-ui);
+}
+
+body:has(.bench-chrome) {
+  background: var(--color-ground);
+  color: var(--color-ink-primary);
 }
 
 .bench-chrome h1,
@@ -4194,6 +4214,22 @@ a.btn-primary {
 /* Keep warm bench on redesigned pages even when OS prefers dark */
 @media (prefers-color-scheme: dark) {
   .bench-chrome {
+    --bg: var(--color-ground);
+    --card-bg: var(--color-panel);
+    --text: var(--color-ink-secondary);
+    --text-h: var(--color-ink-primary);
+    --border: var(--color-rule-light);
+    --code-bg: var(--color-ground);
+    --accent: var(--color-forge);
+    --accent-strong: var(--color-forge);
+    --accent-bg: rgba(196, 123, 43, 0.14);
+    --accent-border: rgba(196, 123, 43, 0.45);
+    --shadow: none;
+    background: var(--color-ground);
+    color: var(--color-ink-primary);
+  }
+
+  body:has(.bench-chrome) {
     background: var(--color-ground);
     color: var(--color-ink-primary);
   }
@@ -4246,6 +4282,307 @@ a.btn-primary {
     background-image: none;
     color: var(--color-ink-primary);
     -webkit-text-fill-color: currentColor;
+  }
+}
+
+/* ── Teacher tools + student preview (bench chrome) ── */
+
+.bench-preview-banner {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--color-panel);
+  border: 1px solid var(--color-forge);
+  border-radius: 2px;
+  color: var(--color-ink-primary);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+
+.bench-preview-banner__text {
+  line-height: 1.35;
+}
+
+.bench-preview-banner__exit {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--color-ink-primary);
+  border-radius: 2px;
+  background: var(--color-ground);
+  color: var(--color-ink-primary);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bench-preview-banner__exit:hover {
+  border-color: var(--color-forge);
+  color: var(--color-ink-primary);
+}
+
+.where-you-are-page .bench-preview-banner {
+  background: #2a2722;
+  border-color: var(--color-forge);
+  color: #f5f2eb;
+}
+
+.where-you-are-page .bench-preview-banner__exit {
+  background: #1e1c18;
+  border-color: #8c8680;
+  color: #f5f2eb;
+}
+
+.where-you-are-page .bench-preview-banner__exit:hover {
+  border-color: var(--color-forge);
+}
+
+.bench-chrome .student-nav-link--preview {
+  color: var(--color-forge);
+  font-weight: 600;
+}
+
+.bench-chrome .student-nav-link--preview:hover {
+  color: var(--color-ink-primary);
+  border-bottom-color: var(--color-forge);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-title,
+.bench-chrome.teacher-panel-page .dash-header h1.bench-page-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-primary);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-subtitle {
+  font-family: var(--font-ui);
+  color: var(--color-ink-tertiary);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-section-title,
+.bench-chrome.teacher-panel-page .teacher-panel-subheading {
+  font-family: var(--font-ui);
+  color: var(--color-ink-primary);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-student,
+.bench-chrome.teacher-panel-page .teacher-panel-student-row-name,
+.bench-chrome.teacher-panel-page .teacher-panel-patent-title {
+  color: var(--color-ink-primary);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-skill,
+.bench-chrome.teacher-panel-page .teacher-panel-kv dd {
+  color: var(--color-ink-secondary);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-kv dt {
+  font-family: var(--font-mono);
+  color: var(--color-ink-tertiary);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-approval-box {
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-approval-box .teacher-panel-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-secondary);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-item,
+.bench-chrome.teacher-panel-page .teacher-panel-mini-row {
+  background: var(--color-ground);
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-student-row {
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-student-row:hover {
+  border-color: var(--color-rule-strong);
+  background: var(--color-ground);
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-student-row:focus-visible {
+  outline: 2px solid var(--color-ink-primary);
+  outline-offset: 2px;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-select,
+.bench-chrome.teacher-panel-page .teacher-panel-penalty-input input {
+  font-family: var(--font-ui);
+  border-radius: 2px;
+  border-color: var(--color-rule-strong);
+  background: var(--color-panel);
+  color: var(--color-ink-primary);
+}
+
+.bench-chrome.teacher-panel-page .role-teacher {
+  background: var(--color-ground);
+  color: var(--color-ink-secondary);
+  border: 1px solid var(--color-rule-strong);
+}
+
+.bench-chrome.teacher-panel-page .stat {
+  background: var(--color-ground);
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.bench-chrome.teacher-panel-page .stat dt {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-tertiary);
+}
+
+.bench-chrome.teacher-panel-page .stat dd {
+  font-family: var(--font-display);
+  color: var(--color-ink-primary);
+}
+
+.bench-chrome.teacher-panel-page .stat--gold dd,
+.bench-chrome.teacher-panel-page .stat--gold dt {
+  color: var(--color-forge);
+}
+
+.bench-chrome.teacher-panel-page .dashboard-teacher-list__item {
+  background: var(--color-ground);
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+}
+
+.bench-chrome.teacher-panel-page .bench-empathy-readout {
+  margin: 0.65rem 0;
+  border-left: 2px solid var(--color-forge);
+}
+
+.bench-chrome .bench-invite-panel {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem;
+  background: var(--color-ground);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: 2px;
+}
+
+.bench-chrome .bench-invite-panel__lead {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--color-ink-primary);
+}
+
+.bench-chrome .bench-invite-panel__url {
+  margin: 0;
+  word-break: break-all;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule-light);
+  padding: 0.55rem 0.75rem;
+  border-radius: 2px;
+  user-select: all;
+  cursor: text;
+  color: var(--color-ink-secondary);
+}
+
+.bench-chrome.teacher-panel-page .patent-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.bench-chrome.teacher-panel-page .patent-field input,
+.bench-chrome.teacher-panel-page .patent-field textarea,
+.bench-chrome.teacher-panel-page .patent-field select {
+  font-family: var(--font-ui);
+  border-radius: 2px;
+  border-color: var(--color-rule-strong);
+  background: var(--color-panel);
+  color: var(--color-ink-primary);
+  box-shadow: none;
+}
+
+.bench-chrome.teacher-panel-page .btn-danger {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  background: #9a3412;
+  border: 1px solid #9a3412;
+  box-shadow: none;
+  filter: none;
+}
+
+.bench-chrome.teacher-panel-page .btn-danger:hover {
+  background: #7c2d12;
+  border-color: #7c2d12;
+  filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bench-chrome.teacher-panel-page .btn-primary,
+  .bench-chrome.teacher-panel-page a.btn-primary,
+  .bench-chrome.teacher-panel-page .btn-secondary,
+  .bench-chrome.teacher-panel-page .btn-danger {
+    filter: none;
+    box-shadow: none;
+  }
+
+  .bench-chrome.teacher-panel-page .btn-primary,
+  .bench-chrome.teacher-panel-page a.btn-primary {
+    background: var(--color-ink-primary);
+    border-color: var(--color-ink-primary);
+    color: var(--color-panel);
+  }
+
+  .bench-chrome.teacher-panel-page .teacher-panel-approval-box,
+  .bench-chrome.teacher-panel-page .teacher-panel-item,
+  .bench-chrome.teacher-panel-page .teacher-panel-mini-row,
+  .bench-chrome.teacher-panel-page .teacher-panel-student-row,
+  .bench-chrome.teacher-panel-page .card {
+    background: var(--color-panel);
+    border-color: var(--color-rule-light);
+    box-shadow: none;
+  }
+
+  .bench-chrome.teacher-panel-page .teacher-panel-student-row:hover {
+    background: var(--color-ground);
+    border-color: var(--color-rule-strong);
   }
 }
 

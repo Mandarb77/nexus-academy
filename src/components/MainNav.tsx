@@ -25,7 +25,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
 
   if (variant === 'teacher') {
     return (
-      <>
+      <div className="student-chrome teacher-chrome">
         <nav className="student-nav" aria-label="Teacher navigation">
           <NavLink
             to="/dashboard"
@@ -63,18 +63,17 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
 
           <button
             type="button"
-            className="student-nav-link"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ca8a04', fontWeight: 700 }}
+            className="student-nav-link student-nav-link--preview"
             onClick={() => {
               /* Preview uses same Google session; flip flag then land on `/` so student route guards apply. */
               toggleStudentPreview()
               navigate('/', { replace: true })
             }}
           >
-            👁 Preview as student
+            Preview as student
           </button>
         </nav>
-      </>
+      </div>
     )
   }
 

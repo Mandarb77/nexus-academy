@@ -198,12 +198,12 @@ export function TeacherQuestsPage() {
   }
 
   return (
-    <div className="app-shell teacher-panel-page">
+    <div className="app-shell bench-chrome teacher-panel-page">
       <header className="teacher-panel-header">
         <MainNav variant="teacher" />
         <div className="teacher-panel-top-row">
           <div>
-            <h1 className="teacher-panel-title">Quest builder</h1>
+            <h1 className="teacher-panel-title bench-page-title">Quest builder</h1>
             <p className="muted teacher-panel-subtitle">
               Create new quest tiles that appear in the skill tree. Each quest uses the full patent packet flow — opening questions, checklist, and closing questions — with teacher approval gates.
             </p>
