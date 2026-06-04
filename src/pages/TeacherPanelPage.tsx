@@ -1,10 +1,17 @@
 /*
  * Teacher approvals console (`/teacher`)
  *
- * Primary grading surface: pending skill completions, patent plan/checklist/packet stages,
- * empathy parsing for quick review, and bulk actions. Look for “duplicate plan rows” comments
- * in approve/return handlers — those loops intentionally touch every pending plan row for a
- * student+tile so stray duplicate inserts cannot leave one row forever stuck in limbo.
+ * Four pending queues: plans, checklists, skill completions (final packet → WP/gold),
+ * redemption requests. Realtime refreshes lists; new items also surface globally via
+ * TeacherSubmissionAlertSync (banner + chime in App.tsx).
+ *
+ * UI: bench-chrome (warm workshop — not legacy purple). Long instructional subtitle
+ * under the page title was removed intentionally.
+ *
+ * “Duplicate plan rows” in approve/return handlers: loops touch every pending plan row
+ * for a student+tile so stray duplicate inserts cannot stay stuck in limbo.
+ *
+ * Overview: docs/developer-handoff-recent-work.md
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'

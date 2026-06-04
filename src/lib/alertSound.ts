@@ -1,6 +1,9 @@
 /*
  * Short UI chimes via Web Audio — no asset files.
- * Browsers may block audio until the user has interacted with the page; we resume the context on play.
+ *
+ * Used by: approvalCelebration.ts (student quest approved), teacherSubmissionAlert.ts
+ * (new pending item for teacher). Browsers may block audio until the user has clicked
+ * the page once; we resume AudioContext on play.
  */
 
 let sharedCtx: AudioContext | null = null

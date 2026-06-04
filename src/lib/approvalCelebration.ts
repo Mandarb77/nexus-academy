@@ -9,6 +9,9 @@
  *
  * `setApprovalCelebrationNotifier` exists specifically so the websocket handler can poke
  * the mounted host’s `setToast` without requiring a full page reload.
+ *
+ * Plays `playApprovalChime()` from alertSound.ts when queued. Teacher-side counterpart:
+ * teacherSubmissionAlert.ts. See docs/developer-handoff-recent-work.md
  */
 
 import { playApprovalChime } from './alertSound'

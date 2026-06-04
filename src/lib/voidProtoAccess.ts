@@ -1,13 +1,13 @@
 /*
- * Void Navigators Tile 1 prototype — who can see past the coming-soon gate
+ * Guild “coming soon” gates + Void patent prototype tester
  *
- * Only the email in `VITE_VOID_TILE1_PROTO_EMAIL` gets Void unlocked (Tile 1 only in UI).
- * Everyone else still sees the locked guild.
+ * Skill tree: only Silicon Covenant is locked (`isGuildComingSoonForUser`). Void Navigators
+ * shows all DB tiles for every student (see docs/developer-handoff-recent-work.md).
  *
- * Deployment notes (Preview vs Production, OAuth, env scope): docs/void-tile1-prototype.md
+ * `canAccessVoidTile1Proto` — still used for PatentLedger test bypass only (env
+ * `VITE_VOID_TILE1_PROTO_EMAIL`). Does not control skill-tree visibility anymore.
  *
- * Local: set in `.env` and restart Vite. Vercel: set for Preview only; redeploy after changes.
- * Value must match Supabase Auth `user.email` exactly (case-insensitive).
+ * History of Preview-only Void unlock: docs/void-tile1-prototype.md
  */
 
 type ProtoUser = { email?: string | null } | null | undefined

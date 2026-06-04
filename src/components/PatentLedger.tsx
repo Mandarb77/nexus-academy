@@ -15,6 +15,9 @@
  * previous `GenericPatentContent` so backend behavior and the `patents` schema are unchanged.
  * `field_5` and `maker_signature_url` (migration 043) are best-effort: the form tolerates their
  * absence so it keeps working before that migration is applied.
+ *
+ * Visual system: patentLedger.css only — not bench-chrome. Recent work map:
+ * docs/developer-handoff-recent-work.md
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

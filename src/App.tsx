@@ -4,9 +4,11 @@
  * Defines every URL the gamified maker-class app serves: student areas (skill trees,
  * gold shop, inventory, journey/codex, patent flows) vs teacher areas (dashboard,
  * approvals, quest tooling, reset). Wraps the tree in `AuthProvider` so any page can
- * read session/profile; mounts `ApprovalCelebrationHost` and `ApprovalCelebrationSync`
- * once at the top so congratulations / WP updates can fire from Realtime without
- * each page wiring its own channel. The dev-only ribbon (`import.meta.env.DEV`) is
+ * read session/profile; mounts global Realtime UX once at the top (no per-page wiring):
+ *   - Students: `ApprovalCelebrationHost` + `ApprovalCelebrationSync` (approved quest toast + chime)
+ *   - Teachers: `TeacherSubmissionAlertHost` + `TeacherSubmissionAlertSync` (pending review banner + chime)
+ * See docs/developer-handoff-recent-work.md for bench chrome vs patent ledger split.
+ * The dev-only ribbon (`import.meta.env.DEV`) is
  * intentionally absent in production builds so students never see local-debug hints
  * or the `/nexus-dev-verify.txt` sanity-check link.
  */

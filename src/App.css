@@ -3196,9 +3196,16 @@ a.btn-primary {
 }
 
 /* ============================================================
- * Machinist's Bench redesign — student app chrome (not Patent ledger)
- * Scoped under `.bench-chrome` + shared `.student-nav`. Patent pages untouched.
- * Appended last so these rules win over legacy purple/dark-mode styles above.
+ * Machinist's Bench redesign — student + teacher app chrome (NOT patent ledger)
+ *
+ * Why: warm workshop shell vs legacy purple student/teacher UI. Tokens in index.css;
+ * patent routes use patent-paper-page / patentLedger.css instead.
+ *
+ * Scoped under `.bench-chrome` + shared `.student-nav`. `.bench-chrome` redefines
+ * --bg/--card-bg/--accent so OS dark mode cannot re-tint teacher pages purple.
+ * Appended last so these rules win over legacy styles above.
+ *
+ * Overview: docs/developer-handoff-recent-work.md
  * ============================================================ */
 
 /* ── Shared nav: warm panel bar, tracked uppercase labels, underline active ── */

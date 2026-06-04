@@ -1,9 +1,8 @@
 /*
- * In-page section pills for the Power Ups lore page
+ * LEGACY — hash section pills for the old Power Ups / Dispatch lore page.
  *
- * Intentionally returns null unless `pathname === '/powerups'` — App.tsx comment calls
- * this out: hash pills should not appear on Home or Skills where they would confuse IA.
- * Uses hash routes so each section is deep-linkable for classroom projection.
+ * PowerUpsPage was rebuilt as “Where You Are” flip cards and no longer imports this nav.
+ * Safe to delete in a cleanup PR. Kept temporarily in case deep links are revived.
  */
 
 import { NavLink, useLocation } from 'react-router-dom'

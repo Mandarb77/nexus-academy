@@ -1,8 +1,9 @@
 /*
  * Primary navigation chrome — student hub vs teacher tools
  *
- * Two variants: default student links (Home, Journey, Skills, Shop, …) used across the
- * gamified experience, and a compact teacher strip for dashboard/reset/quest admin.
+ * Two variants: student links (Workshop, Record, Guilds, Supply, Kit, Archive, Dispatch)
+ * and a compact teacher strip (Dashboard, Teacher, Reset, Quests, Preview as student).
+ * Label map + design rationale: docs/developer-handoff-recent-work.md
  * Mounts `StudentPreviewBanner` above student nav so preview mode is always visible.
  * The yellow “Dev check” strip uses `import.meta.env.DEV` so production students never
  * see port 5173/5174 debugging copy — only developers running Vite locally.

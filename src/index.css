@@ -39,9 +39,8 @@
    * Machinist's Bench redesign tokens (warm shop chrome).
    * Additive only — the legacy --bg/--text/--accent palette above is untouched so pages
    * outside the redesign scope keep their current look. Consumed by `.bench-chrome`
-   * student pages and shared nav (not Patent ledger). Intentionally NOT overridden in
-   * the dark-mode block below: the bench
-   * stays warm regardless of OS theme.
+   * (student + teacher shells; not patent ledger). Bench stays warm regardless of OS
+   * dark mode — see App.css `.bench-chrome` token lock. Map: docs/developer-handoff-recent-work.md
    */
   --color-ground: #C8BFB0;
   --color-panel: #F0EBE1;

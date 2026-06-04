@@ -1,73 +1,40 @@
-# React + TypeScript + Vite
+# Nexus Academy at Kents Hill
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Student maker-class web app: guild skill trees, patent (quest) packets, gold shop, teacher approvals. React + TypeScript + Vite, Supabase auth/data, deployed on Vercel.
 
-Currently, two official plugins are available:
+## Developer orientation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Start here for recent work (bench chrome, PatentLedger, Dispatch, teacher alerts, Void guild):**
 
-## React Compiler
+→ **[docs/developer-handoff-recent-work.md](docs/developer-handoff-recent-work.md)**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Other docs:
 
-## Expanding the ESLint configuration
+- [docs/patent-form-strings.md](docs/patent-form-strings.md) — patent field copy
+- [docs/void-tile1-prototype.md](docs/void-tile1-prototype.md) — Void Tile 1 prototype history (partially superseded on `main`)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Local setup
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+cp .env.example .env   # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+npm run dev            # open the Local: URL from the terminal (often :5173 or :5174)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Optional: `VITE_VOID_TILE1_PROTO_EMAIL` — patent approval bypass for one tester only (`PatentLedger`); does not gate the skill tree on `main`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Supabase
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+SQL migrations live in `supabase/migrations/`. Applying them to the hosted project is manual (SQL Editor or `supabase db push`). Deploying the frontend does **not** run migrations.
+
+Patent ledger columns (if missing): `043_patent_record_row_and_signature.sql`, `044_patents_delivery_url.sql`.  
+Void quests (if empty guild): `039_void_tile1_coaster_proto.sql`, `040_void_tile2_holder_quest.sql`.
+
+## Production
+
+- **Site:** `https://mandarb77-nexus-academy.vercel.app` (GitHub `main` → Vercel)
+- After deploy, hard-refresh if UI looks stale (cached JS bundles)
+
+## Stack notes
+
+Built with Vite + React. ESLint/TypeScript config follows the default Vite template; see Vite docs for expanding lint rules.

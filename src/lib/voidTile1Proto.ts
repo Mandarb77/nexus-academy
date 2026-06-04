@@ -6,7 +6,8 @@
  * by name, not tile id, so the migration can use any UUID in Supabase.
  *
  * Student flow: skill tree → `/patent-custom/:tileId` → PatentLedger (plan,
- * checklist, final packet). Full handoff + deployment pitfalls: docs/void-tile1-prototype.md
+ * checklist, final packet). Void guild is open to all students on `main`; proto email
+ * only affects PatentLedger bypass (voidProtoAccess.ts). See docs/developer-handoff-recent-work.md
  */
 
 import type { StepConfig, TileRow } from '../types/tile'
@@ -70,9 +71,7 @@ export function isVoidTile1Tile(tile: Pick<TileRow, 'guild' | 'skill_name'>): bo
   return g === 'void navigators' && s === VOID_TILE1_SKILL_NAME
 }
 
-/**
- * Returns all Void Navigators tiles — any row seeded for the guild is shown.
- */
+/** All Void Navigators rows. Skill tree uses full `tilesByGuild` on `main`; kept for optional filtering. */
 export function filterVoidTilesForProto(tiles: TileRow[]): TileRow[] {
   return tiles.filter((t) => (t.guild ?? '').trim().toLowerCase() === 'void navigators')
 }

@@ -1,8 +1,16 @@
 # Patent form — raw field labels and helper text
 
-Inventory of user-facing strings from the patent form components. Use this when rebuilding the patent UI for clarity and consistency.
+Inventory of user-facing strings from the patent form. Use when editing copy or rebuilding fields.
 
-**Source components**
+> **Implementation (2026):** All patent routes now render **`PatentLedger.tsx`** (`patentLedger.css`). The table below lists the **legacy** components this doc was written from; strings were consolidated into `src/lib/patentLedgerContent.ts` where applicable. App chrome map: **`docs/developer-handoff-recent-work.md`**.
+
+**Current entry point**
+
+| Component | Routes |
+|---|---|
+| `PatentLedger.tsx` | `/patent-custom/:tileId`, `/patent-game-piece/:tileId`, `/patent-sticker/:tileId` |
+
+**Legacy (removed from repo — reference only)**
 
 | Component | Route | Quest types |
 |---|---|---|
@@ -10,7 +18,7 @@ Inventory of user-facing strings from the patent form components. Use this when 
 | `PersonalGamePiecePatentContent.tsx` | `/patent-game-piece/:tileId` | Forge game piece, Prism pop-up card |
 | `StickerPatentContent.tsx` | `/patent-sticker/:tileId` | Folded Path sticker |
 
-**Shared sub-components:** `EmpathyForm.tsx`, `PatentFlowBanner.tsx`, `FinalApprovalBanner.tsx`, `ApprovedQuestView.tsx`
+**Other:** `FinalApprovalBanner.tsx` (student approval toast), `ApprovedQuestView.tsx` if still used
 
 ---
 

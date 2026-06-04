@@ -1,8 +1,10 @@
 # Void Navigators — Tile 1 prototype handoff
 
-Branch: **`void-tile1-proto`**
+> **Status on `main` (June 2026):** The **skill-tree email gate is removed** — all students see Void Navigators quests from the database. `VITE_VOID_TILE1_PROTO_EMAIL` still only affects **PatentLedger approval bypass** for testing. See **`docs/developer-handoff-recent-work.md`** for the full recent-work map.
 
-Purpose: hardcoded end-to-end UX test for **Tier 1 required quest 1** (profile-cut coaster for a named person/pet) before building the full guild curriculum / modification path. Only one tile, only one tester email, Preview-only on Vercel.
+Branch: **`void-tile1-proto`** (historical prototype branch)
+
+Purpose: hardcoded end-to-end UX test for **Tier 1 required quest 1** (profile-cut coaster for a named person/pet) before building the full guild curriculum / modification path. Originally: one tester email, Preview-only on Vercel.
 
 ---
 
@@ -23,15 +25,19 @@ Purpose: hardcoded end-to-end UX test for **Tier 1 required quest 1** (profile-c
 
 ---
 
-## How it works
+## How it works (historical prototype branch)
+
+On **`void-tile1-proto`** branch only (superseded on `main` for skill tree):
 
 1. **`VITE_VOID_TILE1_PROTO_EMAIL`** is baked into the JS bundle at **build time** (Vite `import.meta.env`).
-2. **`canAccessVoidTile1Proto(user)`** compares that value to `user.email` from Supabase Auth (case-insensitive).
-3. If true on `/tree/void`: skip coming-soon box, show only Tile 1 via **`filterVoidTilesForProto`**.
-4. Student opens patent → **`/patent-custom/:tileId`** → same three-gate flow as T-shirt / Quest Builder tiles.
-5. Everyone else (and Production without the env var) still sees Void as **Coming soon**.
+2. **`canAccessVoidTile1Proto(user)`** compared that value to `user.email` from Supabase Auth (case-insensitive).
+3. If true on `/tree/void`: skip coming-soon box, show Void tiles via **`filterVoidTilesForProto`**.
 
-Silicon Covenant is unchanged.
+**On `main` today:**
+
+- **`isGuildComingSoonForUser`** — only **Silicon Covenant** is “Coming soon”; Void shows all `Void Navigators` tiles.
+- **`canAccessVoidTile1Proto`** — still used in **`PatentLedger`** for `bypassApprovals` during patent UX testing (not skill tree).
+- Student patent flow → **`/patent-custom/:tileId`** → **`PatentLedger`** (plan → checklist → packet).
 
 ---
 
@@ -186,10 +192,13 @@ Sign-in uses `window.location.origin + '/auth/callback'` in `AuthContext` — so
 
 ## When moving beyond the prototype
 
-1. Remove or narrow `voidProtoAccess` (or replace with real curriculum gates).
-2. Remove Void from `isComingSoonGuildSection` / `isGuildComingSoonForUser` when launching guild-wide.
-3. Merge branch to `main` only when ready for class; decide whether proto env var should be removed entirely.
-4. Implement tier metadata and sectioned guild UI (modification path — not this prototype).
+**Done on `main`:** Void skill tree open to all students (`2ebb2e4`).
+
+**Still open:**
+
+1. Remove or narrow `canAccessVoidTile1Proto` when patent testing no longer needs bypass.
+2. Implement tier metadata and sectioned guild UI (modification path).
+3. Decide fate of `filterVoidTilesForProto` (unused on skill tree; can delete or repurpose for tier filtering).
 
 ---
 
