@@ -4,12 +4,17 @@ This document explains **what changed on `main` recently and why**, so a new dev
 
 **Production:** GitHub `main` → Vercel (`mandarb77-nexus-academy.vercel.app`). Supabase schema changes are **not** applied by deploy — run SQL migrations manually in the hosted project.
 
+**Large quest/tile pass (WP/gold, DB backfill, Quest Builder):** → **[docs/quest-tiles-teacher-builder-and-backfill.md](./quest-tiles-teacher-builder-and-backfill.md)**
+
+**Shop catalog (editable Supply, `/teacher/shop`):** → **[docs/shop-catalog-and-teacher-editor.md](./shop-catalog-and-teacher-editor.md)**
+
 ---
 
 ## Timeline (reference commits)
 
 | Commit | Summary |
 |--------|---------|
+| (see git log) | **Quest tiles:** `quest_kind` + WP/gold scale (**045**), tile metadata + `field_6` (**046**), canonical step backfill (**047**), teacher Quest Builder on all tiles — [dev notes](./quest-tiles-teacher-builder-and-backfill.md). |
 | `2ebb2e4` | Void Navigators quests visible to **all** students (not email-gated on skill tree). |
 | `5fb5cc4` | Teacher submission alerts (banner + chime); student approval chime added. |
 | `a8b1a3a` | Removed long instructional subtitle on Teacher panel. |
@@ -51,8 +56,11 @@ Older Void prototype work lives on branch `void-tile1-proto` and in `docs/void-t
 
 - `043_patent_record_row_and_signature.sql` — `field_5`, `maker_signature_url` on `patents`
 - `044_patents_delivery_url.sql` — `delivery_url` on `patents`
+- `046_tile_quest_metadata_and_patent_field6.sql` — `field_6` (“Who taught you?”), tile metadata columns — see [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md)
 
 Ledger reads/writes these best-effort; UI works without migration but those fields won't persist.
+
+**Per-tile checklist copy** now lives on `tiles.steps` (backfill **047**). Resolver: `src/lib/patentLedgerContent.ts` (no longer branches on hardcoded step arrays for flagship quests).
 
 ---
 
@@ -141,6 +149,16 @@ Removed the multi-sentence subtitle from `TeacherPanelPage`; approval queues spe
 
 **Mounted in:** `App.tsx` next to `ApprovalCelebrationHost` / `ApprovalCelebrationSync`.
 
+### Quest Builder + WP/gold scale
+
+**Route:** `/teacher/quests` — `TeacherQuestsPage.tsx` (bench chrome).
+
+**Why:** Teachers author every tile in one place; payouts and quest type align with **045**; flagship quests no longer depend on TS-only checklists.
+
+**Details (migrations, `checklist_state` contract, generator script, pitfalls):** [quest-tiles-teacher-builder-and-backfill.md](./quest-tiles-teacher-builder-and-backfill.md)
+
+**Semester gold reset:** `TeacherResetPage.tsx` — halve student gold only (WP unchanged); RPCs in **045**.
+
 ---
 
 ## Void Navigators guild
@@ -197,6 +215,8 @@ Do not mount these per-page; add new global realtime UX here.
 | Teacher UI purple on dark OS | Missing `bench-chrome` on shell or old bundle without token lock in `.bench-chrome`. |
 | Void shows “Coming soon” | Old JS bundle, or no tiles in DB (run 039/040). |
 | Patent save missing fields | Migrations 043/044 not applied on hosted Supabase. |
+| Wrong checklist step checked off | `tiles.steps` order/count changed without matching `patents.checklist_state` — see [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md). |
+| Quest Builder empty / save fails | **046** not applied; or column missing in select. |
 | No teacher chime | Tab not focused / no prior click; check Realtime enabled on tables. |
 | `npm run deploy` fails locally | Vercel token; production usually deploys via GitHub → Vercel integration, not local CLI. |
 
@@ -210,13 +230,15 @@ Do not mount these per-page; add new global realtime UX here.
 | Nav label / route | `src/components/MainNav.tsx`, `src/App.tsx` |
 | Bench colors / typography | `src/index.css` tokens, `src/App.css` `.bench-chrome` |
 | Patent form copy/fields | `src/lib/patentLedgerContent.ts`, `PatentLedger.tsx`, `docs/patent-form-strings.md` |
+| Quest type / WP/gold / tile brief / steps | `TeacherQuestsPage.tsx`, `questKindScale.ts`, [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md) |
 | Teacher alert copy/sound | `TeacherSubmissionBanner.tsx`, `alertSound.ts` |
-| New guild quest | Supabase `tiles` + teacher quest builder or migration |
+| New guild quest | `/teacher/quests` or migration; regenerate **047** if copying from `src/lib/*.ts` |
 | Coming soon guild | `isGuildComingSoonForUser` in `voidProtoAccess.ts` |
 
 ---
 
 ## Related docs
 
+- `docs/quest-tiles-teacher-builder-and-backfill.md` — WP/gold scale, 045–047, DB backfill, Quest Builder, checklist contract
 - `docs/patent-form-strings.md` — patent field strings
 - `docs/void-tile1-prototype.md` — Void Tile 1 prototype history (email gate, Preview deploy); **skill-tree gate section is outdated on `main`**

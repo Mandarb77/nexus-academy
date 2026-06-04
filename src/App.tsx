@@ -32,6 +32,7 @@ import { SkillTreePage } from './pages/SkillTreePage'
 import { TeacherPanelPage } from './pages/TeacherPanelPage'
 import { TeacherResetPage } from './pages/TeacherResetPage'
 import { TeacherQuestsPage } from './pages/TeacherQuestsPage'
+import { TeacherShopPage } from './pages/TeacherShopPage'
 import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
@@ -196,6 +197,14 @@ export default function App() {
             element={
               <TeacherDashboardRoute>
                 <TeacherQuestsPage />
+              </TeacherDashboardRoute>
+            }
+          />
+          <Route
+            path="/teacher/shop"
+            element={
+              <TeacherDashboardRoute>
+                <TeacherShopPage />
               </TeacherDashboardRoute>
             }
           />

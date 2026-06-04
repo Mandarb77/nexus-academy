@@ -2,7 +2,7 @@
  * Gold economy storefront (`/shop`)
  *
  * Fetches active `shop_items` with tier embeds, groups by tier, and calls purchase RPCs that
- * enforce gold balance, rank locks, and `max_purchases_per_chicago_school_day` using
+ * enforce gold balance, lock state, semester stock, and `max_purchases_per_chicago_school_day` using
  * `isSameEasternCalendarDay` so “one per day” matches Kents Hill’s instructional timezone, not
  * the laptop’s local midnight.
  */
@@ -13,7 +13,7 @@ import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { isSameEasternCalendarDay } from '../lib/schoolDayEastern'
-import type { ShopCatalogItem, ShopTierEmbed } from '../types/shopCatalog'
+import type { ShopCatalogItem, ShopStockStatus, ShopTierEmbed } from '../types/shopCatalog'
 
 type RpcResult = {
   ok?: boolean
@@ -59,6 +59,7 @@ export function GoldShopPage() {
   const [buyingKey, setBuyingKey] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
+  const [stockByItemId, setStockByItemId] = useState<Map<string, ShopStockStatus>>(new Map())
   const [openTiers, setOpenTiers] = useState<Set<string>>(() => new Set())
 
   const gold = profile?.gold ?? 0
@@ -73,6 +74,24 @@ export function GoldShopPage() {
       else next.add(tierId)
       return next
     })
+  }, [])
+
+  const refreshStockStatus = useCallback(async (rows: ShopCatalogItem[]) => {
+    if (!isSupabaseConfigured) {
+      setStockByItemId(new Map())
+      return
+    }
+    const limited = rows.filter((r) => r.stock_per_semester != null && r.stock_per_semester > 0)
+    const next = new Map<string, ShopStockStatus>()
+    await Promise.all(
+      limited.map(async (r) => {
+        const { data, error } = await supabase.rpc('shop_stock_status', { p_shop_item_id: r.id })
+        if (!error && data && typeof data === 'object') {
+          next.set(r.id, data as ShopStockStatus)
+        }
+      }),
+    )
+    setStockByItemId(next)
   }, [])
 
   const refreshDailyLimits = useCallback(
@@ -128,7 +147,9 @@ export function GoldShopPage() {
     ;(async () => {
       setCatalogLoading(true)
       setCatalogError(null)
-      const { data, error } = await supabase.from('shop_items').select(`
+      const { data, error } = await supabase
+        .from('shop_items')
+        .select(`
           id,
           item_key,
           name,
@@ -136,11 +157,13 @@ export function GoldShopPage() {
           tier_id,
           price_gold,
           is_active,
-          rank_requirement,
           flavor_text,
           is_locked,
           display_order,
           max_purchases_per_chicago_school_day,
+          convenience_band,
+          stock_per_semester,
+          gate_requirement,
           shop_tiers (
             id,
             name,
@@ -148,6 +171,7 @@ export function GoldShopPage() {
             sort_order
           )
         `)
+        .eq('is_active', true)
       if (cancelled) return
       if (error) {
         setCatalogError(error.message)
@@ -159,11 +183,12 @@ export function GoldShopPage() {
       setCatalog(rows)
       setCatalogLoading(false)
       void refreshDailyLimits(rows)
+      void refreshStockStatus(rows)
     })()
     return () => {
       cancelled = true
     }
-  }, [refreshDailyLimits])
+  }, [refreshDailyLimits, refreshStockStatus])
 
   async function buy(item: ShopCatalogItem) {
     if (!isSupabaseConfigured || item.is_locked || item.price_gold == null) return
@@ -190,11 +215,13 @@ export function GoldShopPage() {
             : result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit'
               ? 'You already purchased this today (New York time).'
               : result?.error === 'item_locked'
-                ? 'This reward is locked.'
+                ? item.gate_requirement?.trim()
+                  ? item.gate_requirement.trim()
+                  : 'This reward is locked.'
                 : result?.error === 'not_for_sale'
                   ? 'This item is not for sale.'
-                  : result?.error === 'rank_required'
-                    ? 'Your rank does not meet the requirement for this item.'
+                  : result?.error === 'semester_stock_exhausted'
+                    ? 'No stock left this semester.'
                     : 'Purchase could not be completed.',
       )
       return
@@ -203,6 +230,7 @@ export function GoldShopPage() {
     if ((item.max_purchases_per_chicago_school_day ?? 0) >= 1) {
       setDailyBlockedIds((prev) => new Set(prev).add(item.id))
     }
+    void refreshStockStatus(catalog)
     setMessage(null)
   }
 
@@ -266,6 +294,7 @@ export function GoldShopPage() {
               gold={gold}
               buyingKey={buyingKey}
               dailyBlockedIds={dailyBlockedIds}
+              stockByItemId={stockByItemId}
               isSupabaseConfigured={isSupabaseConfigured}
               catalogLoading={catalogLoading}
               onBuy={buy}

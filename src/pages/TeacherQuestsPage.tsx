@@ -1,9 +1,8 @@
 /*
  * Quest Builder admin (`/teacher/quests`)
  *
- * CRUD UI for `tiles` rows: guild, rewards, ordered steps with optional teacher-checkpoint flags.
- * Feeds the student-facing custom patent flow (`GenericPatentContent`) — changing step text here
- * updates what students see after refresh.
+ * CRUD for all `tiles` rows (intro mark-complete + patent quests). Dev notes:
+ * docs/quest-tiles-teacher-builder-and-backfill.md
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -11,7 +10,13 @@ import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
-import { defaultPayoutForQuestKind, QUEST_KIND_LABELS, type QuestKind } from '../lib/questKindScale'
+import {
+  defaultPayoutForQuestKind,
+  defaultRecipientGuidanceForQuestKind,
+  QUEST_KIND_LABELS,
+  type QuestKind,
+} from '../lib/questKindScale'
+import { resolvedTileSteps } from '../lib/customTile'
 import type { TileRow, StepConfig } from '../types/tile'
 
 type GuildOption = (typeof SKILL_TREE_SECTION_GUILDS)[number]
@@ -30,6 +35,9 @@ const BLANK_BUILDER: {
   questKind: QuestKind
   wpValue: number
   goldValue: number
+  tileDescription: string
+  recipientGuidance: string
+  level4Eligible: boolean
   steps: BuilderStep[]
 } = {
   title: '',
@@ -37,6 +45,9 @@ const BLANK_BUILDER: {
   questKind: 'tier2',
   wpValue: 10,
   goldValue: 22,
+  tileDescription: '',
+  recipientGuidance: defaultRecipientGuidanceForQuestKind('tier2'),
+  level4Eligible: false,
   steps: [],
 }
 
@@ -53,6 +64,9 @@ export function TeacherQuestsPage() {
   const [questKind, setQuestKind] = useState<QuestKind>(BLANK_BUILDER.questKind)
   const [wpValue, setWpValue] = useState(BLANK_BUILDER.wpValue)
   const [goldValue, setGoldValue] = useState(BLANK_BUILDER.goldValue)
+  const [tileDescription, setTileDescription] = useState(BLANK_BUILDER.tileDescription)
+  const [recipientGuidance, setRecipientGuidance] = useState(BLANK_BUILDER.recipientGuidance)
+  const [level4Eligible, setLevel4Eligible] = useState(BLANK_BUILDER.level4Eligible)
   const [steps, setSteps] = useState<BuilderStep[]>(BLANK_BUILDER.steps)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -66,16 +80,16 @@ export function TeacherQuestsPage() {
     setLoadingQuests(true)
     const { data, error } = await supabase
       .from('tiles')
-      .select('id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, is_core, steps')
-      .not('steps', 'is', null)
+      .select(
+        'id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, is_core, level4_eligible, tile_description, recipient_guidance, steps',
+      )
       .order('guild', { ascending: true })
       .order('skill_name', { ascending: true })
     setLoadingQuests(false)
     if (error) { setLoadError(error.message); return }
     setQuests(
-      (data ?? [])
-        .filter((r) => Array.isArray(r.steps) && (r.steps as StepConfig[]).length > 0)
-        .map((r) => ({
+      (data ?? []).map((r) => {
+        const row = {
           id: r.id as string,
           guild: r.guild as string,
           skill_name: r.skill_name as string,
@@ -85,8 +99,13 @@ export function TeacherQuestsPage() {
           gold_display: (r.gold_display as string | null) ?? null,
           quest_kind: (r.quest_kind as QuestKind) ?? 'required',
           is_core: Boolean(r.is_core),
-          steps: r.steps as StepConfig[],
-        })),
+          level4_eligible: Boolean(r.level4_eligible),
+          tile_description: (r.tile_description as string | null) ?? null,
+          recipient_guidance: (r.recipient_guidance as string | null) ?? null,
+          steps: r.steps as StepConfig[] | null,
+        } as TileRow
+        return { ...row, steps: resolvedTileSteps(row) }
+      }),
     )
   }, [])
 
@@ -99,24 +118,55 @@ export function TeacherQuestsPage() {
     setQuestKind('tier2')
     setWpValue(10)
     setGoldValue(22)
+    setTileDescription('')
+    setRecipientGuidance(defaultRecipientGuidanceForQuestKind('tier2'))
+    setLevel4Eligible(false)
     setSteps([])
     setSaveError(null)
     setSaveSuccess(null)
   }
 
   const loadIntoBuilder = (q: QuestRow) => {
+    const kind = (q.quest_kind as QuestKind) ?? 'required'
     setEditingId(q.id)
     setTitle(q.skill_name)
     setGuild(
       SKILL_TREE_SECTION_GUILDS.find((g) => g.toLowerCase() === q.guild.toLowerCase()) ?? 'Forge',
     )
-    setQuestKind((q.quest_kind as QuestKind) ?? 'tier2')
+    setQuestKind(kind)
     setWpValue(q.wp_value)
     setGoldValue(q.gold_value ?? 10)
+    setTileDescription(q.tile_description ?? '')
+    setRecipientGuidance(q.recipient_guidance ?? '')
+    setLevel4Eligible(Boolean(q.level4_eligible))
     setSteps(q.steps.map((s) => ({ ...s, tempId: makeId() })))
     setSaveError(null)
     setSaveSuccess(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const applyQuestKindChange = (nextKind: QuestKind) => {
+    const nextDefaults = defaultPayoutForQuestKind(nextKind)
+    if (!editingId) {
+      setQuestKind(nextKind)
+      setWpValue(nextDefaults.wp)
+      setGoldValue(nextDefaults.gold)
+      setRecipientGuidance(defaultRecipientGuidanceForQuestKind(nextKind))
+      return
+    }
+    const oldDefaults = defaultPayoutForQuestKind(questKind)
+    const atOldDefaults = wpValue === oldDefaults.wp && goldValue === oldDefaults.gold
+
+    if (!atOldDefaults) {
+      const label = QUEST_KIND_LABELS[nextKind]
+      const ok = window.confirm(
+        `Changing to ${label} will set WP/gold to ${nextDefaults.wp}/${nextDefaults.gold} and overwrite your custom values (${wpValue}/${goldValue}). Continue?`,
+      )
+      if (!ok) return
+    }
+    setQuestKind(nextKind)
+    setWpValue(nextDefaults.wp)
+    setGoldValue(nextDefaults.gold)
   }
 
   const addStep = () => {
@@ -145,9 +195,10 @@ export function TeacherQuestsPage() {
     setSaveError(null)
     setSaveSuccess(null)
     if (!title.trim()) { setSaveError('Quest title is required.'); return }
-    if (steps.length === 0) { setSaveError('Add at least one step.'); return }
-    const hasEmpty = steps.some((s) => !s.description.trim())
-    if (hasEmpty) { setSaveError('Fill in a description for every step.'); return }
+    if (steps.length > 0) {
+      const hasEmpty = steps.some((s) => !s.description.trim())
+      if (hasEmpty) { setSaveError('Fill in a description for every step.'); return }
+    }
 
     const defaults = defaultPayoutForQuestKind(questKind)
     const payload = {
@@ -155,13 +206,24 @@ export function TeacherQuestsPage() {
       skill_name: title.trim(),
       quest_kind: questKind,
       is_core: questKind === 'required' ? defaults.isCore : false,
+      level4_eligible: level4Eligible,
       wp_value: wpValue,
       gold_value: goldValue,
-      steps: steps.map(({ description, requiresApproval, resourceUrl }) => ({
-        description,
-        requiresApproval,
-        ...(resourceUrl?.trim() ? { resourceUrl: resourceUrl.trim() } : {}),
-      })),
+      tile_description: tileDescription.trim() || null,
+      recipient_guidance: recipientGuidance.trim() || null,
+      steps:
+        steps.length > 0
+          ? steps.map(({ description, requiresApproval, resourceUrl, resourceLabel }) => ({
+              description,
+              requiresApproval,
+              ...(resourceUrl?.trim()
+                ? {
+                    resourceUrl: resourceUrl.trim(),
+                    ...(resourceLabel?.trim() ? { resourceLabel: resourceLabel.trim() } : {}),
+                  }
+                : {}),
+            }))
+          : null,
     }
 
     setSaving(true)
@@ -185,7 +247,7 @@ export function TeacherQuestsPage() {
   }
 
   const deleteQuest = async (id: string, name: string) => {
-    if (!window.confirm(`Delete quest "${name}"? This cannot be undone.`)) return
+    if (!window.confirm(`Delete '${name}' permanently? This cannot be undone.`)) return
     setDeletingId(id)
     const { error } = await supabase.from('tiles').delete().eq('id', id)
     setDeletingId(null)
@@ -251,13 +313,7 @@ export function TeacherQuestsPage() {
             <span className="patent-label">Quest type</span>
             <select
               value={questKind}
-              onChange={(e) => {
-                const k = e.target.value as QuestKind
-                setQuestKind(k)
-                const d = defaultPayoutForQuestKind(k)
-                setWpValue(d.wp)
-                setGoldValue(d.gold)
-              }}
+              onChange={(e) => applyQuestKindChange(e.target.value as QuestKind)}
               style={{ minWidth: '100%', maxWidth: '280px' }}
             >
               {(Object.keys(QUEST_KIND_LABELS) as QuestKind[]).map((k) => (
@@ -276,16 +332,52 @@ export function TeacherQuestsPage() {
             <input type="number" min={0} max={999} value={goldValue} onChange={(e) => setGoldValue(Number(e.target.value))} style={{ width: '72px' }} />
           </label>
         </div>
+        <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
+          <span className="patent-label">Tile description</span>
+          <textarea
+            rows={3}
+            value={tileDescription}
+            onChange={(e) => setTileDescription(e.target.value)}
+            placeholder="Quest brief students read on the skill tree"
+          />
+          <span className="muted" style={{ fontSize: '0.82rem', display: 'block', marginTop: '0.25rem' }}>
+            Early required tiles may suggest an object (&quot;coaster or equivalent&quot;). Stretch / Tier 2 / boss tiles: technique requirements only, leave object and recipient open.
+          </span>
+        </label>
+
+        <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
+          <span className="patent-label">Recipient requirement (hint)</span>
+          <textarea
+            rows={2}
+            value={recipientGuidance}
+            onChange={(e) => setRecipientGuidance(e.target.value)}
+            placeholder="Shown on the patent plan panel — not enforced"
+          />
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={level4Eligible}
+            onChange={(e) => setLevel4Eligible(e.target.checked)}
+          />
+          <span>Level-4 eligible (can satisfy the A gate; does not change points)</span>
+        </label>
+
         <p className="muted" style={{ fontSize: '0.85rem', margin: '0 0 1rem' }}>
           WP and gold are stored on the tile; you can override scale defaults. Awards apply on final skill approval.
         </p>
 
-        {/* Fixed opening questions */}
         <div className="card" style={{ padding: '0.85rem 1rem', marginBottom: '1rem', background: 'rgba(0,0,0,0.03)', border: '1.5px dashed rgba(0,0,0,0.15)', borderRadius: '8px' }}>
-          <p style={{ margin: '0 0 0.35rem', fontWeight: 600, fontSize: '0.9rem' }}>📋 Opening questions (fixed — cannot be removed)</p>
+          <p style={{ margin: '0 0 0.35rem', fontWeight: 600, fontSize: '0.9rem' }}>Patent packet (fixed for all quests)</p>
           <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.88rem', color: 'var(--muted-text,#666)' }}>
-            <li>Describe what you are going to make.</li>
-            <li>Who are you making this for, why does it matter to them, what you know about them that changed a design decision, and how you learned it <span style={{ fontSize: '0.8rem', opacity: 0.65 }}>(structured empathy form)</span></li>
+            <li>What are you making? (one sentence, before making)</li>
+            <li>Who is this for? / Why does it matter? / What changed a decision? (plan)</li>
+            <li>Checklist steps you define below (if any)</li>
+            <li>What did you make, and what makes it yours?</li>
+            <li>What failed, and what did you change?</li>
+            <li>Maine connection? (optional)</li>
+            <li>Who taught you? (optional)</li>
           </ol>
         </div>
 
@@ -370,15 +462,6 @@ export function TeacherQuestsPage() {
           )}
         </div>
 
-        {/* Fixed closing questions */}
-        <div className="card" style={{ padding: '0.85rem 1rem', marginBottom: '1.25rem', background: 'rgba(0,0,0,0.03)', border: '1.5px dashed rgba(0,0,0,0.15)', borderRadius: '8px' }}>
-          <p style={{ margin: '0 0 0.35rem', fontWeight: 600, fontSize: '0.9rem' }}>📋 Closing questions (fixed — cannot be removed)</p>
-          <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.88rem', color: 'var(--muted-text,#666)' }}>
-            <li>What makes this work yours — where did you go beyond the example?</li>
-            <li>What failed and what did you change?</li>
-          </ol>
-        </div>
-
         {saveError ? <p className="error" role="alert">{saveError}</p> : null}
         {saveSuccess ? <p style={{ color: '#16a34a', fontWeight: 600 }} role="status">{saveSuccess}</p> : null}
 
@@ -387,9 +470,20 @@ export function TeacherQuestsPage() {
             {saving ? 'Saving…' : editingId ? 'Update quest' : 'Save quest'}
           </button>
           {editingId ? (
-            <button type="button" className="btn-secondary" onClick={resetBuilder}>
-              Cancel edit
-            </button>
+            <>
+              <button type="button" className="btn-secondary" onClick={resetBuilder}>
+                Cancel edit
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ color: '#b91c1c' }}
+                disabled={deletingId === editingId}
+                onClick={() => void deleteQuest(editingId, title.trim() || 'this quest')}
+              >
+                {deletingId === editingId ? 'Deleting…' : 'Delete quest'}
+              </button>
+            </>
           ) : null}
         </div>
       </section>
@@ -410,7 +504,9 @@ export function TeacherQuestsPage() {
                 <div className="teacher-panel-item-main">
                   <p className="teacher-panel-student" style={{ fontWeight: 700 }}>{q.skill_name}</p>
                   <p className="muted teacher-panel-guild" style={{ margin: 0 }}>
-                    {q.guild} · {q.wp_display ?? `${q.wp_value} WP`} · {q.gold_display ?? `${q.gold_value ?? 10} gold`} · {q.steps.length} step{q.steps.length !== 1 ? 's' : ''}
+                    {q.guild} · {QUEST_KIND_LABELS[(q.quest_kind as QuestKind) ?? 'required']} · {q.wp_display ?? `${q.wp_value} WP`} · {q.gold_display ?? `${q.gold_value ?? 10} gold`}
+                    {q.steps.length > 0 ? ` · ${q.steps.length} step${q.steps.length !== 1 ? 's' : ''}` : ' · Mark complete'}
+                    {q.level4_eligible ? ' · L4' : ''}
                   </p>
                   <details style={{ marginTop: '0.35rem' }}>
                     <summary style={{ fontSize: '0.85rem', cursor: 'pointer', color: 'var(--muted-text,#666)' }}>View steps</summary>

@@ -45,11 +45,11 @@ type Props = {
   completionStatus: SkillCompletionStatus | undefined
 }
 
-type PatentDraft = { field1: string; field3: string; field4: string; field5: string }
+type PatentDraft = { field1: string; field3: string; field4: string; field5: string; field6: string }
 type PlanStatus = UiPatentPlanStatus
 type PlanState = { id: string; status: PlanStatus }
 
-const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '', field5: '' }
+const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '', field5: '', field6: '' }
 const VIDEO_RE = /\.(mp4|webm|mov|avi|m4v)$/i
 
 function guildBackRoute(guild: string): string {
@@ -377,12 +377,17 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     /* Best-effort: field_5 + signature (043) + delivery_url (044). Ignore errors if columns absent. */
     const { data: extra, error: extraErr } = await supabase
       .from('patents')
-      .select('field_5, maker_signature_url, delivery_url')
+      .select('field_5, field_6, maker_signature_url, delivery_url')
       .eq('id', row.id)
       .maybeSingle()
     if (!extraErr && extra) {
-      const ex = extra as { field_5: string | null; maker_signature_url: string | null; delivery_url: string | null }
-      setPatent((p) => ({ ...p, field5: ex.field_5 ?? '' }))
+      const ex = extra as {
+        field_5: string | null
+        field_6: string | null
+        maker_signature_url: string | null
+        delivery_url: string | null
+      }
+      setPatent((p) => ({ ...p, field5: ex.field_5 ?? '', field6: ex.field_6 ?? '' }))
       setSignatureUrl(ex.maker_signature_url ?? null)
       setDeliveryUrl(ex.delivery_url ?? null)
     }
@@ -486,7 +491,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     if (error) console.error('[PatentLedger] checklist save:', error.message)
   }
 
-  const saveFieldToDb = async (fieldName: 'field_2' | 'field_3' | 'field_4', value: string, pid: string) => {
+  const saveFieldToDb = async (
+    fieldName: 'field_2' | 'field_3' | 'field_4' | 'field_6',
+    value: string,
+    pid: string,
+  ) => {
     if (!pid) return
     const { error } = await supabase.from('patents').update({ [fieldName]: value }).eq('id', pid)
     if (error) console.error(`[PatentLedger] ${fieldName} save:`, error.message)
@@ -649,6 +658,10 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       if (patent.field5.trim()) {
         const { error: f5Err } = await supabase.from('patents').update({ field_5: patent.field5 }).eq('id', pid)
         if (f5Err) console.warn('[PatentLedger] field_5 skipped (apply migration 043):', f5Err.message)
+      }
+      if (patent.field6.trim()) {
+        const { error: f6Err } = await supabase.from('patents').update({ field_6: patent.field6 }).eq('id', pid)
+        if (f6Err) console.warn('[PatentLedger] field_6 skipped (apply migration 046):', f6Err.message)
       }
       await persistSignature(pid)
 
@@ -995,8 +1008,15 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
               </div>
             ) : null}
 
-            {content.recipientGuidance ? (
+            {tile.tile_description?.trim() ? (
               <div className="ways-hint" style={{ borderTop: 'none', marginTop: 0 }}>
+                <strong style={{ display: 'block', marginBottom: '0.25rem' }}>Quest brief</strong>
+                {tile.tile_description.trim()}
+              </div>
+            ) : null}
+
+            {content.recipientGuidance ? (
+              <div className="ways-hint" style={{ borderTop: 'none', marginTop: tile.tile_description?.trim() ? undefined : 0 }}>
                 {content.recipientGuidance}
               </div>
             ) : null}
@@ -1280,10 +1300,10 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
               </div>
             </div>
 
-            <div className="ledger-row" style={{ borderBottom: 'none' }}>
+            <div className="ledger-row">
               <span className="row-num">vii.</span>
               <div className="row-body">
-                <span className="row-q">Maine connection</span>
+                <span className="row-q">Maine connection?</span>
                 <span className="row-hint">Optional — a place, a person, a tradition this connects to.</span>
                 <textarea
                   rows={2}
@@ -1291,6 +1311,25 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                   disabled={readOnly}
                   placeholder="e.g. It's modeled on the gray wolves at the Maine Wildlife Park in Gray."
                   onChange={(e) => setPatent((p) => ({ ...p, field5: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="ledger-row" style={{ borderBottom: 'none' }}>
+              <span className="row-num">viii.</span>
+              <div className="row-body">
+                <span className="row-q">Who taught you?</span>
+                <span className="row-hint">Optional — a person who showed you a technique or helped you think it through.</span>
+                <input
+                  type="text"
+                  value={patent.field6}
+                  disabled={readOnly}
+                  placeholder="e.g. Ms. Rivera showed me how to mirror vinyl before cutting."
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setPatent((p) => ({ ...p, field6: v }))
+                    if (plan.id) void saveFieldToDb('field_6', v, plan.id)
+                  }}
                 />
               </div>
             </div>

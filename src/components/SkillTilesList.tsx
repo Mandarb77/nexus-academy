@@ -107,6 +107,11 @@ export function SkillTilesList({
               <div className="skill-tile-row">
                 <div className="skill-tile-main">
                   <h3 className="skill-tile-name" title={tile.subtitle ?? undefined}>{tile.skill_name}</h3>
+                  {tile.tile_description?.trim() ? (
+                    <p className="muted skill-tile-description" style={{ margin: '0.25rem 0 0', fontSize: '0.88rem' }}>
+                      {tile.tile_description.trim()}
+                    </p>
+                  ) : null}
                   <p className="skill-tile-wp">
                     {tile.wp_display ?? `${tile.wp_value} WP`}
                     <span aria-hidden="true"> · </span>

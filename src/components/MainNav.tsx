@@ -61,6 +61,14 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
           >
             Quests
           </NavLink>
+          <NavLink
+            to="/teacher/shop"
+            className={({ isActive }) =>
+              `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
+            }
+          >
+            Shop
+          </NavLink>
 
           <button
             type="button"

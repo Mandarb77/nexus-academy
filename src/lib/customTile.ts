@@ -1,25 +1,11 @@
 /*
- * Custom / Quest Builder tiles — step resolution and T-shirt heuristics
+ * Custom / patent tiles — step resolution from DB
  *
- * Most maker-defined quests store `steps` JSON on `tiles`. A few legacy tiles (ids 25/26)
- * shipped before steps existed in the DB; we embed the T-shirt checklist so patent gating
- * still works. `isTShirtPatentQuestTile` fuzzy-matches because teachers sometimes tweak
- * capitalization or punctuation in `skill_name`. `isCustomTile` drives `/patent-custom` routing.
+ * Checklist lines and counts live on `tiles.steps` (migration 047). Routing helpers
+ * (`isPersonalGamePieceTile`, etc.) remain for URL paths only.
  */
 
 import type { StepConfig, TileRow } from '../types/tile'
-import { isPopUpCardTile } from './popUpCardQuest'
-import { isVoidTile1Tile, VOID_TILE1_STEPS } from './voidTile1Proto'
-import { T_SHIRT_QUEST_SKILL_NAME, T_SHIRT_QUEST_STEPS } from './tShirtQuestSteps'
-
-/**
- * Stepped patent UX (plan gate, checklist, closing, uploads): tile **5** uses
- * `/patent-game-piece` via `isPersonalGamePieceTile`; **25** and **26** use
- * `/patent-custom`. All routes now render the unified `PatentLedger` (content via
- * `patentLedgerContent.ts`). When the DB has no `steps`, 25/26 get the embedded
- * T-shirt checklist (IDs are authoritative).
- */
-const FULL_PATENT_QUEST_TEMPLATE_TILE_IDS = new Set(['5', '25', '26'])
 
 function normalizeSkillTitle(s: string): string {
   return s
@@ -30,14 +16,12 @@ function normalizeSkillTitle(s: string): string {
     .toLowerCase()
 }
 
-/**
- * True when this row is the Folded Path T-shirt patent quest, even if `skill_name`
- * differs slightly from the migration string (casing, "in"/"In", hyphen spacing).
- */
+/** Folded Path T-shirt — fuzzy name match for legacy title variants. */
 export function isTShirtPatentQuestTile(tile: TileRow): boolean {
   const name = (tile.skill_name ?? '').trim()
   if (!name) return false
-  if (normalizeSkillTitle(name) === normalizeSkillTitle(T_SHIRT_QUEST_SKILL_NAME)) return true
+  const canonical = 'Design a T-Shirt for Someone In the Room'
+  if (normalizeSkillTitle(name) === normalizeSkillTitle(canonical)) return true
   const g = (tile.guild ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
   if (g !== 'folded path') return false
   const n = name.toLowerCase()
@@ -49,28 +33,14 @@ export function isTShirtPatentQuestTile(tile: TileRow): boolean {
   )
 }
 
-/**
- * Returns true for tiles created via the Quest Builder (steps stored in the DB),
- * and for known embedded quests (e.g. T-shirt) when DB `steps` is missing.
- * Hardcoded tiles (Game Piece, Sticker) have steps = null and use dedicated components.
- */
+/** Checklist steps from `tiles.steps` only (byte-stable for checklist_state indexing). */
 export function resolvedTileSteps(tile: TileRow): StepConfig[] {
-  if (isPopUpCardTile(tile)) return []
-  /* Void coaster: hardcoded steps even when DB `steps` JSON exists (proto copy is source of truth). */
-  if (isVoidTile1Tile(tile)) return VOID_TILE1_STEPS
   const s = tile.steps
   if (Array.isArray(s) && s.length > 0) return s as StepConfig[]
-  if (isTShirtPatentQuestTile(tile)) return T_SHIRT_QUEST_STEPS
-  const id = String(tile.id)
-  if (FULL_PATENT_QUEST_TEMPLATE_TILE_IDS.has(id) && id !== '5') {
-    return T_SHIRT_QUEST_STEPS
-  }
   return []
 }
 
+/** True when this tile uses the stepped patent flow (plan → checklist → record). */
 export function isCustomTile(tile: TileRow): boolean {
-  if (isPopUpCardTile(tile)) return false
-  /* Routes Void Tile 1 to `/patent-custom` → PatentLedger (not the game-piece route). */
-  if (isVoidTile1Tile(tile)) return true
   return resolvedTileSteps(tile).length > 0
 }

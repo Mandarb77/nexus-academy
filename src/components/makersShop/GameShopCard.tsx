@@ -2,7 +2,7 @@
  * Single catalog card in Supply — trading-post (legacy) or bench tile (compact grid).
  */
 
-import type { ShopCatalogItem } from '../../types/shopCatalog'
+import type { ShopCatalogItem, ShopStockStatus } from '../../types/shopCatalog'
 import { ShopAccordion } from './ShopAccordion'
 import { ShopItemGlyph } from './ShopItemGlyph'
 import { iconVariantForItemKey } from './shopDisplay'
@@ -13,6 +13,7 @@ type GameShopCardProps = {
   shelfAccent: 'forge' | 'prism' | 'folded'
   catalogLocked: boolean
   dailyBlocked: boolean
+  stockStatus?: ShopStockStatus | null
   canAfford: boolean
   canBuy: boolean
   busy: boolean
@@ -62,7 +63,7 @@ function PurchaseButton({
         {busy ? (
           'Trading…'
         ) : catalogLocked ? (
-          'Sealed'
+          'Locked'
         ) : dailyBlocked ? (
           'Back tomorrow'
         ) : canAfford ? (
@@ -77,12 +78,19 @@ function PurchaseButton({
   )
 }
 
+function lockLabel(item: ShopCatalogItem, catalogLocked: boolean): string {
+  if (!catalogLocked) return ''
+  const gate = item.gate_requirement?.trim()
+  return gate || 'Locked'
+}
+
 function BenchShopCard(props: GameShopCardProps) {
   const {
     item,
     shelfAccent,
     catalogLocked,
     dailyBlocked,
+    stockStatus,
     canAfford,
     canBuy,
     busy,
@@ -129,7 +137,7 @@ function BenchShopCard(props: GameShopCardProps) {
       </div>
       <div className="shop-item__foot">
         {catalogLocked ? (
-          <span className="shop-item__price shop-item__price--locked">Sealed</span>
+          <span className="shop-item__price shop-item__price--locked">{lockLabel(item, true)}</span>
         ) : (
           <span className="shop-item__price">
             <span className="shop-item__price-value">{price}</span>{' '}
@@ -138,6 +146,14 @@ function BenchShopCard(props: GameShopCardProps) {
         )}
         <PurchaseButton {...purchaseProps} />
       </div>
+      {catalogLocked && item.gate_requirement?.trim() ? (
+        <p className="shop-item__note muted">{item.gate_requirement.trim()}</p>
+      ) : null}
+      {stockStatus?.limited && !catalogLocked ? (
+        <p className="shop-item__note muted">
+          {stockStatus.remaining ?? 0} of {stockStatus.limit ?? 0} left this semester
+        </p>
+      ) : null}
       {dailyBlocked && !catalogLocked ? (
         <p className="shop-item__note muted">Already purchased today.</p>
       ) : null}
@@ -151,6 +167,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     shelfAccent,
     catalogLocked,
     dailyBlocked,
+    stockStatus,
     canAfford,
     canBuy,
     busy,
@@ -211,7 +228,9 @@ function LegacyShopCard(props: GameShopCardProps) {
 
           <div className="makers-shop-card__price-row" aria-live="polite">
             {catalogLocked ? (
-              <span className="makers-shop-card__price makers-shop-card__price--locked">Sealed</span>
+              <span className="makers-shop-card__price makers-shop-card__price--locked">
+                {lockLabel(item, true)}
+              </span>
             ) : (
               <>
                 <span className="makers-shop-card__coin" aria-hidden />
@@ -221,6 +240,14 @@ function LegacyShopCard(props: GameShopCardProps) {
             )}
           </div>
 
+          {catalogLocked && item.gate_requirement?.trim() ? (
+            <p className="makers-shop-card__inline-note">{item.gate_requirement.trim()}</p>
+          ) : null}
+          {stockStatus?.limited && !catalogLocked ? (
+            <p className="makers-shop-card__inline-note">
+              {stockStatus.remaining ?? 0} of {stockStatus.limit ?? 0} left this semester
+            </p>
+          ) : null}
           {dailyBlocked && !catalogLocked ? (
             <p className="makers-shop-card__inline-note">Already purchased today.</p>
           ) : null}

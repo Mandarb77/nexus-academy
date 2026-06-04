@@ -2,7 +2,7 @@
  * One tier shelf in Supply — guild-style tile + expandable item grid (Convenience / Craft / Legacy).
  */
 
-import type { ShopCatalogItem, ShopTierEmbed } from '../../types/shopCatalog'
+import type { ShopCatalogItem, ShopStockStatus, ShopTierEmbed } from '../../types/shopCatalog'
 import { GameShopCard } from './GameShopCard'
 import { ShopTierBadge } from './ShopTierBadge'
 import { displayShelfTitle, shelfAccentForTier, tierShortDescription, tierSlugId } from './shopDisplay'
@@ -16,6 +16,7 @@ type Props = {
   gold: number
   buyingKey: string | null
   dailyBlockedIds: Set<string>
+  stockByItemId: Map<string, ShopStockStatus>
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   onBuy: (item: ShopCatalogItem) => void
@@ -28,6 +29,7 @@ export function ShopTierBoard({
   gold,
   buyingKey,
   dailyBlockedIds,
+  stockByItemId,
   isSupabaseConfigured,
   catalogLoading,
   onBuy,
@@ -82,10 +84,13 @@ export function ShopTierBoard({
               {items.map((item) => {
                 const dailyBlocked = dailyBlockedIds.has(item.id)
                 const catalogLocked = item.is_locked
+                const stock = stockByItemId.get(item.id)
+                const outOfStock = stock?.limited === true && (stock.remaining ?? 0) <= 0
                 const price = item.price_gold
                 const canAfford = price != null && gold >= price
                 const busy = buyingKey === item.item_key
-                const canBuy = !catalogLocked && price != null && canAfford && !dailyBlocked
+                const canBuy =
+                  !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
 
                 return (
                   <GameShopCard
@@ -95,6 +100,7 @@ export function ShopTierBoard({
                     shelfAccent={accent}
                     catalogLocked={catalogLocked}
                     dailyBlocked={dailyBlocked}
+                    stockStatus={stock}
                     canAfford={canAfford}
                     canBuy={canBuy}
                     busy={busy}

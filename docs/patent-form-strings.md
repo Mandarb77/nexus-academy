@@ -2,7 +2,7 @@
 
 Inventory of user-facing strings from the patent form. Use when editing copy or rebuilding fields.
 
-> **Implementation (2026):** All patent routes now render **`PatentLedger.tsx`** (`patentLedger.css`). The table below lists the **legacy** components this doc was written from; strings were consolidated into `src/lib/patentLedgerContent.ts` where applicable. App chrome map: **`docs/developer-handoff-recent-work.md`**.
+> **Implementation (2026):** All patent routes now render **`PatentLedger.tsx`** (`patentLedger.css`). The table below lists the **legacy** components this doc was written from. **Fixed** plan/record questions live in `PatentLedger.tsx`; **per-tile** checklist, recipient hints, and resources come from `tiles` (see **`docs/quest-tiles-teacher-builder-and-backfill.md`**). App chrome: **`docs/developer-handoff-recent-work.md`**.
 
 **Current entry point**
 

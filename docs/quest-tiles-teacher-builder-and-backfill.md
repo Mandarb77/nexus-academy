@@ -1,0 +1,178 @@
+# Quest tiles, WP/gold scale, and teacher Quest Builder
+
+Developer notes for the **June 2026** pass that unified quest content in Supabase, scaled payouts by quest type, and expanded `/teacher/quests`. Read this before editing flagship quests (game piece, sticker, pop-up, Void, T-shirt) or changing checklist copy.
+
+**Related:** [developer-handoff-recent-work.md](./developer-handoff-recent-work.md) (bench chrome, PatentLedger shell), [patent-form-strings.md](./patent-form-strings.md) (student-facing patent labels).
+
+---
+
+## Why this change happened
+
+1. **Payouts** should follow quest type (required / stretch / tier 2 / boss) on editable DB columns, not scattered constants.
+2. **Teachers** need one editor for **all** tiles — not a split between “Quest Builder rows” and hardcoded TS checklists.
+3. **Student patents** store checklist progress as `patents.checklist_state` — a boolean array **indexed by step order**. Changing step count or order without a migration plan breaks in-progress quests.
+
+---
+
+## Migrations (apply order on hosted Supabase)
+
+| File | What it does |
+|------|----------------|
+| `045_wp_gold_scale_quest_kind.sql` | `quest_kind`, `is_core`; rescales `wp_value` / `gold_value`; semester gold reset RPCs |
+| `046_tile_quest_metadata_and_patent_field6.sql` | `tile_description`, `recipient_guidance`, `level4_eligible`, `ledger_resources`; `patents.field_6` (“Who taught you?”) |
+| `047_backfill_tile_content_from_code.sql` | Copies canonical steps/resources/guidance from `src/lib/*.ts` into `tiles`; **fails if any patent’s `checklist_state` length ≠ `steps` length** |
+
+**Production note:** Migrations **039–044** may still be pending on remote if `db push` hit duplicate version numbers (`039`, `042`, `043` each have two files). **045–047** were applied on prod via `supabase db query` + `migration repair` when this work landed — verify with `npx supabase migration list`.
+
+**Regenerating 047:** Do not hand-edit step JSON in `047_*.sql`. Change canonical copy in TypeScript, then:
+
+```bash
+npx tsx scripts/generate-tile-backfill-migration.ts
+```
+
+Review the diff, then apply (SQL Editor or `db query`). Re-run verification (below) before calling it done.
+
+---
+
+## `tiles` table — columns that matter
+
+| Column | Purpose |
+|--------|---------|
+| `guild`, `skill_name` | Unique together; full guild names (`Void Navigators`, not “Void”) |
+| `wp_value`, `gold_value` | **Authoritative payouts** at skill approval (triggers copy to `skill_completions.wp_awarded` / `gold_awarded`) |
+| `quest_kind` | `required` \| `stretch` \| `tier2` \| `boss` |
+| `is_core` | Tier 1 **required core** flag (`true` when `quest_kind = required` on save from Quest Builder) |
+| `level4_eligible` | **Independent** — A-gate eligibility; teacher sets per tile; **not** auto-changed on tier change |
+| `tile_description` | Student brief on **skill tree** + **patent plan** (“Quest brief”) |
+| `recipient_guidance` | Student hint on patent **plan** panel (per-tile prose) |
+| `steps` | JSONB `[{ description, requiresApproval, resourceUrl?, resourceLabel? }]` — null = mark-complete intro tile |
+| `ledger_resources` | JSONB `[{ label, url }]` — extra resource buttons (game piece TinkerCAD links, pop-up template sites, etc.) |
+| `checklist_footer_note` | Text under checklist (replay rules, tier notes) |
+| `wp_display`, `gold_display` | Optional **text** on tree cards (e.g. Void holder “WPT” / “GDP”) |
+| `subtitle` | Short tooltip on tile **title** (hover) |
+
+There is **no** `wp_awarded` on `tiles` — only on `skill_completions` after approval.
+
+### Default payouts by `quest_kind` (also in `src/lib/questKindScale.ts`)
+
+| `quest_kind` | WP | Gold |
+|--------------|-----|------|
+| `required` | 10 | 3 |
+| `stretch` | 6 | 13 |
+| `tier2` | 10 | 22 |
+| `boss` | 15 | 35 |
+
+---
+
+## Checklist / patent contract (do not break)
+
+- `patents.checklist_state` is a JSON array of booleans: index `i` = step `i` in `tiles.steps`.
+- **Game piece, sticker, pop-up** had real student data with **8** steps while `tiles.steps` was often `null` in DB; **047** backfilled steps from code **byte-for-byte** so indices stayed valid.
+- **Pop-up canonical copy** is `src/lib/popUpCardQuest.ts` (step 2 says “resource links **below**”), not the older `035_prism_popup_card_quest.sql` wording (“in the app”).
+- **Legacy T-shirt title:** some DBs have `Design a T-Shirt for Someone You Know` instead of `…In the Room`. **047** includes an `UPDATE` for Folded Path rows that fuzzy-match t-shirt quests.
+
+**Verify after any step change:**
+
+```bash
+npx supabase db query --linked -f scripts/verify-patent-checklist-alignment.sql
+```
+
+Expect **zero rows**. The tail of `047` also runs this check and **aborts the migration** on mismatch.
+
+---
+
+## App architecture after backfill
+
+### Single source of truth for checklist content
+
+| Before | After |
+|--------|--------|
+| `patentLedgerContent.ts` branched on `isPersonalGamePieceTile`, `isPopUpCardTile`, etc. | Reads `tile.steps`, `recipient_guidance`, `checklist_footer_note`, `ledger_resources` from DB |
+| `customTile.ts` overrode Void / pop-up steps from TS | `resolvedTileSteps()` = DB `steps` only |
+| `journeyPatentReadView.ts` used hardcoded step strings | Uses `resolvedTileSteps()` |
+
+**Routing helpers remain** (`gamePieceTile.ts`, `popUpCardQuest.ts`, `stickerTile.ts`, `voidTile1Proto.ts`) for **URLs only** (`/patent-game-piece` vs `/patent-custom` vs `/patent-sticker`). Step **text** should be edited in DB (or via generator → 047), not only in those files.
+
+### Canonical TypeScript copy (still the “source” for regenerating SQL)
+
+| Quest | File(s) |
+|-------|---------|
+| Personal game piece | `personalGamePieceSteps.ts`, resources in generator / `patentLedgerContent` history |
+| Pop-up card | `popUpCardQuest.ts` |
+| Sticker | `stickerSteps.ts` |
+| Void coaster | `voidTile1Proto.ts` |
+| T-shirt | `tShirtQuestSteps.ts` |
+| Void holder (4 short steps) | `scripts/generate-tile-backfill-migration.ts` (`VOID_HOLDER_STEPS`) |
+
+After editing these, regenerate **047** and re-apply if you intend to sync hosted DB.
+
+### Student UI
+
+- **Skill tree:** `tile_description` under tile name (`SkillTilesList.tsx`); loads via `useSkillTree` select.
+- **PatentLedger:** “Quest brief” + `recipient_guidance`; fixed plan/record questions; optional **Who taught you?** → `patents.field_6` (migration **046**).
+
+### Teacher Quest Builder (`/teacher/quests`)
+
+**File:** `src/pages/TeacherQuestsPage.tsx`
+
+- Lists **all** tiles (not only rows with `steps`).
+- **Create:** changing quest type prefills WP/gold + default `recipient_guidance` (`defaultRecipientGuidanceForQuestKind`).
+- **Edit:** changing type compares current WP/gold to **old type’s defaults** — silent snap if equal, `confirm()` if custom.
+- **`is_core`:** auto from type on save (`required` → core); **`level4_eligible`:** checkbox only, never auto-flipped.
+- Intro tiles: `steps` may be empty/null → **Mark complete** on tree (no patent flow).
+- Patent tiles: need checklist steps in DB (from backfill or teacher-authored).
+
+**Semester gold reset:** `TeacherResetPage.tsx` — RPCs `preview_semester_gold_reset`, `teacher_semester_gold_reset` (**045**).
+
+---
+
+## Semester gold reset (045)
+
+- WP unchanged; student `gold = floor(gold * 0.5)`.
+- Teacher-only RPCs; UI on **Reset** page with preview table + confirm.
+
+---
+
+## Common pitfalls
+
+| Symptom | Likely cause |
+|---------|----------------|
+| Checklist ticks wrong step | Step order/count changed without aligning `checklist_state` or re-running safe backfill |
+| Migration 047 fails | Existing patents with non-empty `checklist_state` and different `steps` length — fix data or adjust steps to match lengths first |
+| Pop-up links missing | `ledger_resources` null on tile — re-run 047 or set in Quest Builder / SQL |
+| `field_6` not saving | Migration **046** not applied |
+| Tree empty after schema change | PostgREST error on unknown column — apply **046**; `useSkillTree` only requests columns that exist on prod |
+| Teacher sees old step text | Hosted DB not updated; or browser cache — hard refresh |
+| Intro tile shows patent button | `steps` non-empty in DB — clear `steps` in builder if tile should be mark-complete only |
+
+---
+
+## Where to change things
+
+| Goal | Start here |
+|------|------------|
+| Default WP/gold / quest type labels | `src/lib/questKindScale.ts` |
+| Flagship step copy (then sync DB) | `src/lib/*Steps.ts`, `popUpCardQuest.ts`, `voidTile1Proto.ts` → regenerate **047** |
+| Teacher create/edit UX | `src/pages/TeacherQuestsPage.tsx` |
+| Student plan hints / resources | `tiles.recipient_guidance`, `tiles.ledger_resources`, `tiles.steps` |
+| Patent form fields (fixed questions) | `src/components/PatentLedger.tsx` |
+| Payout on approval | `tiles.wp_value` / `gold_value` + approval triggers (migrations **037** / **038**) |
+| Classify quest for 045 scale | `tiles.quest_kind` + SQL seeds in **045** |
+
+---
+
+## Files added or central to this pass
+
+```
+supabase/migrations/045_wp_gold_scale_quest_kind.sql
+supabase/migrations/046_tile_quest_metadata_and_patent_field6.sql
+supabase/migrations/047_backfill_tile_content_from_code.sql  # generated
+scripts/generate-tile-backfill-migration.ts
+scripts/verify-patent-checklist-alignment.sql
+src/lib/questKindScale.ts
+src/lib/patentLedgerContent.ts          # DB-driven resolver
+src/lib/customTile.ts                   # DB steps only
+src/pages/TeacherQuestsPage.tsx         # full CRUD + metadata
+src/pages/TeacherResetPage.tsx          # semester gold (045)
+src/types/tile.ts                       # new tile + LedgerResource types
+```

@@ -1,8 +1,5 @@
 /*
  * Gold shop catalog types — joined `shop_items` + `shop_tiers` query shape
- *
- * `max_purchases_per_chicago_school_day` pairs with `lib/schoolDayEastern.ts` limits in
- * the shop UI. `rank_requirement` lets high-tier cosmetics stay locked until promotion.
  */
 
 export type ShopTierEmbed = {
@@ -12,6 +9,8 @@ export type ShopTierEmbed = {
   sort_order: number
 }
 
+export type ConvenienceBand = 'in_room' | 'out_of_room'
+
 export type ShopCatalogItem = {
   id: string
   item_key: string
@@ -20,10 +19,19 @@ export type ShopCatalogItem = {
   tier_id: string
   price_gold: number | null
   is_active: boolean
-  rank_requirement: string | null
   flavor_text: string | null
   is_locked: boolean
   display_order: number
   max_purchases_per_chicago_school_day: number | null
+  convenience_band: ConvenienceBand | null
+  stock_per_semester: number | null
+  gate_requirement: string | null
   shop_tiers: ShopTierEmbed | ShopTierEmbed[] | null
+}
+
+export type ShopStockStatus = {
+  limited: boolean
+  limit?: number
+  sold?: number
+  remaining?: number
 }

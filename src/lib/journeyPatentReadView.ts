@@ -16,10 +16,8 @@ import { parseEmpathy } from './empathy'
 import { resolvedTileSteps } from './customTile'
 import { getPatentRoute } from './patentRoutes'
 import { isPersonalGamePieceTile } from './gamePieceTile'
-import { isPopUpCardTile, POP_UP_CARD_STEPS } from './popUpCardQuest'
+import { isPopUpCardTile } from './popUpCardQuest'
 import { isStickerTile } from './stickerTile'
-import { STICKER_STEPS } from './stickerSteps'
-import { PERSONAL_GAME_PIECE_STEPS } from './personalGamePieceSteps'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from './patentFormMerge'
 import { selectStudentPatentPrimary } from './patentPlanRow'
 import { normalizePatentPlanStatus } from './patentPlanStatus'
@@ -51,9 +49,6 @@ function pickField2EmpathySource(primary: LoadedPlanPatentRow, allRows: LoadedPl
 }
 
 function checklistStepLabels(tile: TileRow): string[] {
-  if (isStickerTile(tile)) return [...STICKER_STEPS]
-  if (isPopUpCardTile(tile)) return [...POP_UP_CARD_STEPS]
-  if (isPersonalGamePieceTile(tile)) return [...PERSONAL_GAME_PIECE_STEPS]
   return resolvedTileSteps(tile).map((s) => s.description)
 }
 

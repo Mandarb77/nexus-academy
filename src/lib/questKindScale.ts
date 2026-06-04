@@ -10,8 +10,16 @@ export type { QuestKind }
 export const QUEST_KIND_LABELS: Record<QuestKind, string> = {
   required: 'Required (Tier 1 core)',
   stretch: 'Stretch (Tier 1 optional)',
-  tier2: 'Tier 2',
+  tier2: 'Tier 2 (commission/community)',
   boss: 'Boss fight',
+}
+
+/** Default recipient_guidance when creating a quest (teacher can override). */
+export function defaultRecipientGuidanceForQuestKind(kind: QuestKind): string {
+  if (kind === 'tier2' || kind === 'boss') {
+    return 'Name a recipient outside your circle who can say no to your design.'
+  }
+  return 'Name someone in your life this is for — roommate, family, friend.'
 }
 
 export function defaultPayoutForQuestKind(kind: QuestKind): { wp: number; gold: number; isCore: boolean } {

@@ -15,6 +15,8 @@ export type StepConfig = {
 
 export type QuestKind = 'required' | 'stretch' | 'tier2' | 'boss'
 
+export type LedgerResource = { label: string; url: string }
+
 export type TileRow = {
   id: string
   guild: string
@@ -23,10 +25,17 @@ export type TileRow = {
   gold_value?: number | null
   quest_kind?: QuestKind | null
   is_core?: boolean | null
+  level4_eligible?: boolean | null
   wp_display?: string | null
   gold_display?: string | null
   subtitle?: string | null
-  /** Null for hardcoded tiles (Game Piece, Sticker); populated for builder-created quests. */
+  /** Student-facing quest brief (skill tree + patent plan). */
+  tile_description?: string | null
+  /** Plan-panel hint; teacher-authored per tile. */
+  recipient_guidance?: string | null
+  /** Optional resource buttons on patent checklist. */
+  ledger_resources?: LedgerResource[] | null
+  /** Null = legacy/hardcoded before DB backfill; otherwise checklist lines. */
   steps?: StepConfig[] | null
   /** Shown below the checklist on some quests (e.g. replay rules). */
   checklist_footer_note?: string | null
