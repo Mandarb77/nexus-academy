@@ -11,6 +11,7 @@ import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
+import { defaultPayoutForQuestKind, QUEST_KIND_LABELS, type QuestKind } from '../lib/questKindScale'
 import type { TileRow, StepConfig } from '../types/tile'
 
 type GuildOption = (typeof SKILL_TREE_SECTION_GUILDS)[number]
@@ -26,14 +27,16 @@ function makeId() {
 const BLANK_BUILDER: {
   title: string
   guild: GuildOption
+  questKind: QuestKind
   wpValue: number
   goldValue: number
   steps: BuilderStep[]
 } = {
   title: '',
   guild: 'Forge',
-  wpValue: 20,
-  goldValue: 10,
+  questKind: 'tier2',
+  wpValue: 10,
+  goldValue: 22,
   steps: [],
 }
 
@@ -47,6 +50,7 @@ export function TeacherQuestsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [title, setTitle] = useState(BLANK_BUILDER.title)
   const [guild, setGuild] = useState<GuildOption>(BLANK_BUILDER.guild)
+  const [questKind, setQuestKind] = useState<QuestKind>(BLANK_BUILDER.questKind)
   const [wpValue, setWpValue] = useState(BLANK_BUILDER.wpValue)
   const [goldValue, setGoldValue] = useState(BLANK_BUILDER.goldValue)
   const [steps, setSteps] = useState<BuilderStep[]>(BLANK_BUILDER.steps)
@@ -62,7 +66,7 @@ export function TeacherQuestsPage() {
     setLoadingQuests(true)
     const { data, error } = await supabase
       .from('tiles')
-      .select('id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, steps')
+      .select('id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, is_core, steps')
       .not('steps', 'is', null)
       .order('guild', { ascending: true })
       .order('skill_name', { ascending: true })
@@ -79,6 +83,8 @@ export function TeacherQuestsPage() {
           gold_value: (r.gold_value as number) ?? 10,
           wp_display: (r.wp_display as string | null) ?? null,
           gold_display: (r.gold_display as string | null) ?? null,
+          quest_kind: (r.quest_kind as QuestKind) ?? 'required',
+          is_core: Boolean(r.is_core),
           steps: r.steps as StepConfig[],
         })),
     )
@@ -90,8 +96,9 @@ export function TeacherQuestsPage() {
     setEditingId(null)
     setTitle('')
     setGuild('Forge')
-    setWpValue(20)
-    setGoldValue(10)
+    setQuestKind('tier2')
+    setWpValue(10)
+    setGoldValue(22)
     setSteps([])
     setSaveError(null)
     setSaveSuccess(null)
@@ -103,6 +110,7 @@ export function TeacherQuestsPage() {
     setGuild(
       SKILL_TREE_SECTION_GUILDS.find((g) => g.toLowerCase() === q.guild.toLowerCase()) ?? 'Forge',
     )
+    setQuestKind((q.quest_kind as QuestKind) ?? 'tier2')
     setWpValue(q.wp_value)
     setGoldValue(q.gold_value ?? 10)
     setSteps(q.steps.map((s) => ({ ...s, tempId: makeId() })))
@@ -141,9 +149,12 @@ export function TeacherQuestsPage() {
     const hasEmpty = steps.some((s) => !s.description.trim())
     if (hasEmpty) { setSaveError('Fill in a description for every step.'); return }
 
+    const defaults = defaultPayoutForQuestKind(questKind)
     const payload = {
       guild: guild,
       skill_name: title.trim(),
+      quest_kind: questKind,
+      is_core: questKind === 'required' ? defaults.isCore : false,
       wp_value: wpValue,
       gold_value: goldValue,
       steps: steps.map(({ description, requiresApproval, resourceUrl }) => ({
@@ -218,15 +229,15 @@ export function TeacherQuestsPage() {
           {editingId ? `Editing: ${title || 'Quest'}` : 'New quest'}
         </h2>
 
-        {/* Title + guild + awards row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: '0.75rem', alignItems: 'end', marginBottom: '1.25rem' }}>
+        {/* Title + guild + kind + awards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem', alignItems: 'end', marginBottom: '0.75rem' }}>
           <label className="patent-field" style={{ margin: 0 }}>
             <span className="patent-label">Quest title *</span>
             <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Design Your Logo" />
           </label>
           <label className="patent-field" style={{ margin: 0 }}>
             <span className="patent-label">Guild</span>
-            <select value={guild} onChange={(e) => setGuild(e.target.value as GuildOption)} style={{ minWidth: '120px' }}>
+            <select value={guild} onChange={(e) => setGuild(e.target.value as GuildOption)} style={{ minWidth: '140px' }}>
               {SKILL_TREE_SECTION_GUILDS.map((g) => (
                 <option key={g} value={g}>
                   {g}
@@ -234,15 +245,40 @@ export function TeacherQuestsPage() {
               ))}
             </select>
           </label>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem', alignItems: 'end', marginBottom: '1.25rem' }}>
           <label className="patent-field" style={{ margin: 0 }}>
-            <span className="patent-label">WP award</span>
-            <input type="number" min={1} max={999} value={wpValue} onChange={(e) => setWpValue(Number(e.target.value))} style={{ width: '72px' }} />
+            <span className="patent-label">Quest type</span>
+            <select
+              value={questKind}
+              onChange={(e) => {
+                const k = e.target.value as QuestKind
+                setQuestKind(k)
+                const d = defaultPayoutForQuestKind(k)
+                setWpValue(d.wp)
+                setGoldValue(d.gold)
+              }}
+              style={{ minWidth: '100%', maxWidth: '280px' }}
+            >
+              {(Object.keys(QUEST_KIND_LABELS) as QuestKind[]).map((k) => (
+                <option key={k} value={k}>
+                  {QUEST_KIND_LABELS[k]}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="patent-field" style={{ margin: 0 }}>
-            <span className="patent-label">Gold award</span>
+            <span className="patent-label">WP</span>
+            <input type="number" min={0} max={999} value={wpValue} onChange={(e) => setWpValue(Number(e.target.value))} style={{ width: '72px' }} />
+          </label>
+          <label className="patent-field" style={{ margin: 0 }}>
+            <span className="patent-label">Gold</span>
             <input type="number" min={0} max={999} value={goldValue} onChange={(e) => setGoldValue(Number(e.target.value))} style={{ width: '72px' }} />
           </label>
         </div>
+        <p className="muted" style={{ fontSize: '0.85rem', margin: '0 0 1rem' }}>
+          WP and gold are stored on the tile; you can override scale defaults. Awards apply on final skill approval.
+        </p>
 
         {/* Fixed opening questions */}
         <div className="card" style={{ padding: '0.85rem 1rem', marginBottom: '1rem', background: 'rgba(0,0,0,0.03)', border: '1.5px dashed rgba(0,0,0,0.15)', borderRadius: '8px' }}>

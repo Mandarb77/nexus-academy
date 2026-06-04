@@ -33,6 +33,134 @@ type CompletionRow = {
   patent_id: string | null
 }
 
+type SemesterPreviewRow = {
+  student_id: string
+  display_name: string | null
+  email: string | null
+  gold_before: number
+  gold_after: number
+}
+
+function SemesterGoldResetSection({
+  busy,
+  setBusy,
+  setMessage,
+}: {
+  busy: boolean
+  setBusy: (v: boolean) => void
+  setMessage: (v: string | null) => void
+}) {
+  const [preview, setPreview] = useState<SemesterPreviewRow[] | null>(null)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+
+  const loadPreview = async () => {
+    if (!isSupabaseConfigured) return
+    setPreviewLoading(true)
+    setPreviewError(null)
+    const { data, error } = await supabase.rpc('preview_semester_gold_reset')
+    setPreviewLoading(false)
+    if (error) {
+      setPreview(null)
+      setPreviewError(error.message)
+      return
+    }
+    setPreview((data ?? []) as SemesterPreviewRow[])
+  }
+
+  const runReset = async () => {
+    if (!preview?.length) return
+    const lines = preview
+      .map((r) => {
+        const name = r.display_name?.trim() || r.email?.trim() || r.student_id.slice(0, 8)
+        return `${name}: ${r.gold_before} → ${r.gold_after} gold`
+      })
+      .join('\n')
+    const ok = window.confirm(
+      `Start new semester?\n\nWP is unchanged. Every student's gold becomes floor(half of current gold):\n\n${lines}\n\nThis cannot be undone.`,
+    )
+    if (!ok) return
+
+    setBusy(true)
+    setMessage(null)
+    const { data, error } = await supabase.rpc('teacher_semester_gold_reset')
+    setBusy(false)
+    if (error) {
+      setMessage(`Semester reset failed: ${error.message}`)
+      return
+    }
+    const count =
+      data && typeof data === 'object' && 'students_updated' in data
+        ? Number((data as { students_updated: number }).students_updated)
+        : preview.length
+    setMessage(`Semester gold reset complete for ${count} student(s). WP unchanged.`)
+    setPreview(null)
+  }
+
+  return (
+    <section className="teacher-panel-section" aria-labelledby="teacher-semester-gold-heading">
+      <h2 id="teacher-semester-gold-heading" className="teacher-panel-section-title">
+        Start new semester (gold)
+      </h2>
+      <p className="muted teacher-panel-reset-hint">
+        Workshop Points carry over. Gold resets to half (rounded down) for every student. Run once at a
+        semester boundary.
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.75rem' }}>
+        <button
+          type="button"
+          className="btn-secondary"
+          disabled={!isSupabaseConfigured || busy || previewLoading}
+          onClick={() => void loadPreview()}
+        >
+          {previewLoading ? 'Loading…' : 'Preview gold changes'}
+        </button>
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={!isSupabaseConfigured || busy || !preview?.length}
+          onClick={() => void runReset()}
+        >
+          Apply semester gold reset
+        </button>
+      </div>
+      {previewError ? (
+        <p className="error" style={{ marginTop: '0.75rem' }}>
+          {previewError}
+          {previewError.includes('does not exist') || previewError.includes('function') ? (
+            <span>
+              {' '}
+              — apply migration <code className="inline-code">045_wp_gold_scale_quest_kind.sql</code> in
+              Supabase.
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+      {preview && preview.length > 0 ? (
+        <div className="card bench-inset-card" style={{ marginTop: '0.9rem' }}>
+          <strong className="bench-inset-card__title">Preview</strong>
+          <ul className="teacher-panel-mini-list" style={{ marginTop: '0.5rem' }}>
+            {preview.map((r) => (
+              <li key={r.student_id} className="teacher-panel-mini-row">
+                <span className="teacher-panel-mini-main">
+                  {r.display_name?.trim() || r.email?.trim() || `Student ${r.student_id.slice(0, 8)}…`}
+                </span>
+                <span className="muted">
+                  {r.gold_before} → {r.gold_after} gold
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : preview ? (
+        <p className="muted" style={{ marginTop: '0.75rem' }}>
+          No student profiles found.
+        </p>
+      ) : null}
+    </section>
+  )
+}
+
 export function TeacherResetPage() {
   const { signOut } = useAuth()
   const [busy, setBusy] = useState(false)
@@ -512,6 +640,8 @@ export function TeacherResetPage() {
           {message}
         </p>
       ) : null}
+
+      <SemesterGoldResetSection busy={busy} setBusy={setBusy} setMessage={setMessage} />
 
       <section className="teacher-panel-section" aria-labelledby="teacher-reset-full-heading">
         <h2 id="teacher-reset-full-heading" className="teacher-panel-section-title">

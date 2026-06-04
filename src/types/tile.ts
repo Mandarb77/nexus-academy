@@ -13,12 +13,16 @@ export type StepConfig = {
   resourceLabel?: string
 }
 
+export type QuestKind = 'required' | 'stretch' | 'tier2' | 'boss'
+
 export type TileRow = {
   id: string
   guild: string
   skill_name: string
   wp_value: number
   gold_value?: number | null
+  quest_kind?: QuestKind | null
+  is_core?: boolean | null
   wp_display?: string | null
   gold_display?: string | null
   subtitle?: string | null
