@@ -17,7 +17,12 @@ export type QuestKind = 'required' | 'stretch' | 'tier2' | 'boss'
 
 export type LedgerResource = { label: string; url: string }
 
-export type TileChipKind = 'tinkercad_tool' | 'resource' | 'fusion_option'
+export type TileChipKind =
+  | 'tinkercad_tool'
+  | 'resource'
+  | 'fusion_option'
+  | 'platform'
+  | 'technique'
 
 export type TileChip = { label: string; kind: TileChipKind }
 

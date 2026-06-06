@@ -1586,6 +1586,15 @@ a.btn-primary {
   border-style: dashed;
 }
 
+.skill-tile-chip--platform {
+  border-color: #7f77dd;
+  color: #4c1d95;
+}
+
+.skill-tile-chip--technique {
+  font-style: italic;
+}
+
 @media (prefers-color-scheme: dark) {
   .skill-tree-guild--forge .skill-tree-guild-name,
   .skill-tree-guild--forge .skill-tree-guild-page-title,
