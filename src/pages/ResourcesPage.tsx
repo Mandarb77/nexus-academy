@@ -1,5 +1,5 @@
 /*
- * Static “Library” resource hub (`/resources`)
+ * Field Guide — static resource hub (`/resources`)
  *
  * Curated links placeholders for tool docs (TinkerCAD, printers, Cricut, etc.). Teachers
  * extend this over time without needing new routes — it is intentionally lightweight compared
@@ -52,7 +52,7 @@ export function ResourcesPage() {
       <MainNav />
       <main className="page">
         <header className="page-header bench-page-title-row">
-          <h1 className="page-title bench-page-title">Archive</h1>
+          <h1 className="page-title bench-page-title">Field Guide</h1>
           <p className="muted page-subtitle">
             Quick references, links, and videos (we’ll add the real content over time).
           </p>

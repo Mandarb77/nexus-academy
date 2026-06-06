@@ -38,6 +38,7 @@ SQL migrations live in `supabase/migrations/`. Applying them to the hosted proje
 Patent ledger columns (if missing): `043_patent_record_row_and_signature.sql`, `044_patents_delivery_url.sql`, `046_tile_quest_metadata_and_patent_field6.sql`.  
 Quest payouts / types / backfill: `045_wp_gold_scale_quest_kind.sql`, `047_backfill_tile_content_from_code.sql` (regenerate via `npx tsx scripts/generate-tile-backfill-migration.ts`).  
 Shop catalog + catalog `buy_shop_item`: `048_shop_catalog_baseline.sql`, `049_shop_catalog_seed_and_buy_rpc.sql` (phone SKUs deleted in **049**).  
+Tool-chip hints: `050_tool_glossary.sql` — teacher edits at `/teacher/tools`.  
 Void quests (if empty guild): `039_void_tile1_coaster_proto.sql`, `040_void_tile2_holder_quest.sql`.  
 After step changes: `scripts/verify-patent-checklist-alignment.sql` (expect zero rows).
 

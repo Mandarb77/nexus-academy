@@ -1,7 +1,7 @@
 /*
  * Primary navigation chrome — student hub vs teacher tools
  *
- * Two variants: student links (Workshop, Record, Guilds, Supply, Kit, Archive, Dispatch)
+ * Two variants: student links (Workshop, Record, Guilds, Supply, Kit, Field Guide, Dispatch)
  * and a compact teacher strip (Dashboard, Teacher, Reset, Quests, Preview as student).
  * Label map + design rationale: docs/developer-handoff-recent-work.md
  * Mounts `StudentPreviewBanner` above student nav so preview mode is always visible.
@@ -68,6 +68,14 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             }
           >
             Shop
+          </NavLink>
+          <NavLink
+            to="/teacher/tools"
+            className={({ isActive }) =>
+              `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
+            }
+          >
+            Tools
           </NavLink>
 
           <button
@@ -160,7 +168,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Archive
+          Field Guide
         </NavLink>
         <NavLink
           to="/powerups"

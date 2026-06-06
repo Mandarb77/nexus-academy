@@ -76,7 +76,7 @@ Ledger reads/writes these best-effort; UI works without migration but those fiel
 | Skills | Guilds | `/tree` |
 | Shop | Supply | `/shop` |
 | Inventory | Kit | `/inventory` |
-| Resources | Archive | `/resources` |
+| Resources | Field Guide | `/resources` |
 | Power Ups | Dispatch | `/powerups` |
 
 **Guild list UI:** `SkillTreePage` — tiled accordion with `GuildMark` compact marks (not full-width banners). Per-guild deep link: `/tree/:guildSlug` (`GuildSkillTreePage`).
@@ -280,6 +280,7 @@ Do not mount these per-page; add new global realtime UX here.
 | New guild quest | `/teacher/quests` or migration; regenerate **047** if copying from `src/lib/*.ts` |
 | Shop item / price / lock / stock | `/teacher/shop` or `shop_items` SQL; defaults in `shopCatalogDefaults.ts` |
 | Supply card copy or tier | `TeacherShopPage` or seed in **049** |
+| Tool-chip hint copy | `/teacher/tools` or `tool_glossary` (**050**); `tool_name` must match chip label |
 | Coming soon guild | `isGuildComingSoonForUser` in `voidProtoAccess.ts` |
 
 ---
