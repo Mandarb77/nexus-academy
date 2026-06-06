@@ -4,6 +4,27 @@ Developer notes for the **June 2026** pass that unified quest content in Supabas
 
 **Related:** [developer-handoff-recent-work.md](./developer-handoff-recent-work.md) (bench chrome, PatentLedger shell), [patent-form-strings.md](./patent-form-strings.md) (student-facing patent labels).
 
+**Commits on `main`:**
+
+| Commit | Scope |
+|--------|--------|
+| `02f4d8a` | Migration **045** + `questKindScale.ts` + semester gold reset on `TeacherResetPage` |
+| `dd73779` | Migrations **046–047**, DB-driven patent resolver, `TeacherQuestsPage` on all tiles, generator/verify scripts |
+
+Frontend deploys via Vercel; migrations are manual on hosted Supabase.
+
+---
+
+## What changed in `dd73779` (046–047 + app)
+
+| Area | Change |
+|------|--------|
+| **046** | `tile_description`, `recipient_guidance`, `level4_eligible`, `ledger_resources`; `patents.field_6` (“Who taught you?”) |
+| **047** | Byte-stable backfill of flagship `tiles.steps` / resources / guidance from `src/lib/*.ts` (generator: `scripts/generate-tile-backfill-migration.ts`) |
+| **PatentLedger** | Checklist copy from DB; quest brief + recipient hint; optional `field_6` save |
+| **Quest Builder** | All tiles editable; smart WP/gold on type change; `is_core` from `required`; `level4_eligible` manual only |
+| **Removed pattern** | `patentLedgerContent.ts` / `customTile.ts` no longer override flagship steps from TS at runtime |
+
 ---
 
 ## Why this change happened
@@ -22,7 +43,7 @@ Developer notes for the **June 2026** pass that unified quest content in Supabas
 | `046_tile_quest_metadata_and_patent_field6.sql` | `tile_description`, `recipient_guidance`, `level4_eligible`, `ledger_resources`; `patents.field_6` (“Who taught you?”) |
 | `047_backfill_tile_content_from_code.sql` | Copies canonical steps/resources/guidance from `src/lib/*.ts` into `tiles`; **fails if any patent’s `checklist_state` length ≠ `steps` length** |
 
-**Production note:** Migrations **039–044** may still be pending on remote if `db push` hit duplicate version numbers (`039`, `042`, `043` each have two files). **045–047** were applied on prod via `supabase db query` + `migration repair` when this work landed — verify with `npx supabase migration list`.
+**Production note:** Migrations **039–044** may still be pending on remote if `db push` hit duplicate version numbers (`039`, `042`, `043` each have two files). **045** (`02f4d8a`) and **046–047** (`dd73779`) were applied on prod via `supabase db query` + `migration repair` — verify with `npx supabase migration list`.
 
 **Regenerating 047:** Do not hand-edit step JSON in `047_*.sql`. Change canonical copy in TypeScript, then:
 

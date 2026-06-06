@@ -14,7 +14,8 @@ This document explains **what changed on `main` recently and why**, so a new dev
 
 | Commit | Summary |
 |--------|---------|
-| (see git log) | **Quest tiles:** `quest_kind` + WP/gold scale (**045**), tile metadata + `field_6` (**046**), canonical step backfill (**047**), teacher Quest Builder on all tiles — [dev notes](./quest-tiles-teacher-builder-and-backfill.md). |
+| `dd73779` | **Shop catalog (048–049):** editable `shop_items`, catalog `buy_shop_item`, teacher **Shop Manager** (`/teacher/shop`), phone SKUs hard-deleted. **Quest tiles (046–047):** tile metadata + `patents.field_6`, canonical `steps` backfill, DB-driven `patentLedgerContent`, Quest Builder on all tiles — [shop](./shop-catalog-and-teacher-editor.md), [quests](./quest-tiles-teacher-builder-and-backfill.md). |
+| `02f4d8a` | **Quest payouts (045):** `quest_kind` / `is_core`, WP/gold rescale, semester gold reset UI on Reset page. |
 | `2ebb2e4` | Void Navigators quests visible to **all** students (not email-gated on skill tree). |
 | `5fb5cc4` | Teacher submission alerts (banner + chime); student approval chime added. |
 | `a8b1a3a` | Removed long instructional subtitle on Teacher panel. |
@@ -80,7 +81,7 @@ Ledger reads/writes these best-effort; UI works without migration but those fiel
 
 **Guild list UI:** `SkillTreePage` — tiled accordion with `GuildMark` compact marks (not full-width banners). Per-guild deep link: `/tree/:guildSlug` (`GuildSkillTreePage`).
 
-**Shop:** `GoldShopPage` + `ShopTierBoard` — shelf tiles (Convenience / Craft / Legacy), bench-styled item cards.
+**Shop (Supply):** `GoldShopPage` + `ShopTierBoard` — catalog from `shop_items` / `shop_tiers` (not hardcoded RPC SKUs). Locked items use `is_locked` + optional `gate_requirement` copy. Teacher edits at `/teacher/shop` — see [Shop catalog](#shop-catalog-048049).
 
 **Student home:** `StudentHomePage` — status-focused (“Your status”); guild mark grid on home was removed in favor of Guilds nav.
 
@@ -109,7 +110,7 @@ Ledger reads/writes these best-effort; UI works without migration but those fiel
 
 **Pages:** `DashboardPage`, `TeacherPanelPage`, `TeacherResetPage`, `TeacherQuestsPage` — all `bench-chrome teacher-panel-page`.
 
-**Nav:** `MainNav variant="teacher"` — Dashboard, Teacher, Reset, Quests, **Preview as student** (toggles `studentPreviewMode` in `AuthContext`, navigates to `/`).
+**Nav:** `MainNav variant="teacher"` — Dashboard, Teacher, Reset, Quests, **Shop** (`/teacher/shop`), **Preview as student** (toggles `studentPreviewMode` in `AuthContext`, navigates to `/`).
 
 ### Student preview banner
 
@@ -158,6 +159,47 @@ Removed the multi-sentence subtitle from `TeacherPanelPage`; approval queues spe
 **Details (migrations, `checklist_state` contract, generator script, pitfalls):** [quest-tiles-teacher-builder-and-backfill.md](./quest-tiles-teacher-builder-and-backfill.md)
 
 **Semester gold reset:** `TeacherResetPage.tsx` — halve student gold only (WP unchanged); RPCs in **045**.
+
+**Landed on `main`:** `02f4d8a` (045 + Reset UI), `dd73779` (046–047 + builder/patent resolver). Full migration and checklist contract: [quest-tiles-teacher-builder-and-backfill.md](./quest-tiles-teacher-builder-and-backfill.md).
+
+---
+
+## Shop catalog (048–049)
+
+**Why:** Production had a full `shop_items` table and student UI, but `buy_shop_item` still only recognized four hardcoded keys from migrations **008** / **036** / **043** — most catalog purchases returned `unknown_item`. Phone-time SKUs were removed from the program entirely.
+
+**Landed on `main`:** `dd73779`. **Hosted Supabase:** **048** and **049** applied via SQL + `migration repair` (same pattern as **045–047**).
+
+### Product decisions (locked in for this pass)
+
+| Topic | Behavior |
+|--------|----------|
+| Phone time | **Hard delete** — not `is_active = false`. Keys removed in **049**: `phone_time`, `phone_time_one_class_period`, plus legacy RPC-only keys `workshop_dj`, `free_tardy`. |
+| Gates | **`is_locked` only** enforces “cannot buy.” **`gate_requirement`** is display copy on locked cards (no guild/rank engine). |
+| Legacy tier | Teachers may set **price** and **unlock** like any other item. |
+| Rank column | Older DBs may have `rank_requirement`; app and RPC use **`gate_requirement` only**. |
+
+### Schema and RPC
+
+| Migration | Role |
+|-----------|------|
+| `048_shop_catalog_baseline.sql` | `shop_items` / `shop_tiers` (idempotent), new columns (`convenience_band`, `stock_per_semester`, `gate_requirement`), teacher RLS, `gold_purchases.shop_item_id` |
+| `049_shop_catalog_seed_and_buy_rpc.sql` | Prod-like seed (`ON CONFLICT item_key`), phone delete, **`buy_shop_item`** reads catalog row, **`shop_stock_status`** for semester caps |
+
+**Purchase flow:** `buy_shop_item(item_key)` → load row → `is_active`, `is_locked`, `price_gold`, per-student daily limit (America/New_York), global `stock_per_semester` → debit gold, `gold_purchases` + `inventory` with `shop_item_id`.
+
+### App surfaces
+
+| Route | File | Role |
+|-------|------|------|
+| `/shop` | `GoldShopPage.tsx` | Active items only; buy via RPC; errors `item_locked`, `semester_stock_exhausted`, etc. |
+| `/teacher/shop` | `TeacherShopPage.tsx` | Create / edit / **hard delete**; price, lock, gate text, band, stock, daily cap |
+| — | `GameShopCard.tsx`, `ShopTierBoard.tsx` | Gate copy on lock; semester stock label |
+| — | `shopCatalogDefaults.ts`, `shopItemKey.ts` | Tier defaults + slugify on create |
+
+**Teacher nav:** `MainNav.tsx` — **Shop** link for `variant="teacher"`. **Route:** `App.tsx` → `/teacher/shop`.
+
+**Details:** [shop-catalog-and-teacher-editor.md](./shop-catalog-and-teacher-editor.md)
 
 ---
 
@@ -217,6 +259,9 @@ Do not mount these per-page; add new global realtime UX here.
 | Patent save missing fields | Migrations 043/044 not applied on hosted Supabase. |
 | Wrong checklist step checked off | `tiles.steps` order/count changed without matching `patents.checklist_state` — see [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md). |
 | Quest Builder empty / save fails | **046** not applied; or column missing in select. |
+| Shop purchase `unknown_item` | **049** not applied — RPC still hardcoded to old four SKUs. |
+| Phone item still visible | **049** delete not run, or row re-added manually. |
+| Locked item won’t unlock for students | Set `is_locked = false` and a numeric `price_gold` in Shop Manager (null price → `not_for_sale`). |
 | No teacher chime | Tab not focused / no prior click; check Realtime enabled on tables. |
 | `npm run deploy` fails locally | Vercel token; production usually deploys via GitHub → Vercel integration, not local CLI. |
 
@@ -233,6 +278,8 @@ Do not mount these per-page; add new global realtime UX here.
 | Quest type / WP/gold / tile brief / steps | `TeacherQuestsPage.tsx`, `questKindScale.ts`, [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md) |
 | Teacher alert copy/sound | `TeacherSubmissionBanner.tsx`, `alertSound.ts` |
 | New guild quest | `/teacher/quests` or migration; regenerate **047** if copying from `src/lib/*.ts` |
+| Shop item / price / lock / stock | `/teacher/shop` or `shop_items` SQL; defaults in `shopCatalogDefaults.ts` |
+| Supply card copy or tier | `TeacherShopPage` or seed in **049** |
 | Coming soon guild | `isGuildComingSoonForUser` in `voidProtoAccess.ts` |
 
 ---
@@ -240,5 +287,6 @@ Do not mount these per-page; add new global realtime UX here.
 ## Related docs
 
 - `docs/quest-tiles-teacher-builder-and-backfill.md` — WP/gold scale, 045–047, DB backfill, Quest Builder, checklist contract
+- `docs/shop-catalog-and-teacher-editor.md` — Supply catalog, 048–049, gates, purchase RPC
 - `docs/patent-form-strings.md` — patent field strings
 - `docs/void-tile1-prototype.md` — Void Tile 1 prototype history (email gate, Preview deploy); **skill-tree gate section is outdated on `main`**

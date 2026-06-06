@@ -4,6 +4,22 @@ Developer notes for editable **Supply** (`/shop`) items: DB catalog, purchase RP
 
 **Related:** [developer-handoff-recent-work.md](./developer-handoff-recent-work.md), [quest-tiles-teacher-builder-and-backfill.md](./quest-tiles-teacher-builder-and-backfill.md).
 
+**Landed on `main`:** commit `dd73779` (June 2026). Frontend deploys via Vercel; **048** / **049** must be applied on hosted Supabase separately (already applied on prod when this shipped — confirm with `npx supabase migration list`).
+
+---
+
+## What changed in `dd73779` (annotated)
+
+| Area | Change |
+|------|--------|
+| **Before** | Student UI read `shop_items`, but `buy_shop_item` only handled `workshop_dj`, `phone_time`, `free_tardy`, and related hardcoded branches (**008**, **036**, **043**). |
+| **After** | RPC loads any active catalog row by `item_key`; limits and gold come from columns on that row. |
+| **Phone** | SKUs **deleted** from `shop_items` (not deactivated). |
+| **Gates** | `is_locked` blocks purchase; `gate_requirement` is student-facing copy only. |
+| **Teacher** | New `/teacher/shop` — CRUD, price, unlock, gate text, convenience band, semester stock, daily cap. |
+| **Student** | `GoldShopPage` filters `is_active`; shows gate text and semester stock; handles `item_locked`, `semester_stock_exhausted`. |
+| **Legacy RPC keys** | `workshop_dj`, `free_tardy` removed from DB in **049** (superseded by catalog items like `pick_class_playlist`, tardy pass). |
+
 ---
 
 ## Architecture
@@ -73,6 +89,8 @@ Legacy items can be **unlocked** and given a **price** like any other tier.
 | `049_shop_catalog_seed_and_buy_rpc.sql` | Prod-like seed, phone delete, `buy_shop_item`, `shop_stock_status` |
 
 Apply on hosted Supabase like other migrations (`db query` + `migration repair` if needed).
+
+**048 pitfall:** If `shop_items` already existed, `CREATE TABLE IF NOT EXISTS` does not add new columns — **048** uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for `gate_requirement`, `stock_per_semester`, `convenience_band`. Run **048** before **049**.
 
 ---
 

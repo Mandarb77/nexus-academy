@@ -8,11 +8,11 @@ Student maker-class web app: guild skill trees, patent (quest) packets, gold sho
 
 → **[docs/developer-handoff-recent-work.md](docs/developer-handoff-recent-work.md)**
 
-**Quest tiles, WP/gold scale, teacher Quest Builder, DB backfill (045–047):**
+**Quest tiles, WP/gold scale, teacher Quest Builder, DB backfill (`02f4d8a` / `dd73779`, migrations 045–047):**
 
 → **[docs/quest-tiles-teacher-builder-and-backfill.md](docs/quest-tiles-teacher-builder-and-backfill.md)**
 
-**Shop catalog, teacher Shop Manager (048–049):**
+**Shop catalog, teacher Shop Manager (`dd73779`, migrations 048–049):**
 
 → **[docs/shop-catalog-and-teacher-editor.md](docs/shop-catalog-and-teacher-editor.md)**
 
@@ -37,6 +37,7 @@ SQL migrations live in `supabase/migrations/`. Applying them to the hosted proje
 
 Patent ledger columns (if missing): `043_patent_record_row_and_signature.sql`, `044_patents_delivery_url.sql`, `046_tile_quest_metadata_and_patent_field6.sql`.  
 Quest payouts / types / backfill: `045_wp_gold_scale_quest_kind.sql`, `047_backfill_tile_content_from_code.sql` (regenerate via `npx tsx scripts/generate-tile-backfill-migration.ts`).  
+Shop catalog + catalog `buy_shop_item`: `048_shop_catalog_baseline.sql`, `049_shop_catalog_seed_and_buy_rpc.sql` (phone SKUs deleted in **049**).  
 Void quests (if empty guild): `039_void_tile1_coaster_proto.sql`, `040_void_tile2_holder_quest.sql`.  
 After step changes: `scripts/verify-patent-checklist-alignment.sql` (expect zero rows).
 

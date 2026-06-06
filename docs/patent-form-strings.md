@@ -470,3 +470,39 @@ The same four DB fields use **two different question sets**:
 | field_2 | Empathy block (shared) | Empathy block (shared) |
 | field_3 | What makes this work yours — where did you go beyond the example? | How did you make it an original work? |
 | field_4 | What failed and what did you change? | What do you have to iterate? |
+
+**Added `dd73779` / migration 046**
+
+| DB field | Label | Notes |
+|---|---|---|
+| `field_6` | Who taught you? | Optional; plan panel; persisted when **046** applied |
+
+**Per-tile copy (not in table above — edit in Quest Builder or `tiles` columns)**
+
+| Source column | Student UI |
+|---|---|
+| `tile_description` | Quest brief (plan + skill tree) |
+| `recipient_guidance` | Recipient hint on plan panel |
+| `steps[].description` | Checklist rows |
+| `ledger_resources` | Extra resource buttons |
+| `checklist_footer_note` | Footer under checklist |
+
+See **`docs/quest-tiles-teacher-builder-and-backfill.md`**.
+
+**Added `dd73779` / migration 046**
+
+| DB field | Label | Notes |
+|---|---|---|
+| `field_6` | Who taught you? | Optional; plan panel; persisted when **046** applied |
+
+**Per-tile copy (not in table above — edit in Quest Builder or `tiles` columns)**
+
+| Source column | Student UI |
+|---|---|
+| `tile_description` | Quest brief (plan + skill tree) |
+| `recipient_guidance` | Recipient hint on plan panel |
+| `steps[].description` | Checklist rows |
+| `ledger_resources` | Extra resource buttons |
+| `checklist_footer_note` | Footer under checklist |
+
+See **`docs/quest-tiles-teacher-builder-and-backfill.md`**.
