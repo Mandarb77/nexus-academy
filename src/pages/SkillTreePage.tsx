@@ -37,15 +37,10 @@ export function SkillTreePage() {
     tileBySlug,
   } = useSkillTree()
 
-  const [openGuilds, setOpenGuilds] = useState<Set<string>>(() => new Set())
+  const [openGuildKey, setOpenGuildKey] = useState<string | null>(null)
 
   const toggleGuild = useCallback((guildKey: string) => {
-    setOpenGuilds((prev) => {
-      const next = new Set(prev)
-      if (next.has(guildKey)) next.delete(guildKey)
-      else next.add(guildKey)
-      return next
-    })
+    setOpenGuildKey((prev) => (prev === guildKey ? null : guildKey))
   }, [])
 
   const descByMod = useMemo(() => {
@@ -69,7 +64,7 @@ export function SkillTreePage() {
             <h1 className="skill-tree-title bench-page-title">Guilds</h1>
             <p className="muted skill-tree-subtitle">
               Mark a skill to request credit. Your teacher approves it to add Workshop Points to your profile.
-              Click a guild to show its quests below — all five guilds stay visible at the top.
+              Click a guild to show its quests below — one guild at a time; all five stay visible at the top.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>
@@ -101,7 +96,7 @@ export function SkillTreePage() {
               const mod = skillTreeGuildModifier(guildKey)
               const slug = markSlug(mod)
               const treeSlug = guildSlugId(guildKey)
-              const open = openGuilds.has(guildKey)
+              const open = openGuildKey === guildKey
               const shortLabel = heading(guildKey)
               const desc = descByMod[slug] ?? descByMod.default
 
@@ -140,46 +135,35 @@ export function SkillTreePage() {
             })}
           </div>
 
-          {openGuilds.size > 0 ? (
+          {openGuildKey ? (
             <div className="skill-tree-guilds-expand">
-              {guildKeys
-                .filter((guildKey) => openGuilds.has(guildKey))
-                .map((guildKey) => {
-                  const mod = skillTreeGuildModifier(guildKey)
-                  const treeSlug = guildSlugId(guildKey)
-                  const shortLabel = heading(guildKey)
-
-                  return (
-                    <section
-                      key={`panel-${guildKey}`}
-                      id={`guild-panel-${treeSlug}`}
-                      role="tabpanel"
-                      aria-labelledby={`guild-trigger-${treeSlug}`}
-                      className={`skill-tree-guild-panel skill-tree-guild-panel--detached skill-tree-guild--${mod}`}
-                    >
-                      <h3 className="skill-tree-guild-panel-title">{shortLabel} guild</h3>
-                      {isGuildComingSoonForUser(guildKey, user) ? (
-                        <div className="guild-coming-soon-box guild-coming-soon-box--inline">
-                          <p className="guild-coming-soon-box__icon">🔒</p>
-                          <p className="guild-coming-soon-box__heading">Coming soon</p>
-                          <p className="guild-coming-soon-box__body">
-                            This guild is not yet open. Check back later — new quests are on the way.
-                          </p>
-                        </div>
-                      ) : (
-                        <SkillTilesList
-                          tiles={tilesByGuild.get(guildKey) ?? []}
-                          tileBySlug={tileBySlug}
-                          completionByTileId={completionByTileId}
-                          patentProgressByTileId={patentProgressByTileId}
-                          submittingTileId={submittingTileId}
-                          markComplete={markComplete}
-                          canUseDb={canUseDb}
-                        />
-                      )}
-                    </section>
-                  )
-                })}
+              <section
+                id={`guild-panel-${guildSlugId(openGuildKey)}`}
+                role="tabpanel"
+                aria-labelledby={`guild-trigger-${guildSlugId(openGuildKey)}`}
+                className={`skill-tree-guild-panel skill-tree-guild-panel--detached skill-tree-guild--${skillTreeGuildModifier(openGuildKey)}`}
+              >
+                <h3 className="skill-tree-guild-panel-title">{heading(openGuildKey)} guild</h3>
+                {isGuildComingSoonForUser(openGuildKey, user) ? (
+                  <div className="guild-coming-soon-box guild-coming-soon-box--inline">
+                    <p className="guild-coming-soon-box__icon">🔒</p>
+                    <p className="guild-coming-soon-box__heading">Coming soon</p>
+                    <p className="guild-coming-soon-box__body">
+                      This guild is not yet open. Check back later — new quests are on the way.
+                    </p>
+                  </div>
+                ) : (
+                  <SkillTilesList
+                    tiles={tilesByGuild.get(openGuildKey) ?? []}
+                    tileBySlug={tileBySlug}
+                    completionByTileId={completionByTileId}
+                    patentProgressByTileId={patentProgressByTileId}
+                    submittingTileId={submittingTileId}
+                    markComplete={markComplete}
+                    canUseDb={canUseDb}
+                  />
+                )}
+              </section>
             </div>
           ) : null}
         </div>
