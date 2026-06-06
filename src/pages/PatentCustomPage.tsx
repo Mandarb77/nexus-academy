@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
 import { PatentLedger } from '../components/PatentLedger'
+import { QuestLockedGate } from '../components/QuestLockedGate'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { skillTreeGuildModifier } from '../lib/guildTree'
@@ -16,7 +17,7 @@ import { skillTreeGuildModifier } from '../lib/guildTree'
 export function PatentCustomPage() {
   const { tileId } = useParams<{ tileId: string }>()
   const { signOut } = useAuth()
-  const { tiles, loading, refresh, completionByTileId, canUseDb } = useSkillTree()
+  const { tiles, loading, refresh, completionByTileId, canUseDb, tileBySlug } = useSkillTree()
 
   // ---------------------------------------------------------------------------
   // Resolve URL tile id → `tiles` row from skill tree hook
@@ -38,7 +39,9 @@ export function PatentCustomPage() {
           ? '/tree/folded'
           : mod === 'void'
             ? '/tree/void'
-            : '/tree'
+            : mod === 'silicon'
+              ? '/tree/silicon'
+              : '/tree'
   const backLabel = tile ? `← Back to ${tile.guild} skill tree` : '← Back'
 
   if (!tileId) return null
@@ -70,7 +73,14 @@ export function PatentCustomPage() {
         ) : !tile ? (
           <p className="error" role="alert">Quest tile not found. <Link to="/tree">← Back to skill tree</Link></p>
         ) : (
-          <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          <QuestLockedGate
+            tile={tile}
+            tileBySlug={tileBySlug}
+            completionByTileId={completionByTileId}
+            backPath={backPath}
+          >
+            <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          </QuestLockedGate>
         )}
       </main>
     </div>

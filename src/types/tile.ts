@@ -32,6 +32,8 @@ export type TileRow = {
   skill_name: string
   slug?: string | null
   sort_order?: number | null
+  /** Prerequisite slugs — all must be teacher-approved before this quest opens. */
+  unlock_after_slugs?: string[] | null
   chips?: TileChip[] | null
   wp_value: number
   gold_value?: number | null

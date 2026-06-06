@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
 import { PatentLedger } from '../components/PatentLedger'
+import { QuestLockedGate } from '../components/QuestLockedGate'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { skillTreeGuildModifier } from '../lib/guildTree'
@@ -22,7 +23,7 @@ function patentGamePieceBackPath(guild: string): string {
 export function PatentGamePiecePage() {
   const { tileId } = useParams<{ tileId: string }>()
   const { signOut } = useAuth()
-  const { tiles, loading, refresh, completionByTileId, canUseDb } = useSkillTree()
+  const { tiles, loading, refresh, completionByTileId, canUseDb, tileBySlug } = useSkillTree()
 
   // ---------------------------------------------------------------------------
   // URL → tile row; back link follows guild (Forge vs Prism)
@@ -76,7 +77,14 @@ export function PatentGamePiecePage() {
             Quest tile not found. <Link to="/tree">← Back to skill tree</Link>
           </p>
         ) : (
-          <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          <QuestLockedGate
+            tile={tile}
+            tileBySlug={tileBySlug}
+            completionByTileId={completionByTileId}
+            backPath={backPath}
+          >
+            <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          </QuestLockedGate>
         )}
       </main>
     </div>

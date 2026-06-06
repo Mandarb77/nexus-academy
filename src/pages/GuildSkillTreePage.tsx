@@ -38,6 +38,7 @@ export function GuildSkillTreePage() {
     submittingTileId,
     markComplete,
     canUseDb,
+    tileBySlug,
   } = useSkillTree()
 
   const guildKey = useMemo(() => {
@@ -144,6 +145,7 @@ export function GuildSkillTreePage() {
           ) : (
             <SkillTilesList
               tiles={tiles}
+              tileBySlug={tileBySlug}
               completionByTileId={completionByTileId}
               patentProgressByTileId={patentProgressByTileId}
               submittingTileId={submittingTileId}

@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { MainNav } from '../components/MainNav'
 import { PatentLedger } from '../components/PatentLedger'
+import { QuestLockedGate } from '../components/QuestLockedGate'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { isStickerQuestLocked } from '../lib/stickerTile'
@@ -16,7 +17,7 @@ import { isStickerQuestLocked } from '../lib/stickerTile'
 export function PatentStickerPage() {
   const { tileId } = useParams<{ tileId: string }>()
   const { signOut } = useAuth()
-  const { tiles, loading, refresh, completionByTileId, canUseDb } = useSkillTree()
+  const { tiles, loading, refresh, completionByTileId, canUseDb, tileBySlug } = useSkillTree()
 
   // ---------------------------------------------------------------------------
   // URL → tile; `isStickerQuestLocked` drives “coming soon” vs full wizard
@@ -75,7 +76,14 @@ export function PatentStickerPage() {
             </p>
           </div>
         ) : (
-          <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          <QuestLockedGate
+            tile={tile}
+            tileBySlug={tileBySlug}
+            completionByTileId={completionByTileId}
+            backPath="/tree/folded"
+          >
+            <PatentLedger tile={tile} refresh={refresh} completionStatus={completion?.status} />
+          </QuestLockedGate>
         )}
       </main>
     </div>

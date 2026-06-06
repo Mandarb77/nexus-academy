@@ -18,9 +18,11 @@ import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
 import { isCustomTile, resolvedTileSteps } from '../lib/customTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
 import { STICKER_STEPS } from '../lib/stickerSteps'
+import { tileUnlockStatus } from '../lib/tileUnlock'
 
 type Props = {
   tiles: TileRow[]
+  tileBySlug: Map<string, TileRow>
   completionByTileId: Map<string, TileCompletionState>
   patentProgressByTileId: Map<string, PatentProgress>
   submittingTileId: string | null
@@ -39,6 +41,7 @@ function stepCount(tile: TileRow): number {
 
 export function SkillTilesList({
   tiles,
+  tileBySlug,
   completionByTileId,
   patentProgressByTileId,
   submittingTileId,
@@ -92,9 +95,13 @@ export function SkillTilesList({
            * existing in the DB — avoids deleting curriculum content while the room is not ready.
            */
           const isComingSoon = isStickerQuestLocked(tile)
+          const unlock = tileUnlockStatus(tile, tileBySlug, completionByTileId)
+          const isQuestLocked =
+            unlock.locked && !isApproved && !isPending && !isReturned
 
           const isSimpleMarkCompleteOnly =
             !isComingSoon &&
+            !isQuestLocked &&
             !isApproved &&
             !isPending &&
             !isReturned &&
@@ -103,7 +110,7 @@ export function SkillTilesList({
           return (
             <li
               key={tile.id}
-              className={`skill-tile card${isComingSoon ? ' skill-tile--locked' : ''}${
+              className={`skill-tile card${isComingSoon || isQuestLocked ? ' skill-tile--locked' : ''}${
                 isSimpleMarkCompleteOnly ? ' skill-tile--simple-mark' : ''
               }`}
             >
@@ -138,11 +145,18 @@ export function SkillTilesList({
                     <p className="skill-tile-locked-hint muted">
                       🔒 Coming soon
                     </p>
+                  ) : isQuestLocked ? (
+                    <p className="skill-tile-locked-hint muted">
+                      🔒 Complete{' '}
+                      <strong>{unlock.blockedBy?.skill_name ?? 'the previous quest'}</strong> first
+                    </p>
                   ) : null}
                 </div>
                 <div className="skill-tile-action">
                   {isComingSoon ? (
                     <span className="skill-tile-badge skill-tile-badge--locked">Coming soon</span>
+                  ) : isQuestLocked ? (
+                    <span className="skill-tile-badge skill-tile-badge--locked">Locked</span>
                   ) : isApproved ? (
                     <span className="skill-tile-badge skill-tile-badge--approved">Approved</span>
                   ) : isPending ? (

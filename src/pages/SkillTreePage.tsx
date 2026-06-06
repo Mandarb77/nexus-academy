@@ -34,6 +34,7 @@ export function SkillTreePage() {
     submittingTileId,
     markComplete,
     canUseDb,
+    tileBySlug,
   } = useSkillTree()
 
   const [openGuilds, setOpenGuilds] = useState<Set<string>>(() => new Set())
@@ -168,6 +169,7 @@ export function SkillTreePage() {
                       ) : (
                         <SkillTilesList
                           tiles={tilesByGuild.get(guildKey) ?? []}
+                          tileBySlug={tileBySlug}
                           completionByTileId={completionByTileId}
                           patentProgressByTileId={patentProgressByTileId}
                           submittingTileId={submittingTileId}

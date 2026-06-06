@@ -15,6 +15,7 @@ import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
+import { buildTileBySlug } from '../lib/tileUnlock'
 import type { TileChip, TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
@@ -186,7 +187,7 @@ export function useSkillTree() {
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
       .select(
-        'id, guild, skill_name, slug, sort_order, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, quest_kind, steps',
+        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, quest_kind, steps',
       )
       .order('guild', { ascending: true })
       .order('sort_order', { ascending: true })
@@ -225,6 +226,8 @@ export function useSkillTree() {
     const merged = [...new Set<string>([...SKILL_TREE_SECTION_GUILDS, ...fromTiles])]
     return sortGuildKeys(merged)
   }, [tilesByGuild])
+
+  const tileBySlug = useMemo(() => buildTileBySlug(tiles), [tiles])
 
   // --- Student action: insert or resubmit `skill_completions` (non-patent tiles) ---
   const markComplete = useCallback(
@@ -288,5 +291,6 @@ export function useSkillTree() {
     markComplete,
     refresh: refreshAll,
     canUseDb: isSupabaseConfigured && Boolean(studentId),
+    tileBySlug,
   }
 }
