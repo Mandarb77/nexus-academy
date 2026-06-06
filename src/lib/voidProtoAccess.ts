@@ -1,8 +1,7 @@
 /*
  * Guild “coming soon” gates + Void patent prototype tester
  *
- * Skill tree: only Silicon Covenant is locked (`isGuildComingSoonForUser`). Void Navigators
- * shows all DB tiles for every student (see docs/developer-handoff-recent-work.md).
+ * Skill tree: no guilds are “coming soon” — all sections show live DB tiles when present.
  *
  * `canAccessVoidTile1Proto` — still used for PatentLedger test bypass only (env
  * `VITE_VOID_TILE1_PROTO_EMAIL`). Does not control skill-tree visibility anymore.
@@ -26,9 +25,8 @@ export function canAccessVoidTile1Proto(user: ProtoUser): boolean {
 
 /**
  * Replaces `isComingSoonGuildSection` for user-aware pages.
- * Silicon Covenant stays locked; Void Navigators shows quests from the database for everyone.
+ * Returns false for all guilds; re-enable a guild here when its tree is not ready to ship.
  */
 export function isGuildComingSoonForUser(_guildKey: string, _user: ProtoUser): boolean {
-  const k = _guildKey.trim().toLowerCase()
-  return k === 'silicon covenant'
+  return false
 }

@@ -1,7 +1,7 @@
 /*
  * Per-guild skill tree (`/tree/:guildSlug`)
  *
- * Deep link from student home guild marks. Silicon stays coming-soon; Void shows live DB quests.
+ * Deep link from student home guild marks. Quest rows come from the database.
  * Reuses `SkillTilesList` with `useSkillTree` data.
  */
 

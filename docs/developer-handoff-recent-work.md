@@ -209,7 +209,7 @@ Removed the multi-sentence subtitle from `TeacherPanelPage`; approval queues spe
 
 **Why:** Class should see Void quests in production, not only a prototype tester email.
 
-- `isGuildComingSoonForUser()` — **only** `Silicon Covenant` is “Coming soon”.
+- `isGuildComingSoonForUser()` — returns **false** for all guilds (Silicon Covenant unlocked with migration **052**).
 - **Void Navigators** shows all rows in `tiles` where `guild = 'Void Navigators'`.
 - Quest data comes from Supabase; empty list → error pointing at migrations **039** and **040**.
 

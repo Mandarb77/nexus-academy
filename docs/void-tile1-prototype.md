@@ -35,7 +35,7 @@ On **`void-tile1-proto`** branch only (superseded on `main` for skill tree):
 
 **On `main` today:**
 
-- **`isGuildComingSoonForUser`** — only **Silicon Covenant** is “Coming soon”; Void shows all `Void Navigators` tiles.
+- **`isGuildComingSoonForUser`** — no guilds are “Coming soon” on current `main`; Void and Silicon show DB tiles when seeded.
 - **`canAccessVoidTile1Proto`** — still used in **`PatentLedger`** for `bypassApprovals` during patent UX testing (not skill tree).
 - Student patent flow → **`/patent-custom/:tileId`** → **`PatentLedger`** (plan → checklist → packet).
 

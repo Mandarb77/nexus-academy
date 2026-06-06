@@ -2,7 +2,7 @@
  * Class-wide skill tree (`/tree`)
  *
  * Renders every guild section in `SKILL_TREE_SECTION_GUILDS` order with anchors for deep links.
- * Silicon coming-soon uses `isGuildComingSoonForUser` (voidProtoAccess.ts).
+ * Guild “coming soon” gates use `isGuildComingSoonForUser` (voidProtoAccess.ts).
  */
 
 import { useCallback, useMemo, useState } from 'react'
