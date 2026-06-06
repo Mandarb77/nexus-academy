@@ -5,8 +5,7 @@
  * plan-stage `patents` rows grouped per tile. Uses `pickStudentPlanPatentContext` so a
  * stray duplicate `pending` row cannot hide teacher-approved plan state on the tree.
  * Exposes `markComplete` for “Submit for approval” on non-patent tiles. The tiles select
- * intentionally omits `checklist_footer_note` on older databases that predate migration
- * 034 — requesting a missing column used to blank the entire tree in production.
+ * loads patent footer + flow connector fields when present (migrations 034+, 056+).
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -180,14 +179,14 @@ export function useSkillTree() {
     setLoading(true)
 
     /*
-     * Omit `checklist_footer_note`: older class DBs without migration 034 throw on unknown
+     * Includes `checklist_footer_note` + `flow_in_style` (migrations 034+, 056+).
      * columns — PostgREST used to return an error for the whole `tiles` select, which made
      * the skill tree empty for everyone until the migration landed.
      */
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
       .select(
-        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, quest_kind, steps',
+        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps, checklist_footer_note, flow_in_style',
       )
       .order('guild', { ascending: true })
       .order('sort_order', { ascending: true })

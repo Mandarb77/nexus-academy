@@ -4062,6 +4062,71 @@ body:has(.bench-chrome) {
   color: color-mix(in srgb, var(--guild-accent) 72%, var(--color-ink-secondary));
 }
 
+/* Quest tree flow connectors + stretch tile treatment (flow_in_style on tiles) */
+.bench-chrome .skill-tile-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0 0.5rem;
+  color: var(--color-ink-tertiary);
+}
+
+.bench-chrome .skill-tile-flow__shaft {
+  display: block;
+  width: 0;
+  height: 1.35rem;
+  border-left: 2px solid var(--color-ink-tertiary);
+}
+
+.bench-chrome .skill-tile-flow--dashed-optional .skill-tile-flow__shaft {
+  border-left-style: dashed;
+  opacity: 0.75;
+}
+
+.bench-chrome .skill-tile-flow__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.bench-chrome .skill-tile-flow__head {
+  font-size: 0.55rem;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+.bench-chrome .skill-tile-tier-label {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-tertiary);
+}
+
+.bench-chrome .skill-tile--stretch.card {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--guild-accent, var(--color-forge)) 38%, var(--color-rule-light));
+}
+
+.bench-chrome .skill-tile-divider {
+  margin: 0.65rem 0 0.45rem;
+  border: 0;
+  border-top: 1px solid var(--color-rule-light);
+}
+
+.bench-chrome .skill-tile-example {
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--color-ink-tertiary);
+}
+
 .bench-chrome .skill-tree-guild--nav.skill-tree-guild--open .skill-tree-guild-chevron {
   color: var(--guild-accent);
 }

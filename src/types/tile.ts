@@ -58,4 +58,6 @@ export type TileRow = {
   steps?: StepConfig[] | null
   /** Shown below the checklist on some quests (e.g. replay rules). */
   checklist_footer_note?: string | null
+  /** Skill-tree connector before this tile: dashed-optional | solid */
+  flow_in_style?: string | null
 }

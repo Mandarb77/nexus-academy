@@ -107,19 +107,46 @@ export function SkillTilesList({
             !isReturned &&
             !isPatentTile
 
+          const questKind = tile.quest_kind ?? 'required'
+          const flowIn = tile.flow_in_style?.trim()
+
           return (
             <li
               key={tile.id}
               className={`skill-tile card${isComingSoon || isQuestLocked ? ' skill-tile--locked' : ''}${
                 isSimpleMarkCompleteOnly ? ' skill-tile--simple-mark' : ''
-              }`}
+              }${questKind === 'stretch' ? ' skill-tile--stretch' : ''}${
+                questKind === 'tier2' ? ' skill-tile--tier2' : ''
+              }${questKind === 'boss' ? ' skill-tile--boss' : ''}`}
             >
+              {flowIn ? (
+                <div
+                  className={`skill-tile-flow skill-tile-flow--${flowIn}`}
+                  aria-hidden="true"
+                >
+                  <span className="skill-tile-flow__shaft" />
+                  {flowIn === 'dashed-optional' ? (
+                    <span className="skill-tile-flow__label">Optional</span>
+                  ) : null}
+                  <span className="skill-tile-flow__head" aria-hidden="true">
+                    ▼
+                  </span>
+                </div>
+              ) : null}
               <div className="skill-tile-row">
                 <div className="skill-tile-main">
-                  <h3 className="skill-tile-name" title={tile.subtitle ?? undefined}>{tile.skill_name}</h3>
+                  {questKind === 'stretch' ? (
+                    <p className="skill-tile-tier-label">Stretch</p>
+                  ) : null}
+                  <h3 className="skill-tile-name">{tile.skill_name}</h3>
                   {tile.tile_description?.trim() ? (
                     <p className="muted skill-tile-description" style={{ margin: '0.25rem 0 0', fontSize: '0.88rem' }}>
                       {tile.tile_description.trim()}
+                    </p>
+                  ) : null}
+                  {tile.recipient_guidance?.trim() ? (
+                    <p className="muted skill-tile-detail-line" style={{ margin: '0.35rem 0 0', fontSize: '0.88rem' }}>
+                      {tile.recipient_guidance.trim()}
                     </p>
                   ) : null}
                   {tile.chips && tile.chips.length > 0 ? (
@@ -150,6 +177,12 @@ export function SkillTilesList({
                       🔒 Complete{' '}
                       <strong>{unlock.blockedBy?.skill_name ?? 'the previous quest'}</strong> first
                     </p>
+                  ) : null}
+                  {tile.subtitle?.trim() ? (
+                    <>
+                      <hr className="skill-tile-divider" />
+                      <p className="muted skill-tile-example">{tile.subtitle.trim()}</p>
+                    </>
                   ) : null}
                 </div>
                 <div className="skill-tile-action">
