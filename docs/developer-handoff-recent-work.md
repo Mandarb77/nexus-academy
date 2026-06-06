@@ -47,7 +47,7 @@ Older Void prototype work lives on branch `void-tile1-proto` and in `docs/void-t
 
 **Critical fix (teacher purple bug):** `.bench-chrome` redefines legacy CSS variables (`--bg`, `--card-bg`, `--accent`, etc.) so components that still use `var(--card-bg)` do not flip to purple-black when the OS is in dark mode. `body:has(.bench-chrome)` keeps the page background warm.
 
-**Apply the class on:** `app-shell bench-chrome` on student pages (home, guilds, shop, journey, inventory, resources, codex, login) and teacher pages (dashboard, teacher panel, reset, quests). **Dispatch** adds `where-you-are-page` for a charcoal grid background (exception to warm ground).
+**Apply the class on:** `app-shell bench-chrome` on student pages (home, guilds, shop, journey, inventory, resources, codex, dispatch, login) and teacher pages (dashboard, teacher panel, reset, quests). **Dispatch** (`where-you-are-page`) uses the same warm bench shell; flip cards keep category accent bands.
 
 **Do not apply on:** Patent routes — they use `patent-paper-page` + `src/patentLedger.css` (cream paper, Cinzel/Crimson Pro). See `docs/patent-form-strings.md` for copy source of truth.
 
@@ -110,7 +110,7 @@ Ledger reads/writes these best-effort; UI works without migration but those fiel
 - `src/pages/PowerUpsPage.tsx` — page shell
 - `src/lib/whereYouAreCards.ts` — card copy (edit here to add cards)
 - `src/components/WhereYouAreCard.tsx` — 3D flip on tap
-- `src/App.css` — `.where-you-are-*`, `.where-card-*` (dark background)
+- `src/App.css` — `.where-you-are-*`, `.where-card-*` (flip-card grid on warm bench)
 
 **Legacy:** `PowerUpsTabsNav.tsx` is unused after rebuild; safe to delete in a cleanup PR.
 

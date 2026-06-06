@@ -374,27 +374,7 @@ a.btn-primary {
   border: 1px solid rgba(34, 197, 94, 0.45);
 }
 
-@media (prefers-color-scheme: dark) {
-  .btn-primary {
-    background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
 
-  .btn-google:not(:disabled) {
-    background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .btn-google:disabled {
-    background: var(--code-bg);
-    color: var(--text);
-  }
-
-  .role-teacher {
-    color: #86efac;
-    border-color: rgba(134, 239, 172, 0.4);
-  }
-}
 
 .setup-notice {
   border-color: rgba(109, 40, 217, 0.35);
@@ -455,11 +435,7 @@ a.btn-primary {
   font-size: 0.9rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  .error {
-    color: #fca5a5;
-  }
-}
+
 
 .muted {
   color: var(--text);
@@ -600,11 +576,7 @@ a.btn-primary {
   color: var(--text-h);
 }
 
-@media (prefers-color-scheme: dark) {
-  .rank-progress-fill {
-    background: linear-gradient(90deg, #7c3aed, #c4b5fd);
-  }
-}
+
 
 .student-home-guilds {
   margin-top: 0;
@@ -1199,17 +1171,7 @@ a.btn-primary {
   border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
-@media (prefers-color-scheme: dark) {
-  .journey-entry-wp {
-    color: #86efac;
-  }
 
-  .journey-badge--approved {
-    color: #86efac;
-    background: rgba(34, 197, 94, 0.12);
-    border-color: rgba(34, 197, 94, 0.28);
-  }
-}
 
 .skill-tree-top {
   margin-bottom: 1.5rem;
@@ -1483,30 +1445,7 @@ a.btn-primary {
   border-left: 4px solid rgba(216, 90, 48, 0.45);
 }
 
-@media (prefers-color-scheme: dark) {
-  .skill-tree-guild-welcome--forge {
-    background: linear-gradient(135deg, rgba(120, 53, 15, 0.35) 0%, rgba(146, 64, 14, 0.22) 100%);
-    border-color: rgba(251, 191, 36, 0.22);
-    border-left-color: rgba(251, 191, 36, 0.45);
-  }
 
-  .skill-tree-guild-welcome--prism {
-    background: linear-gradient(135deg, rgba(49, 46, 129, 0.45) 0%, rgba(67, 56, 202, 0.2) 100%);
-    border-color: rgba(165, 180, 252, 0.22);
-    border-left-color: rgba(165, 180, 252, 0.45);
-  }
-
-  .skill-tree-guild-welcome--folded {
-    background: linear-gradient(135deg, rgba(88, 28, 28, 0.35) 0%, rgba(124, 45, 18, 0.22) 100%);
-    border-color: rgba(244, 160, 122, 0.2);
-    border-left-color: rgba(244, 160, 122, 0.42);
-  }
-
-  .skill-tree-guild-welcome__text {
-    color: var(--text);
-    opacity: 0.95;
-  }
-}
 
 .skill-tree-guild--single {
   max-width: 100%;
@@ -1595,22 +1534,7 @@ a.btn-primary {
   font-style: italic;
 }
 
-@media (prefers-color-scheme: dark) {
-  .skill-tree-guild--forge .skill-tree-guild-name,
-  .skill-tree-guild--forge .skill-tree-guild-page-title,
-  .skill-tree-guild--forge .skill-tile-name {
-    background: linear-gradient(165deg, #fef3c7 0%, #fbbf24 40%, #d97706 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    -webkit-text-fill-color: transparent;
-  }
 
-  .skill-tree-guild--forge .skill-tile-wp {
-    color: #fbbf24;
-    opacity: 0.9;
-  }
-}
 
 /* Prism guild: rainbow titles */
 .skill-tree-guild--prism .skill-tree-guild-name,
@@ -1640,11 +1564,7 @@ a.btn-primary {
   color: #6366f1;
 }
 
-@media (prefers-color-scheme: dark) {
-  .skill-tree-guild--prism .skill-tile-wp {
-    color: #a5b4fc;
-  }
-}
+
 
 @keyframes skill-tree-rainbow-flow {
   0% {
@@ -1685,17 +1605,7 @@ a.btn-primary {
   color: #D85A30;
 }
 
-@media (prefers-color-scheme: dark) {
-  .skill-tree-guild--folded .skill-tree-guild-name,
-  .skill-tree-guild--folded .skill-tree-guild-page-title,
-  .skill-tree-guild--folded .skill-tile-name {
-    color: #f4a07a;
-  }
 
-  .skill-tree-guild--folded .skill-tile-wp {
-    color: #f4a07a;
-  }
-}
 
 /* Silicon Covenant — cool neutral accent */
 .skill-tree-guild--silicon .skill-tree-guild-name:not(.skill-tree-guild-name--banner),
@@ -1727,19 +1637,7 @@ a.btn-primary {
   border-color: rgba(124, 58, 237, 0.28);
 }
 
-@media (prefers-color-scheme: dark) {
-  .skill-tree-guild--silicon .skill-tree-guild-name:not(.skill-tree-guild-name--banner),
-  .skill-tree-guild--silicon .skill-tree-guild-page-title,
-  .skill-tree-guild--silicon .skill-tile-name {
-    color: #99f6e4;
-  }
 
-  .skill-tree-guild--void .skill-tree-guild-name:not(.skill-tree-guild-name--banner),
-  .skill-tree-guild--void .skill-tree-guild-page-title,
-  .skill-tree-guild--void .skill-tile-name {
-    color: #c4b5fd;
-  }
-}
 
 .skill-tile-list {
   list-style: none;
@@ -2385,19 +2283,7 @@ a.btn-primary {
   color: var(--text);
 }
 
-@media (prefers-color-scheme: dark) {
-  .patent-paper-page {
-    --bg: #FAF8F3;
-    --card-bg: #F0EBE0;
-    --text: #3a3530;
-    --text-h: #1a1a1a;
-    --border: #d4cfc4;
-    --code-bg: #E8E2D8;
-    --muted-text: #6b6258;
-    background: var(--bg);
-    color: var(--text);
-  }
-}
+
 
 /* Typed answer ink — override the default blue-on-dark */
 .patent-paper-page .patent-game-piece-form input[type="text"],
@@ -2440,17 +2326,7 @@ a.btn-primary {
   cursor: not-allowed;
 }
 
-@media (prefers-color-scheme: dark) {
-  .btn-skill--complete {
-    background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
 
-  .skill-tile-badge--approved {
-    color: #86efac;
-    border-color: rgba(134, 239, 172, 0.4);
-  }
-}
 
 /* ── 2×2 approval boxes grid ── */
 .teacher-panel-approvals-grid {
@@ -3182,20 +3058,7 @@ a.btn-primary {
   filter: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  .gold-shop-buy-btn--active {
-    background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
 
-  .gold-shop-item-name--affordable {
-    color: #4ade80;
-  }
-
-  .gold-shop-item-name--unaffordable {
-    color: #f87171;
-  }
-}
 
 .nexus-app-dev-ribbon {
   background: #1e1b2e;
@@ -3234,7 +3097,7 @@ a.btn-primary {
  * patent routes use patent-paper-page / patentLedger.css instead.
  *
  * Scoped under `.bench-chrome` + shared `.student-nav`. `.bench-chrome` redefines
- * --bg/--card-bg/--accent so OS dark mode cannot re-tint teacher pages purple.
+ * --bg/--card-bg/--accent for warm workshop chrome. OS dark mode is disabled globally (index.css).
  * Appended last so these rules win over legacy styles above.
  *
  * Overview: docs/developer-handoff-recent-work.md
@@ -4445,62 +4308,7 @@ body:has(.bench-chrome) {
 }
 
 /* Keep warm bench on redesigned pages even when OS prefers dark */
-@media (prefers-color-scheme: dark) {
-  .bench-chrome {
-    --bg: var(--color-ground);
-    --card-bg: var(--color-panel);
-    --text: var(--color-ink-secondary);
-    --text-h: var(--color-ink-primary);
-    --border: var(--color-rule-light);
-    --code-bg: var(--color-ground);
-    --accent: var(--color-forge);
-    --accent-strong: var(--color-forge);
-    --accent-bg: rgba(196, 123, 43, 0.14);
-    --accent-border: rgba(196, 123, 43, 0.45);
-    --shadow: none;
-    background: var(--color-ground);
-    color: var(--color-ink-primary);
-  }
 
-  body:has(.bench-chrome) {
-    background: var(--color-ground);
-    color: var(--color-ink-primary);
-  }
-
-  .bench-chrome h1,
-  .bench-chrome h2,
-  .bench-chrome h3,
-  .bench-chrome strong {
-    color: var(--color-ink-primary);
-  }
-
-  .bench-chrome .muted {
-    color: var(--color-ink-tertiary);
-  }
-
-  .bench-chrome .card {
-    background: var(--color-panel);
-    border-color: var(--color-rule-light);
-  }
-
-  .bench-chrome .journey-entry-wp,
-  .bench-chrome .journey-badge--approved {
-    color: var(--color-ink-primary);
-    background: var(--color-ground);
-    border-color: var(--color-rule-strong);
-  }
-
-  .bench-chrome .skill-tree-guild--accordion {
-    background: var(--color-panel);
-    border-color: var(--color-rule-light);
-  }
-
-  .bench-chrome .skill-tree-guild-toggle-fallback .skill-tree-guild-chevron {
-    color: var(--color-ink-primary);
-  }
-
-  /* bench-chrome locks warm tokens — guild accents unchanged in dark OS mode */
-}
 
 /* ── Teacher tools + student preview (bench chrome) ── */
 
@@ -4549,22 +4357,6 @@ body:has(.bench-chrome) {
 .bench-preview-banner__exit:hover {
   border-color: var(--color-forge);
   color: var(--color-ink-primary);
-}
-
-.where-you-are-page .bench-preview-banner {
-  background: #2a2722;
-  border-color: var(--color-forge);
-  color: #f5f2eb;
-}
-
-.where-you-are-page .bench-preview-banner__exit {
-  background: #1e1c18;
-  border-color: #8c8680;
-  color: #f5f2eb;
-}
-
-.where-you-are-page .bench-preview-banner__exit:hover {
-  border-color: var(--color-forge);
 }
 
 .bench-chrome .student-nav-link--preview {
@@ -4771,37 +4563,7 @@ body:has(.bench-chrome) {
   filter: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  .bench-chrome.teacher-panel-page .btn-primary,
-  .bench-chrome.teacher-panel-page a.btn-primary,
-  .bench-chrome.teacher-panel-page .btn-secondary,
-  .bench-chrome.teacher-panel-page .btn-danger {
-    filter: none;
-    box-shadow: none;
-  }
 
-  .bench-chrome.teacher-panel-page .btn-primary,
-  .bench-chrome.teacher-panel-page a.btn-primary {
-    background: var(--color-ink-primary);
-    border-color: var(--color-ink-primary);
-    color: var(--color-panel);
-  }
-
-  .bench-chrome.teacher-panel-page .teacher-panel-approval-box,
-  .bench-chrome.teacher-panel-page .teacher-panel-item,
-  .bench-chrome.teacher-panel-page .teacher-panel-mini-row,
-  .bench-chrome.teacher-panel-page .teacher-panel-student-row,
-  .bench-chrome.teacher-panel-page .card {
-    background: var(--color-panel);
-    border-color: var(--color-rule-light);
-    box-shadow: none;
-  }
-
-  .bench-chrome.teacher-panel-page .teacher-panel-student-row:hover {
-    background: var(--color-ground);
-    border-color: var(--color-rule-strong);
-  }
-}
 
 /* ── StudentHomePage (texture + home-only layout) ── */
 
@@ -5114,26 +4876,7 @@ body:has(.bench-chrome) {
  * Dispatch — Where You Are (flip cards)
  * ============================================================ */
 
-.where-you-are-page {
-  background: #1e1c18;
-  color: #e8e4dc;
-}
-
-.where-you-are-page .student-nav {
-  background: #2a2722;
-  border-color: #3d3830;
-}
-
-.where-you-are-page .student-nav-link {
-  color: #c8c2b8;
-}
-
-.where-you-are-page .student-nav-link:hover,
-.where-you-are-page .student-nav-link--active {
-  color: #f5f2eb;
-  border-color: #8c8680;
-}
-
+/* Dispatch uses bench-chrome ground; layout + flip cards only below */
 .where-you-are {
   padding-bottom: 2.5rem;
 }
@@ -5146,19 +4889,20 @@ body:has(.bench-chrome) {
 .where-you-are__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #f5f2eb;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
 }
 
 .where-you-are__subtitle {
   margin: 0.5rem 0 0;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #9c968c;
+  color: var(--color-ink-tertiary);
 }
 
 .where-you-are__grid {
@@ -5176,12 +4920,12 @@ body:has(.bench-chrome) {
 .where-you-are__footer {
   margin-top: 2rem;
   padding-top: 1.25rem;
-  border-top: 1px solid #3d3830;
+  border-top: 1px solid var(--color-rule-light);
   font-family: var(--font-ui);
   font-size: 0.95rem;
   line-height: 1.5;
   text-align: center;
-  color: #9c968c;
+  color: var(--color-ink-tertiary);
 }
 
 /* Flip card */
@@ -5201,7 +4945,7 @@ body:has(.bench-chrome) {
 }
 
 .where-card:focus-visible {
-  outline: 2px solid #c8c2b8;
+  outline: 2px solid var(--color-ink-primary);
   outline-offset: 3px;
 }
 
@@ -5225,9 +4969,9 @@ body:has(.bench-chrome) {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   border: 2px solid var(--where-card-border);
-  border-radius: 4px;
-  background: #fdfbf7;
-  color: #1a1714;
+  border-radius: 2px;
+  background: var(--color-panel);
+  color: var(--color-ink-primary);
   overflow: hidden;
   box-shadow: none;
 }
@@ -5281,7 +5025,7 @@ body:has(.bench-chrome) {
   font-size: 1.55rem;
   font-weight: 700;
   line-height: 1.15;
-  color: #1a1714;
+  color: var(--color-ink-primary);
 }
 
 .where-card__meta {
@@ -5292,18 +5036,18 @@ body:has(.bench-chrome) {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.04em;
-  color: #6b6560;
+  color: var(--color-ink-tertiary);
 }
 
 .where-card__hook {
   margin: auto 0 0;
   padding-top: 0.75rem;
-  border-top: 1px solid #e0dbd2;
+  border-top: 1px solid var(--color-rule-light);
   font-family: 'Crimson Pro', Georgia, serif;
   font-size: 0.95rem;
   font-style: italic;
   line-height: 1.45;
-  color: #2a2622;
+  color: var(--color-ink-secondary);
 }
 
 .where-card__story {
@@ -5311,13 +5055,13 @@ body:has(.bench-chrome) {
   font-family: 'Crimson Pro', Georgia, serif;
   font-size: 0.92rem;
   line-height: 1.5;
-  color: #2a2622;
+  color: var(--color-ink-secondary);
 }
 
 .where-card__divider {
   margin: 0.75rem 0;
   border: 0;
-  border-top: 1px dashed #c8c2b8;
+  border-top: 1px dashed var(--color-rule-strong);
 }
 
 .where-card__kicker {
@@ -5326,15 +5070,10 @@ body:has(.bench-chrome) {
   font-size: 0.88rem;
   font-style: italic;
   line-height: 1.45;
-  color: #4a453f;
+  color: var(--color-ink-secondary);
 }
 
-@media (prefers-color-scheme: dark) {
-  .where-you-are-page.bench-chrome {
-    background: #1e1c18;
-    color: #e8e4dc;
-  }
-}
+
 
 /* ============================================================
  * END TEXTURE LAYER

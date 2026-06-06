@@ -2,7 +2,7 @@
  * Nexus Academy — global design tokens and base layout
  *
  * Defines CSS variables consumed across `App.css` and feature modules (shell width, palette,
- * typography). Media blocks override tokens for wide screens and `prefers-color-scheme: dark`.
+ * typography). OS dark mode is ignored app-wide — always light tokens (`color-scheme: light only`).
  * Loaded from `main.tsx` before `App.css`.
  */
 
@@ -67,30 +67,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  color-scheme: light only;
+}
+
 @media (min-width: 1024px) {
   :root {
     --app-shell-max-width: 1400px;
     --app-shell-padding-x: clamp(1.5rem, 3.5vw, 2.75rem);
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #a8a3b8;
-    --text-h: #f4f2fb;
-    --bg: #12101a;
-    --border: #2d2840;
-    --code-bg: #1c1829;
-    --accent: #a78bfa;
-    --accent-strong: #c4b5fd;
-    --accent-bg: rgba(167, 139, 250, 0.15);
-    --accent-border: rgba(167, 139, 250, 0.4);
-    --card-bg: #1a1626;
-    --gold-text: #fbbf24;
-    --gold-text-bright: #fde047;
-    --shadow:
-      rgba(0, 0, 0, 0.35) 0 12px 28px -8px,
-      rgba(0, 0, 0, 0.2) 0 4px 10px -4px;
   }
 }
 
