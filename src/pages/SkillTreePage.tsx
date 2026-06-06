@@ -1,8 +1,14 @@
 /*
  * Class-wide skill tree (`/tree`)
  *
- * Renders every guild section in `SKILL_TREE_SECTION_GUILDS` order with anchors for deep links.
- * Guild “coming soon” gates use `isGuildComingSoonForUser` (voidProtoAccess.ts).
+ * Layout (June 2026): five guild tiles always visible in a top nav strip; one guild open at
+ * a time (`openGuildKey`). Quest rows render in a single tall panel below (`skill-tree-guilds-expand`).
+ * Quest content is DB-driven (`useSkillTree`); unlock uses `tileUnlock.ts`.
+ *
+ * Guild order: `SKILL_TREE_SECTION_GUILDS` in guildTree.ts. “Coming soon” gates:
+ * `isGuildComingSoonForUser` (voidProtoAccess.ts).
+ *
+ * Docs: docs/developer-handoff-recent-work.md (accordion UX), docs/quest-tiles-teacher-builder-and-backfill.md (guild trees).
  */
 
 import { useCallback, useMemo, useState } from 'react'

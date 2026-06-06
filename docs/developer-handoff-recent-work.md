@@ -14,6 +14,14 @@ This document explains **what changed on `main` recently and why**, so a new dev
 
 | Commit | Summary |
 |--------|---------|
+| `ce063bc` | **Prism Order quest tree (054):** 10 editable tiles; legacy Prism rows removed; `unlock_after_any_slugs` (boss opens after **one** Tier 2 capstone — 7A or 7B); guild accent `#378ADD`. Prod: `db query` + `migration repair 054`. |
+| `b1f863b` | **Guild accordion UX:** one guild open at a time; quest panel fills page height below the five-tile nav strip (`SkillTreePage` + `App.css`). |
+| `10ff3ae` | **Quest sequential unlock (053):** `tiles.unlock_after_slugs`; Forge + Silicon linear gates; `tileUnlock.ts`, `QuestLockedGate`, patent routes gated. |
+| `1fe462f` | **Guild accordion (first pass):** all five guilds always visible in top row; quests in scroll panel below. |
+| `bb22502` | **Silicon Covenant unlocked** on skill tree (`isGuildComingSoonForUser` → false for all guilds). |
+| `b0ecabd` | **Silicon Covenant quest tree (052):** 8 tiles; `platform` / `technique` chips; Path B placeholder step. |
+| `2673d0c` | **Forge quest tree (051):** 8 tiles; `slug`, `chips`, `sort_order`; legacy Forge rows deleted FK-safe. |
+| `10596e9` | **Field Guide** nav rename (`Archive` → `Field Guide`, route `/resources` unchanged); **tool glossary (050)** + `/teacher/tools`. |
 | `dd73779` | **Shop catalog (048–049):** editable `shop_items`, catalog `buy_shop_item`, teacher **Shop Manager** (`/teacher/shop`), phone SKUs hard-deleted. **Quest tiles (046–047):** tile metadata + `patents.field_6`, canonical `steps` backfill, DB-driven `patentLedgerContent`, Quest Builder on all tiles — [shop](./shop-catalog-and-teacher-editor.md), [quests](./quest-tiles-teacher-builder-and-backfill.md). |
 | `02f4d8a` | **Quest payouts (045):** `quest_kind` / `is_core`, WP/gold rescale, semester gold reset UI on Reset page. |
 | `2ebb2e4` | Void Navigators quests visible to **all** students (not email-gated on skill tree). |
@@ -79,7 +87,13 @@ Ledger reads/writes these best-effort; UI works without migration but those fiel
 | Resources | Field Guide | `/resources` |
 | Power Ups | Dispatch | `/powerups` |
 
-**Guild list UI:** `SkillTreePage` — tiled accordion with `GuildMark` compact marks (not full-width banners). Per-guild deep link: `/tree/:guildSlug` (`GuildSkillTreePage`).
+**Guild list UI:** `SkillTreePage` — **nav strip + expansion panel** (June 2 pass):
+
+- All **five guilds** stay visible in a top row (`skill-tree-guilds-nav` grid).
+- **One guild open at a time** — `openGuildKey: string | null`; clicking toggles; quest list renders in a single tall panel below (`skill-tree-guilds-expand`, `flex: 1`, full viewport height).
+- Compact `GuildMark` tiles (not full-width banners). Per-guild deep link: `/tree/:guildSlug` (`GuildSkillTreePage`).
+
+**Quest unlock on tree + patents:** `tiles.unlock_after_slugs` (all required) and `tiles.unlock_after_any_slugs` (any one — Prism boss). Resolver: `src/lib/tileUnlock.ts`; UI: `SkillTilesList`, `QuestLockedGate`. Unlock = **teacher-approved** `skill_completion` on prerequisite slug(s). Details: [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md#guild-quest-trees-051054-june-2).
 
 **Shop (Supply):** `GoldShopPage` + `ShopTierBoard` — catalog from `shop_items` / `shop_tiers` (not hardcoded RPC SKUs). Locked items use `is_locked` + optional `gate_requirement` copy. Teacher edits at `/teacher/shop` — see [Shop catalog](#shop-catalog-048049).
 
@@ -235,6 +249,56 @@ Removed the multi-sentence subtitle from `TeacherPanelPage`; approval queues spe
 
 - `src/components/GuildMark.tsx` — forge/prism/folded/silicon/void marks
 - `src/lib/guildBannerAssets.ts` — PNG paths for guild page thumbs only
+- **Prism accent** (`--color-prism`): `#378ADD` in `src/index.css` (June 2; was `#3D5A8A`)
+
+---
+
+## Guild quest trees in DB (051–054, June 2)
+
+**Why:** Flagship guild curricula move out of TS/JSX into editable `tiles` rows — same pattern as Void: `slug`, `sort_order`, `chips`, `tile_description`, `recipient_guidance`, `steps`, unlock columns.
+
+| Migration | Guild (`tiles.guild`) | Tiles | Notes |
+|-----------|----------------------|-------|-------|
+| **051** | `Forge` | 8 | Tinkercad/Fusion chips; gate = tile 3; parallel Tier 2 gates; boss needs both gates |
+| **052** | `Silicon Covenant` | 8 | `platform` / `technique` chips; same unlock shape as Forge |
+| **053** | — | — | `unlock_after_slugs` column + Forge/Silicon unlock seeds |
+| **054** | `Prism` | 10 | Laser/Glowforge/Cuttle chips; **Preservation** (6A→7A) vs **Utility** (6B→7B) paths; boss via `unlock_after_any_slugs` (7A **or** 7B) |
+
+**Display name vs DB:** Skill tree section key is `Prism`; welcome copy uses **Prism Order** (`guildWelcomeCopy.ts`). Silicon/Void use full guild string in DB (`Silicon Covenant`, `Void Navigators`).
+
+**No path/branch column yet:** Prism Tier 2 shows both paths; student completes one track; boss opens after either capstone. Mutual-exclusion UI not built — both path entry tiles unlock after the gate.
+
+**Legacy row cleanup:** 051/054 delete guild rows where `slug is null` (after clearing `patents` / `skill_completions` FKs). Removes old Forge intro skills and Prism pop-up card quest.
+
+**Prod apply:** Duplicate migration numbers **039–044** still block clean `supabase db push`. Apply new migrations with `npx supabase db query --linked -f supabase/migrations/NNN_….sql` then `npx supabase migration repair NNN --status applied`. **054** applied this way on hosted Supabase.
+
+Full unlock/chip/slug reference: [quest-tiles doc — guild trees](./quest-tiles-teacher-builder-and-backfill.md#guild-quest-trees-051054-june-2).
+
+---
+
+## Tool glossary (050)
+
+**Why:** Kid-facing hints for tile tool-chips (teacher-authored; students will look up by `tool_name` when click-to-hint ships).
+
+| Route | File | Role |
+|-------|------|------|
+| `/teacher/tools` | `TeacherToolGlossaryPage.tsx` | CRUD on `tool_glossary` (`tool_name`, `software`, `hint`, `active`) |
+| — | 12 Tinkercad seeds in **050** | `tool_name` must match chip `label` exactly |
+
+---
+
+## June 2, 2026 — session checklist
+
+What landed on `main` and prod in this pass:
+
+1. **Forge** — full quest tree in DB (**051**); UI reads `chips` + `sort_order`.
+2. **Silicon Covenant** — full quest tree (**052**); guild no longer “coming soon”.
+3. **Quest gating** — sequential unlock (**053**); approved completions on prerequisite slugs.
+4. **Guild accordion** — five-tile nav strip; one panel open; tall quest area (**`1fe462f`**, **`b1f863b`**).
+5. **Prism Order** — 10 tiles (**054**); OR boss unlock; accent color; prod applied.
+6. **Field Guide** rename + **tool glossary** (**050**, **`10596e9`**).
+
+**Not in this pass (deferred):** Folded/Prism/Void `unlock_after` seeds beyond what 053 already set; teacher UI for `unlock_after_slugs` / `chips` / `slug`; Prism path mutual-exclusion; duplicate **039–044** migration renumber for clean `db push`.
 
 ---
 
@@ -255,7 +319,11 @@ Do not mount these per-page; add new global realtime UX here.
 |---------|----------------|
 | Production still looks purple/old | Browser cache — hard refresh; confirm Vercel deployed latest `main` commit. |
 | Teacher UI purple on dark OS | Missing `bench-chrome` on shell or old bundle without token lock in `.bench-chrome`. |
-| Void shows “Coming soon” | Old JS bundle, or no tiles in DB (run 039/040). |
+| Void shows “Coming soon” | Old JS bundle, or `isGuildComingSoonForUser` still true (should be false for all guilds since `bb22502`). |
+| All quests open / none locked | **053** not applied, or `unlock_after_slugs` empty on tiles. |
+| Prism boss never opens | Need approved **7A or 7B** (not both); check `unlock_after_any_slugs` on `prism-boss`. |
+| Guild panel tiny / many accordions open | Old bundle before **`b1f863b`** — hard refresh. |
+| `db push` fails on 039 | Duplicate version numbers **039–044** — use `db query` + `migration repair` per migration. |
 | Patent save missing fields | Migrations 043/044 not applied on hosted Supabase. |
 | Wrong checklist step checked off | `tiles.steps` order/count changed without matching `patents.checklist_state` — see [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md). |
 | Quest Builder empty / save fails | **046** not applied; or column missing in select. |
@@ -277,7 +345,10 @@ Do not mount these per-page; add new global realtime UX here.
 | Patent form copy/fields | `src/lib/patentLedgerContent.ts`, `PatentLedger.tsx`, `docs/patent-form-strings.md` |
 | Quest type / WP/gold / tile brief / steps | `TeacherQuestsPage.tsx`, `questKindScale.ts`, [quest tile notes](./quest-tiles-teacher-builder-and-backfill.md) |
 | Teacher alert copy/sound | `TeacherSubmissionBanner.tsx`, `alertSound.ts` |
-| New guild quest | `/teacher/quests` or migration; regenerate **047** if copying from `src/lib/*.ts` |
+| New guild quest tree | New migration with `slug` upsert (see **051** / **052** / **054**); set `unlock_after_slugs` in **053** or same file |
+| Quest unlock / gating | `tiles.unlock_after_slugs`, `unlock_after_any_slugs`; `src/lib/tileUnlock.ts` |
+| Guild accordion layout | `SkillTreePage.tsx`, `App.css` `.skill-tree-guilds-*` |
+| New guild quest (single tile) | `/teacher/quests` or migration; regenerate **047** if copying from `src/lib/*.ts` |
 | Shop item / price / lock / stock | `/teacher/shop` or `shop_items` SQL; defaults in `shopCatalogDefaults.ts` |
 | Supply card copy or tier | `TeacherShopPage` or seed in **049** |
 | Tool-chip hint copy | `/teacher/tools` or `tool_glossary` (**050**); `tool_name` must match chip label |

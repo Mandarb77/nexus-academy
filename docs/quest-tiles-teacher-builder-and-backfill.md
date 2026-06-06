@@ -8,6 +8,9 @@ Developer notes for the **June 2026** pass that unified quest content in Supabas
 
 | Commit | Scope |
 |--------|--------|
+| `ce063bc` | Migration **054** (Prism Order tree), `unlock_after_any_slugs`, `tileUnlock.ts` OR logic |
+| `10ff3ae` | Migration **053** (`unlock_after_slugs`), Forge + Silicon unlock seeds, `QuestLockedGate` |
+| `2673d0c` / `b0ecabd` | Migrations **051** (Forge), **052** (Silicon Covenant) — slug/chips/sort_order quest trees |
 | `02f4d8a` | Migration **045** + `questKindScale.ts` + semester gold reset on `TeacherResetPage` |
 | `dd73779` | Migrations **046–047**, DB-driven patent resolver, `TeacherQuestsPage` on all tiles, generator/verify scripts |
 
@@ -71,8 +74,15 @@ Review the diff, then apply (SQL Editor or `db query`). Re-run verification (bel
 | `checklist_footer_note` | Text under checklist (replay rules, tier notes) |
 | `wp_display`, `gold_display` | Optional **text** on tree cards (e.g. Void holder “WPT” / “GDP”) |
 | `subtitle` | Short tooltip on tile **title** (hover) |
+| `slug` | Stable id for idempotent seeds and unlock references (e.g. `forge-01-marks-home`) — **051** |
+| `sort_order` | Display order within guild on skill tree (lower first) — **051** |
+| `chips` | JSONB `[{ label, kind }]` — tool/resource chips on tree cards (`tinkercad_tool`, `platform`, `technique`, …) — **051** |
+| `unlock_after_slugs` | Prerequisite slugs; **all** must be teacher-approved before tile opens — **053** |
+| `unlock_after_any_slugs` | Prerequisite slugs; **any one** approved unlocks tile (Prism boss) — **054** |
 
 There is **no** `wp_awarded` on `tiles` — only on `skill_completions` after approval.
+
+**Unlock rule:** `src/lib/tileUnlock.ts` checks `skill_completions.status = 'approved'` on prerequisite tile ids resolved via `slug`. Used on skill tree (`SkillTilesList`) and patent entry (`QuestLockedGate`).
 
 ### Default payouts by `quest_kind` (also in `src/lib/questKindScale.ts`)
 
@@ -82,6 +92,65 @@ There is **no** `wp_awarded` on `tiles` — only on `skill_completions` after ap
 | `stretch` | 6 | 13 |
 | `tier2` | 10 | 22 |
 | `boss` | 15 | 35 |
+
+---
+
+## Guild quest trees (051–054, June 2)
+
+Full guild curricula are **editable `tiles` rows** — not hardcoded in React. Each tree migration:
+
+1. Adds schema columns if needed (`slug`, `chips`, `sort_order` in **051**; unlock columns in **053** / **054**).
+2. Deletes legacy guild rows where `slug is null` (FK-safe: `patents` + `skill_completions` first).
+3. `INSERT … ON CONFLICT (slug) DO UPDATE` for idempotent seeds.
+
+### Forge (`051`, guild = `Forge`)
+
+| Sort | Slug | `quest_kind` |
+|------|------|----------------|
+| 1–3 | `forge-01` … `forge-03-two-parts-gate` | required (3 = gate) |
+| 4–5 | `forge-04` … `forge-05-borrowed-changed` | stretch |
+| 6–7 | `forge-gate-a-cross-guild`, `forge-gate-b-reverse-engineer` | tier2 (parallel) |
+| 8 | `forge-boss` | boss |
+
+**Chips:** `tinkercad_tool`, `resource`, `fusion_option`.
+
+**Unlock (053):** linear 1→2→3→4→5; gates 6+7 after tile 3; boss after **both** gates.
+
+### Silicon Covenant (`052`, guild = `Silicon Covenant`)
+
+8 tiles; chips use `platform` / `technique`. Same unlock shape as Forge (`silicon-01` … `silicon-boss`).
+
+### Prism Order (`054`, guild = `Prism`)
+
+| Sort | Slug | `quest_kind` |
+|------|------|----------------|
+| 1–3 | `prism-01` … `prism-03-layers-of-meaning` | required (3 = gate) |
+| 4–5 | `prism-04` … `prism-05-borrowed-and-changed` | stretch (gold **12**, not 13) |
+| 6–7 | `prism-path-a-archive`, `prism-path-a-restore-what-faded` | tier2 Preservation |
+| 8–9 | `prism-path-b-thing-that-organizes`, `prism-path-b-place-for-everything` | tier2 Utility |
+| 10 | `prism-boss` | boss |
+
+**Chips:** `laser cutter` (technique), `Glowforge` + `Cuttle` (platform).
+
+**Unlock:**
+
+- Tier 1 linear through gate (same as Forge).
+- 6A and 6B both unlock after gate (tile 3).
+- 7A after 6A; 7B after 6B.
+- Boss: `unlock_after_slugs = {}`, `unlock_after_any_slugs = {prism-path-a-restore-what-faded, prism-path-b-place-for-everything}` — **one path capstone** is enough.
+
+**No `branch` column:** both paths visible; student may complete one track; UI does not hide the other path yet.
+
+**Removed:** legacy Prism intro skills + pop-up card quest (no slug).
+
+### Applying on hosted Supabase
+
+```bash
+npx supabase db query --linked -f supabase/migrations/054_prism_quest_tree.sql
+npx supabase migration repair 054 --status applied
+```
+
+Same pattern for **051–053** if `db push` fails on duplicate **039–044** versions.
 
 ---
 
@@ -165,6 +234,9 @@ After editing these, regenerate **047** and re-apply if you intend to sync hoste
 | Tree empty after schema change | PostgREST error on unknown column — apply **046**; `useSkillTree` only requests columns that exist on prod |
 | Teacher sees old step text | Hosted DB not updated; or browser cache — hard refresh |
 | Intro tile shows patent button | `steps` non-empty in DB — clear `steps` in builder if tile should be mark-complete only |
+| Quest locked but prerequisite done | Approval still `pending` — unlock needs **approved** completion |
+| Boss locked after one Tier 2 path | Check `unlock_after_any_slugs` (Prism) vs `unlock_after_slugs` (Forge/Silicon need both gates) |
+| Tree order wrong | `sort_order` on tiles; teacher list still sorts by `skill_name` |
 
 ---
 
@@ -179,6 +251,8 @@ After editing these, regenerate **047** and re-apply if you intend to sync hoste
 | Patent form fields (fixed questions) | `src/components/PatentLedger.tsx` |
 | Payout on approval | `tiles.wp_value` / `gold_value` + approval triggers (migrations **037** / **038**) |
 | Classify quest for 045 scale | `tiles.quest_kind` + SQL seeds in **045** |
+| Guild tree seed / chips / unlock | Migrations **051–054**; `src/lib/tileUnlock.ts` |
+| Skill tree lock UI | `SkillTilesList.tsx`, `QuestLockedGate.tsx` |
 
 ---
 
@@ -196,4 +270,11 @@ src/lib/customTile.ts                   # DB steps only
 src/pages/TeacherQuestsPage.tsx         # full CRUD + metadata
 src/pages/TeacherResetPage.tsx          # semester gold (045)
 src/types/tile.ts                       # new tile + LedgerResource types
+supabase/migrations/051_forge_quest_tree.sql
+supabase/migrations/052_silicon_quest_tree.sql
+supabase/migrations/053_tile_unlock_after_slugs.sql
+supabase/migrations/054_prism_quest_tree.sql
+src/lib/tileUnlock.ts                   # unlock_after_slugs + unlock_after_any_slugs
+src/components/QuestLockedGate.tsx      # patent route gate
+src/pages/SkillTreePage.tsx             # guild nav strip + single expansion panel
 ```

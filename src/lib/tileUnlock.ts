@@ -1,6 +1,11 @@
 /*
- * Quest tile unlock — `tiles.unlock_after_slugs` (all required) and
- * `tiles.unlock_after_any_slugs` (any one required).
+ * Quest tile unlock — prerequisite slugs on `tiles`.
+ *
+ * - `unlock_after_slugs` — ALL listed slugs need teacher-approved `skill_completions` (Forge/Silicon linear + boss).
+ * - `unlock_after_any_slugs` — ANY ONE listed slug is enough (Prism boss after 7A or 7B).
+ *
+ * Seeds: migrations 053 (column + Forge/Silicon), 054 (any + Prism boss).
+ * Consumers: SkillTilesList, QuestLockedGate.
  */
 
 import type { TileCompletionState } from '../hooks/useSkillTree'

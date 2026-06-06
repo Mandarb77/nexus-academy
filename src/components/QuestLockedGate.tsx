@@ -1,5 +1,7 @@
 /*
  * Blocks patent routes when prerequisite quests are not teacher-approved.
+ *
+ * Uses `tileUnlock.ts` (`unlock_after_slugs` + `unlock_after_any_slugs`). Added with migration 053.
  */
 
 import type { ReactNode } from 'react'

@@ -2,7 +2,10 @@
  * Quest definitions from the `tiles` table (plus optional Quest Builder JSON)
  *
  * `steps` holds per-checklist-line approval flags and resource links for custom patents.
- * Nullable `steps` means “use hardcoded flow” for legacy tiles (see `lib/customTile.ts`).
+ * Nullable `steps` means mark-complete intro tile (no patent flow).
+ *
+ * Guild trees (051–054): `slug`, `sort_order`, `chips`, `unlock_after_slugs`, `unlock_after_any_slugs`.
+ * Unlock resolver: `lib/tileUnlock.ts`.
  */
 
 export type StepConfig = {
