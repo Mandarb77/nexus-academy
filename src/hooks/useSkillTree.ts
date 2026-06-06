@@ -15,7 +15,7 @@ import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
-import type { TileRow } from '../types/tile'
+import type { TileChip, TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
 
 // -----------------------------------------------------------------------------
@@ -35,7 +35,15 @@ function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
         steps = null
       }
     }
-    return { ...r, steps } as TileRow
+    let chips = r.chips
+    if (typeof chips === 'string') {
+      try {
+        chips = JSON.parse(chips) as unknown
+      } catch {
+        chips = null
+      }
+    }
+    return { ...r, steps, chips: Array.isArray(chips) ? (chips as TileChip[]) : null } as TileRow
   })
 }
 
@@ -178,9 +186,10 @@ export function useSkillTree() {
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
       .select(
-        'id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, quest_kind, steps',
+        'id, guild, skill_name, slug, sort_order, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, quest_kind, steps',
       )
       .order('guild', { ascending: true })
+      .order('sort_order', { ascending: true })
       .order('skill_name', { ascending: true })
 
     if (tileErr) {

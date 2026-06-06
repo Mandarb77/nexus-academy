@@ -52,6 +52,9 @@ export function SkillTilesList({
    * at the end so freshmen do not mistake it for the main progression path.
    */
   const sortedTiles = [...tiles].sort((a, b) => {
+    const aOrder = a.sort_order ?? 0
+    const bOrder = b.sort_order ?? 0
+    if (aOrder !== bOrder) return aOrder - bOrder
     const rank = (t: TileRow) => {
       if (isPersonalGamePieceTile(t)) return 0
       if (isPopUpCardTile(t)) return 0
@@ -111,6 +114,15 @@ export function SkillTilesList({
                     <p className="muted skill-tile-description" style={{ margin: '0.25rem 0 0', fontSize: '0.88rem' }}>
                       {tile.tile_description.trim()}
                     </p>
+                  ) : null}
+                  {tile.chips && tile.chips.length > 0 ? (
+                    <ul className="skill-tile-chips" aria-label="Tools and resources">
+                      {tile.chips.map((chip) => (
+                        <li key={`${chip.kind}:${chip.label}`} className={`skill-tile-chip skill-tile-chip--${chip.kind}`}>
+                          {chip.label}
+                        </li>
+                      ))}
+                    </ul>
                   ) : null}
                   <p className="skill-tile-wp">
                     {tile.wp_display ?? `${tile.wp_value} WP`}

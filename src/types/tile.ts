@@ -17,10 +17,17 @@ export type QuestKind = 'required' | 'stretch' | 'tier2' | 'boss'
 
 export type LedgerResource = { label: string; url: string }
 
+export type TileChipKind = 'tinkercad_tool' | 'resource' | 'fusion_option'
+
+export type TileChip = { label: string; kind: TileChipKind }
+
 export type TileRow = {
   id: string
   guild: string
   skill_name: string
+  slug?: string | null
+  sort_order?: number | null
+  chips?: TileChip[] | null
   wp_value: number
   gold_value?: number | null
   quest_kind?: QuestKind | null
