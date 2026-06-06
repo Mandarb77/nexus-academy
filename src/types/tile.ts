@@ -34,6 +34,8 @@ export type TileRow = {
   sort_order?: number | null
   /** Prerequisite slugs — all must be teacher-approved before this quest opens. */
   unlock_after_slugs?: string[] | null
+  /** Prerequisite slugs — any one teacher-approved completion unlocks this quest (OR). */
+  unlock_after_any_slugs?: string[] | null
   chips?: TileChip[] | null
   wp_value: number
   gold_value?: number | null

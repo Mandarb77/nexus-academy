@@ -1,6 +1,6 @@
 /*
- * Quest tile unlock — prerequisite slugs on `tiles.unlock_after_slugs`.
- * A tile opens when every listed slug has an approved skill_completion.
+ * Quest tile unlock — `tiles.unlock_after_slugs` (all required) and
+ * `tiles.unlock_after_any_slugs` (any one required).
  */
 
 import type { TileCompletionState } from '../hooks/useSkillTree'
@@ -45,5 +45,35 @@ export function tileUnlockStatus(
       return { locked: true, blockedBy: { slug, skill_name: prereq.skill_name } }
     }
   }
+
+  const anySlugs = tile.unlock_after_any_slugs ?? []
+  if (anySlugs.length) {
+    let anyApproved = false
+    for (const raw of anySlugs) {
+      const slug = raw.trim()
+      if (!slug) continue
+      const prereq = tileBySlug.get(slug)
+      if (!prereq) continue
+      if (isApproved(completionByTileId, prereq.id)) {
+        anyApproved = true
+        break
+      }
+    }
+    if (!anyApproved) {
+      for (const raw of anySlugs) {
+        const slug = raw.trim()
+        if (!slug) continue
+        const prereq = tileBySlug.get(slug)
+        if (prereq) {
+          return {
+            locked: true,
+            blockedBy: { slug, skill_name: 'a Tier 2 path capstone' },
+          }
+        }
+      }
+      return { locked: true }
+    }
+  }
+
   return { locked: false }
 }
