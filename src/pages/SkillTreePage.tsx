@@ -69,8 +69,7 @@ export function SkillTreePage() {
           <div>
             <h1 className="skill-tree-title bench-page-title">Guilds</h1>
             <p className="muted skill-tree-subtitle">
-              Mark a skill to request credit. Your teacher approves it to add Workshop Points to your profile.
-              Click a guild to show its quests below — one guild at a time; all five stay visible at the top.
+              This is where the magic happens.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>
@@ -142,7 +141,9 @@ export function SkillTreePage() {
           </div>
 
           {openGuildKey ? (
-            <div className="skill-tree-guilds-expand">
+            <div
+              className={`skill-tree-guilds-expand skill-tree-guilds-expand--${skillTreeGuildModifier(openGuildKey)}`}
+            >
               <section
                 id={`guild-panel-${guildSlugId(openGuildKey)}`}
                 role="tabpanel"

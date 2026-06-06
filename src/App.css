@@ -4061,7 +4061,7 @@ body:has(.bench-chrome) {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-ink-secondary);
+  /* color set per guild via --guild-accent on parent panel */
 }
 
 .bench-chrome .skill-tree-guild-toggle-inner {
@@ -4088,29 +4088,139 @@ body:has(.bench-chrome) {
   letter-spacing: 0.02em;
 }
 
-/* Bench guild list: flat ink titles — no legacy gradient / tinted guild text */
+/* Guild accents — match bench-guild-mark stroke colors (--color-forge, etc.) */
+.bench-chrome .skill-tree-guild--forge {
+  --guild-accent: var(--color-forge);
+  --guild-accent-soft: color-mix(in srgb, var(--color-forge) 11%, var(--color-panel));
+  --guild-accent-tile: color-mix(in srgb, var(--color-forge) 7%, var(--color-panel));
+}
+
+.bench-chrome .skill-tree-guild--prism {
+  --guild-accent: var(--color-prism);
+  --guild-accent-soft: color-mix(in srgb, var(--color-prism) 11%, var(--color-panel));
+  --guild-accent-tile: color-mix(in srgb, var(--color-prism) 7%, var(--color-panel));
+}
+
+.bench-chrome .skill-tree-guild--folded {
+  --guild-accent: var(--color-folded);
+  --guild-accent-soft: color-mix(in srgb, var(--color-folded) 11%, var(--color-panel));
+  --guild-accent-tile: color-mix(in srgb, var(--color-folded) 7%, var(--color-panel));
+}
+
+.bench-chrome .skill-tree-guild--silicon {
+  --guild-accent: var(--color-silicon);
+  --guild-accent-soft: color-mix(in srgb, var(--color-silicon) 11%, var(--color-panel));
+  --guild-accent-tile: color-mix(in srgb, var(--color-silicon) 7%, var(--color-panel));
+}
+
+.bench-chrome .skill-tree-guild--void {
+  --guild-accent: var(--color-void);
+  --guild-accent-soft: color-mix(in srgb, var(--color-void) 11%, var(--color-panel));
+  --guild-accent-tile: color-mix(in srgb, var(--color-void) 7%, var(--color-panel));
+}
+
+/* Nav titles, panel heading, quest names — slight guild tint (no legacy gradients) */
 .bench-chrome .skill-tree-guild--forge .skill-tree-guild-name,
 .bench-chrome .skill-tree-guild--forge .skill-tree-guild-page-title,
+.bench-chrome .skill-tree-guild--forge .skill-tree-guild-panel-title,
+.bench-chrome .skill-tree-guild--forge .skill-tile-name,
 .bench-chrome .skill-tree-guild--prism .skill-tree-guild-name,
 .bench-chrome .skill-tree-guild--prism .skill-tree-guild-page-title,
+.bench-chrome .skill-tree-guild--prism .skill-tree-guild-panel-title,
+.bench-chrome .skill-tree-guild--prism .skill-tile-name,
 .bench-chrome .skill-tree-guild--folded .skill-tree-guild-name,
 .bench-chrome .skill-tree-guild--folded .skill-tree-guild-page-title,
+.bench-chrome .skill-tree-guild--folded .skill-tree-guild-panel-title,
+.bench-chrome .skill-tree-guild--folded .skill-tile-name,
 .bench-chrome .skill-tree-guild--silicon .skill-tree-guild-name,
 .bench-chrome .skill-tree-guild--silicon .skill-tree-guild-page-title,
+.bench-chrome .skill-tree-guild--silicon .skill-tree-guild-panel-title,
+.bench-chrome .skill-tree-guild--silicon .skill-tile-name,
 .bench-chrome .skill-tree-guild--void .skill-tree-guild-name,
 .bench-chrome .skill-tree-guild--void .skill-tree-guild-page-title,
-.bench-chrome .skill-tree-guild--forge .skill-tile-name,
-.bench-chrome .skill-tree-guild--prism .skill-tile-name,
-.bench-chrome .skill-tree-guild--folded .skill-tile-name,
-.bench-chrome .skill-tree-guild--silicon .skill-tile-name,
+.bench-chrome .skill-tree-guild--void .skill-tree-guild-panel-title,
 .bench-chrome .skill-tree-guild--void .skill-tile-name {
   background: none;
   background-image: none;
   -webkit-background-clip: unset;
   background-clip: unset;
-  color: var(--color-ink-primary);
+  color: var(--guild-accent);
   -webkit-text-fill-color: currentColor;
   animation: none;
+}
+
+/* Open nav tile + expansion panel — whisper of guild color */
+.bench-chrome .skill-tree-guild--nav.skill-tree-guild--open {
+  background: var(--guild-accent-soft);
+}
+
+.bench-chrome .skill-tree-guilds-expand--forge,
+.bench-chrome .skill-tree-guilds-expand--prism,
+.bench-chrome .skill-tree-guilds-expand--folded,
+.bench-chrome .skill-tree-guilds-expand--silicon,
+.bench-chrome .skill-tree-guilds-expand--void {
+  background: var(--guild-accent-soft);
+}
+
+.bench-chrome .skill-tree-guilds-expand--forge {
+  border-color: color-mix(in srgb, var(--color-forge) 32%, var(--color-rule-light));
+}
+
+.bench-chrome .skill-tree-guilds-expand--prism {
+  border-color: color-mix(in srgb, var(--color-prism) 32%, var(--color-rule-light));
+}
+
+.bench-chrome .skill-tree-guilds-expand--folded {
+  border-color: color-mix(in srgb, var(--color-folded) 32%, var(--color-rule-light));
+}
+
+.bench-chrome .skill-tree-guilds-expand--silicon {
+  border-color: color-mix(in srgb, var(--color-silicon) 32%, var(--color-rule-light));
+}
+
+.bench-chrome .skill-tree-guilds-expand--void {
+  border-color: color-mix(in srgb, var(--color-void) 32%, var(--color-rule-light));
+}
+
+.bench-chrome .skill-tree-guild--forge .skill-tile.card,
+.bench-chrome .skill-tree-guild--prism .skill-tile.card,
+.bench-chrome .skill-tree-guild--folded .skill-tile.card,
+.bench-chrome .skill-tree-guild--silicon .skill-tile.card,
+.bench-chrome .skill-tree-guild--void .skill-tile.card {
+  border-left: 2px solid var(--guild-accent);
+  background: var(--guild-accent-tile);
+}
+
+.bench-chrome .skill-tree-guild--forge .skill-tile-wp,
+.bench-chrome .skill-tree-guild--prism .skill-tile-wp,
+.bench-chrome .skill-tree-guild--folded .skill-tile-wp,
+.bench-chrome .skill-tree-guild--silicon .skill-tile-wp,
+.bench-chrome .skill-tree-guild--void .skill-tile-wp {
+  color: color-mix(in srgb, var(--guild-accent) 72%, var(--color-ink-secondary));
+}
+
+.bench-chrome .skill-tree-guild--nav.skill-tree-guild--open .skill-tree-guild-chevron {
+  color: var(--guild-accent);
+}
+
+.bench-chrome .skill-tree-guild--forge .bench-guild-mark__frame {
+  border-color: color-mix(in srgb, var(--color-forge) 42%, var(--color-rule-strong));
+}
+
+.bench-chrome .skill-tree-guild--prism .bench-guild-mark__frame {
+  border-color: color-mix(in srgb, var(--color-prism) 42%, var(--color-rule-strong));
+}
+
+.bench-chrome .skill-tree-guild--folded .bench-guild-mark__frame {
+  border-color: color-mix(in srgb, var(--color-folded) 42%, var(--color-rule-strong));
+}
+
+.bench-chrome .skill-tree-guild--silicon .bench-guild-mark__frame {
+  border-color: color-mix(in srgb, var(--color-silicon) 42%, var(--color-rule-strong));
+}
+
+.bench-chrome .skill-tree-guild--void .bench-guild-mark__frame {
+  border-color: color-mix(in srgb, var(--color-void) 42%, var(--color-rule-strong));
 }
 
 .bench-chrome .skill-tree-guild-desc {
@@ -4192,9 +4302,7 @@ body:has(.bench-chrome) {
   box-shadow: none;
 }
 
-.bench-chrome .skill-tile-wp {
-  color: var(--color-ink-secondary);
-}
+/* .skill-tile-wp color per guild when inside guild panel — see guild accent block above */
 
 .bench-chrome .btn-skill--complete {
   color: var(--color-panel);
@@ -4391,23 +4499,7 @@ body:has(.bench-chrome) {
     color: var(--color-ink-primary);
   }
 
-  .bench-chrome .skill-tree-guild--forge .skill-tree-guild-name,
-  .bench-chrome .skill-tree-guild--forge .skill-tree-guild-page-title,
-  .bench-chrome .skill-tree-guild--prism .skill-tree-guild-name,
-  .bench-chrome .skill-tree-guild--prism .skill-tree-guild-page-title,
-  .bench-chrome .skill-tree-guild--silicon .skill-tree-guild-name,
-  .bench-chrome .skill-tree-guild--silicon .skill-tree-guild-page-title,
-  .bench-chrome .skill-tree-guild--void .skill-tree-guild-name,
-  .bench-chrome .skill-tree-guild--void .skill-tree-guild-page-title,
-  .bench-chrome .skill-tree-guild--forge .skill-tile-name,
-  .bench-chrome .skill-tree-guild--prism .skill-tile-name,
-  .bench-chrome .skill-tree-guild--silicon .skill-tile-name,
-  .bench-chrome .skill-tree-guild--void .skill-tile-name {
-    background: none;
-    background-image: none;
-    color: var(--color-ink-primary);
-    -webkit-text-fill-color: currentColor;
-  }
+  /* bench-chrome locks warm tokens — guild accents unchanged in dark OS mode */
 }
 
 /* ── Teacher tools + student preview (bench chrome) ── */
