@@ -13,8 +13,12 @@ export function LearnToolLink({ resource }: Props) {
         target="_blank"
         rel="noopener noreferrer"
         className="learn-tools-link__title"
+        aria-label={`${resource.title} (opens in new tab)`}
       >
-        {resource.title}
+        <span className="learn-tools-link__title-text">{resource.title}</span>
+        <span className="learn-tools-link__external" aria-hidden="true">
+          ↗
+        </span>
       </a>
       <p className="muted learn-tools-link__desc">{resource.description}</p>
       {isStudentSubmittedResource(resource) && resource.credit_line?.trim() ? (
