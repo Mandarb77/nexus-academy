@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { GuildMark, type GuildMarkSlug } from '../components/GuildMark'
 import { MainNav } from '../components/MainNav'
+import { ReadingGuildPagesKey } from '../components/fieldGuide/ReadingGuildPagesKey'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
@@ -142,6 +143,8 @@ export function GuildSkillTreePage() {
               </p>
             </div>
           ) : (
+            <>
+            <ReadingGuildPagesKey />
             <SkillTilesList
               tiles={tiles}
               tileBySlug={tileBySlug}
@@ -151,6 +154,7 @@ export function GuildSkillTreePage() {
               markComplete={markComplete}
               canUseDb={canUseDb}
             />
+            </>
           )}
         </section>
       )}

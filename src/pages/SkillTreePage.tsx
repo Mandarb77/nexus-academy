@@ -14,6 +14,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { GuildMark, type GuildMarkSlug } from '../components/GuildMark'
 import { MainNav } from '../components/MainNav'
+import { ReadingGuildPagesKey } from '../components/fieldGuide/ReadingGuildPagesKey'
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
@@ -91,6 +92,8 @@ export function SkillTreePage() {
           No guild sections configured.
         </p>
       ) : (
+        <>
+        <ReadingGuildPagesKey />
         <div className="skill-tree-guilds-layout">
           <div
             className="skill-tree-guilds skill-tree-guilds--accordion skill-tree-guilds--tiles skill-tree-guilds-nav"
@@ -174,6 +177,7 @@ export function SkillTreePage() {
             </div>
           ) : null}
         </div>
+        </>
       )}
     </div>
   )

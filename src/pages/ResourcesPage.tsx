@@ -12,7 +12,6 @@ import {
   type FieldGuidePanel,
 } from '../components/fieldGuide/FieldGuideAnchorNav'
 import { FieldGuideQuoteRotator } from '../components/fieldGuide/FieldGuideQuoteRotator'
-import { ReadingGuildPagesKey } from '../components/fieldGuide/ReadingGuildPagesKey'
 import { LearnToolsSection } from '../components/learnTools/LearnToolsSection'
 import { MainNav } from '../components/MainNav'
 import { normalizeBeyondRow } from '../lib/beyondTiles'
@@ -121,8 +120,6 @@ export function ResourcesPage() {
             <BeyondTileProposalForm onSubmitted={() => void loadBeyond()} />
           </section>
         ) : null}
-
-        <ReadingGuildPagesKey />
       </main>
     </div>
   )

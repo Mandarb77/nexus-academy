@@ -1,34 +1,39 @@
 /*
- * Field Guide — inline shape key for guild skill-tree pages.
+ * Guilds — inline shape key for reading quest tiles on skill-tree pages.
  */
 
 export function ReadingGuildPagesKey() {
   return (
-    <p className="field-guide-key" aria-label="Guild page shape key">
-      <span className="field-guide-key__item">
-        <span className="field-guide-key__shape field-guide-key__shape--required" aria-hidden="true">
-          ●
+    <section className="guild-page-read-key" aria-labelledby="guild-page-read-key-heading">
+      <h2 id="guild-page-read-key-heading" className="guild-page-read-key__title">
+        How to read this page
+      </h2>
+      <p className="guild-page-read-key__legend" aria-label="Guild page shape key">
+        <span className="guild-page-read-key__item">
+          <span className="guild-page-read-key__shape guild-page-read-key__shape--required" aria-hidden="true">
+            ●
+          </span>
+          this is required
         </span>
-        this is required
-      </span>
-      <span className="field-guide-key__sep" aria-hidden="true">
-        ·
-      </span>
-      <span className="field-guide-key__item">
-        <span className="field-guide-key__shape field-guide-key__shape--stretch" aria-hidden="true">
-          ○
+        <span className="guild-page-read-key__sep" aria-hidden="true">
+          ·
         </span>
-        this goes further
-      </span>
-      <span className="field-guide-key__sep" aria-hidden="true">
-        ·
-      </span>
-      <span className="field-guide-key__item">
-        <span className="field-guide-key__shape field-guide-key__shape--gate" aria-hidden="true">
-          ◆
+        <span className="guild-page-read-key__item">
+          <span className="guild-page-read-key__shape guild-page-read-key__shape--stretch" aria-hidden="true">
+            ○
+          </span>
+          this goes further
         </span>
-        this is a gate
-      </span>
-    </p>
+        <span className="guild-page-read-key__sep" aria-hidden="true">
+          ·
+        </span>
+        <span className="guild-page-read-key__item">
+          <span className="guild-page-read-key__shape guild-page-read-key__shape--gate" aria-hidden="true">
+            ◆
+          </span>
+          this is a gate
+        </span>
+      </p>
+    </section>
   )
 }
