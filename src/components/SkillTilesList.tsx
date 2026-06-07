@@ -8,7 +8,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
-import type { TileRow } from '../types/tile'
+import type { QuestKind, TileRow } from '../types/tile'
 import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 import { isPopUpCardTile, POP_UP_CARD_STEPS } from '../lib/popUpCardQuest'
@@ -28,6 +28,13 @@ type Props = {
   submittingTileId: string | null
   markComplete: (tile: TileRow) => Promise<boolean>
   canUseDb: boolean
+}
+
+function questKindIconClass(questKind: QuestKind | null | undefined): string {
+  const kind = questKind ?? 'required'
+  if (kind === 'stretch') return 'skill-tile-kind-icon skill-tile-kind-icon--stretch'
+  if (kind === 'tier2') return 'skill-tile-kind-icon skill-tile-kind-icon--gate'
+  return 'skill-tile-kind-icon skill-tile-kind-icon--required'
 }
 
 function stepCount(tile: TileRow): number {
@@ -138,7 +145,13 @@ export function SkillTilesList({
                   {questKind === 'stretch' ? (
                     <p className="skill-tile-tier-label">Stretch</p>
                   ) : null}
-                  <h3 className="skill-tile-name">{tile.skill_name}</h3>
+                  <div className="skill-tile-title-row">
+                    <span
+                      className={questKindIconClass(questKind)}
+                      aria-hidden="true"
+                    />
+                    <h3 className="skill-tile-name">{tile.skill_name}</h3>
+                  </div>
                   {tile.tile_description?.trim() ? (
                     <p className="muted skill-tile-description" style={{ margin: '0.25rem 0 0', fontSize: '0.88rem' }}>
                       {tile.tile_description.trim()}

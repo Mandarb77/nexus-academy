@@ -1799,8 +1799,42 @@ a.btn-primary {
   min-width: 12rem;
 }
 
-.skill-tile-name {
+.skill-tile-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0 0 0.35rem;
+}
+
+.skill-tile-kind-icon {
+  flex-shrink: 0;
+  width: 11px;
+  height: 11px;
+  color: var(--guild-accent, var(--color-ink-primary));
+}
+
+.skill-tile-kind-icon--required {
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.skill-tile-kind-icon--stretch {
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.skill-tile-kind-icon--gate {
+  width: 8px;
+  height: 8px;
+  margin: 0 1.5px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.skill-tile-name {
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-h);
@@ -3580,29 +3614,43 @@ body:has(.bench-chrome) {
 
 /* Field Guide — Reading the guild pages key (bottom reference) */
 .field-guide-key {
-  margin-top: 0.5rem;
-  margin-bottom: 1.5rem;
-  padding: 0.85rem 1rem 0.95rem;
+  --field-guide-key-accent: var(--color-ink-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem 0.55rem;
+  margin: 0.5rem 0 1.5rem;
+  padding: 0.35rem 0;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--color-ink-tertiary);
 }
 
-.field-guide-key__title {
-  margin: 0 0 0.55rem;
-  font-size: clamp(1.05rem, 2.2vw, 1.2rem);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-ink-primary);
+.field-guide-key__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
 }
 
-.field-guide-key__list {
-  margin: 0;
-  padding-left: 1.15rem;
-  font-size: 0.88rem;
-  line-height: 1.5;
+.field-guide-key__sep {
+  color: var(--color-ink-tertiary);
+  opacity: 0.65;
+  user-select: none;
 }
 
-.field-guide-key__list li + li {
-  margin-top: 0.35rem;
+.field-guide-key__shape {
+  display: inline-block;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--field-guide-key-accent);
+}
+
+.field-guide-key__shape--stretch {
+  font-size: 0.78rem;
 }
 
 /* Field Guide — Learn the tools */
@@ -4577,8 +4625,15 @@ body:has(.bench-chrome) {
 .bench-chrome .skill-tree-guild--folded .skill-tile.card,
 .bench-chrome .skill-tree-guild--silicon .skill-tile.card,
 .bench-chrome .skill-tree-guild--void .skill-tile.card {
-  border-left: 2px solid var(--guild-accent);
   background: var(--guild-accent-tile);
+}
+
+.bench-chrome .skill-tree-guild--forge .skill-tile-kind-icon,
+.bench-chrome .skill-tree-guild--prism .skill-tile-kind-icon,
+.bench-chrome .skill-tree-guild--folded .skill-tile-kind-icon,
+.bench-chrome .skill-tree-guild--silicon .skill-tile-kind-icon,
+.bench-chrome .skill-tree-guild--void .skill-tile-kind-icon {
+  color: var(--guild-accent);
 }
 
 .bench-chrome .skill-tree-guild--forge .skill-tile-wp,
@@ -4633,11 +4688,6 @@ body:has(.bench-chrome) {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-ink-tertiary);
-}
-
-.bench-chrome .skill-tile--stretch.card {
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--guild-accent, var(--color-forge)) 38%, var(--color-rule-light));
 }
 
 .bench-chrome .skill-tile-divider {
