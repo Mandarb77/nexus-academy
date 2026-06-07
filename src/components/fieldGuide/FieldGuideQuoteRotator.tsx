@@ -34,7 +34,9 @@ export function FieldGuideQuoteRotator() {
         className={`field-guide-quote__block${visible ? ' field-guide-quote__block--visible' : ''}`}
       >
         <p className="field-guide-quote__text">&ldquo;{quote.text}&rdquo;</p>
-        <footer className="field-guide-quote__attrib">— {quote.attribution}</footer>
+        {quote.attribution ? (
+          <footer className="field-guide-quote__attrib">— {quote.attribution}</footer>
+        ) : null}
       </blockquote>
     </div>
   )

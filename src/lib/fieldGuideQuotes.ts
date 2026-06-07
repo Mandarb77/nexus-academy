@@ -1,6 +1,6 @@
 export type FieldGuideQuote = {
   text: string
-  attribution: string
+  attribution?: string
 }
 
 export const FIELD_GUIDE_QUOTE_SEED: FieldGuideQuote[] = [
@@ -55,6 +55,34 @@ export const FIELD_GUIDE_QUOTE_SEED: FieldGuideQuote[] = [
   {
     text: 'Not lesser knowing. Not vocational knowing. Just knowing.',
     attribution: 'Luther Sampson, as remembered',
+  },
+  {
+    text: "I would rather have questions that can't be answered than answers that can't be questioned.",
+    attribution: 'Richard Feynman',
+  },
+  {
+    text: 'Study hard what interests you the most in the most undisciplined, irreverent and original manner possible.',
+    attribution: 'Richard Feynman',
+  },
+  {
+    text: 'The first principle is that you must not fool yourself — and you are the easiest person to fool.',
+    attribution: 'Richard Feynman',
+  },
+  {
+    text: 'I learned very early the difference between knowing the name of something and knowing something.',
+    attribution: 'Richard Feynman',
+  },
+  {
+    text: 'There is something in this school I have not found yet. I am looking.',
+  },
+  {
+    text: 'Someone made this. I want to know who.',
+  },
+  {
+    text: 'The mark was there before I arrived. I do not think it was meant for me. I am not sure it wasn\'t.',
+  },
+  {
+    text: 'Find what I found.',
   },
 ]
 
