@@ -1,7 +1,7 @@
 -- Void Navigators quest tree seed (slug upsert). Gating via unlock_after_slugs.
 -- CNC / Carbide Create guild — five tiles, two gates, one boss.
 --
--- Tile 4 (stretch) is visible from day one — no unlock_after_slugs (optional, not locked).
+-- Tile 4 (stretch) unlocks after Tile 3 (competence gate); still optional stretch, not required for progression.
 -- Boss unlocks after BOTH gates (AND), same pattern as Forge / Silicon.
 
 -- ---------------------------------------------------------------------------
@@ -149,7 +149,7 @@ values
     $steps$[
       {"description": "Design it, cut it on the CNC, document your iterations, and file your patent.", "requiresApproval": false}
     ]$steps$::jsonb,
-    '{}',
+    '{void-03-inlay-gate}',
     '{}'
   ),
   (

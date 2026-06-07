@@ -34,6 +34,7 @@ import { TeacherResetPage } from './pages/TeacherResetPage'
 import { TeacherQuestsPage } from './pages/TeacherQuestsPage'
 import { TeacherShopPage } from './pages/TeacherShopPage'
 import { TeacherToolGlossaryPage } from './pages/TeacherToolGlossaryPage'
+import { TeacherBeyondTilesPage } from './pages/TeacherBeyondTilesPage'
 import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
@@ -214,6 +215,14 @@ export default function App() {
             element={
               <TeacherDashboardRoute>
                 <TeacherToolGlossaryPage />
+              </TeacherDashboardRoute>
+            }
+          />
+          <Route
+            path="/teacher/beyond"
+            element={
+              <TeacherDashboardRoute>
+                <TeacherBeyondTilesPage />
               </TeacherDashboardRoute>
             }
           />
