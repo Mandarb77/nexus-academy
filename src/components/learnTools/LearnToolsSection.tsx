@@ -58,7 +58,7 @@ export function LearnToolsSection({ sectionId = 'field-guide-learn' }: Props) {
   return (
     <section
       id={sectionId}
-      className="learn-tools-section field-guide-scroll-target"
+      className="learn-tools-section field-guide-scroll-target field-guide-panel"
       aria-labelledby="learn-tools-heading"
     >
       <header className="learn-tools-section__header">

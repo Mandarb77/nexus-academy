@@ -3428,6 +3428,11 @@ body:has(.bench-chrome) {
   background: color-mix(in srgb, var(--color-ground) 35%, var(--color-panel));
 }
 
+.field-guide-anchor--active {
+  border-color: var(--color-rule-strong);
+  background: color-mix(in srgb, var(--color-ground) 28%, var(--color-panel));
+}
+
 .field-guide-anchor:focus-visible {
   outline: 1px solid var(--color-rule-strong);
   outline-offset: 2px;
@@ -3447,6 +3452,21 @@ body:has(.bench-chrome) {
 
 .field-guide-scroll-target {
   scroll-margin-top: 1rem;
+}
+
+.field-guide-panel {
+  animation: field-guide-panel-in 0.22s ease;
+}
+
+@keyframes field-guide-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Field Guide — Beyond the Tiles */
