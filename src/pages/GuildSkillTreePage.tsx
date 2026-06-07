@@ -129,9 +129,8 @@ export function GuildSkillTreePage() {
 
           {slug === 'void' && !showComingSoon && tiles.length === 0 ? (
             <p className="error" role="alert">
-              No Void quests in the database yet. Apply migrations{' '}
-              <code className="inline-code">039_void_tile1_coaster_proto.sql</code> and{' '}
-              <code className="inline-code">040_void_tile2_holder_quest.sql</code> in Supabase, then refresh.
+              No Void quests in the database yet. Apply migration{' '}
+              <code className="inline-code">057_void_navigators_quest_tree.sql</code> in Supabase, then refresh.
             </p>
           ) : null}
           {showComingSoon ? (

@@ -36,12 +36,11 @@ export const GUILD_WELCOME_BY_SLUG: Partial<Record<GuildWelcomeSlug, GuildWelcom
       'Your tools are color, pattern, and the courage to make something someone will wear or display.',
     ],
   },
-  /* Shown on `/tree/void` when proto email gate passes (voidProtoAccess.ts). */
   void: {
     orderName: 'Void Navigators',
     sentences: [
-      'In this guild you will make profile-cut gifts for real people and pets — coasters, holders, and parts that must fit something in the world.',
-      'Your tools are observation, tolerance, and the discipline to test on scrap before you cut the real thing.',
+      'In this guild you will work with Carbide Create and the CNC to v-carve, pocket, and inlay wood and Delrin for real recipients.',
+      'Your tools are feed and depth, joint fit, and the discipline to simulate before you cut the real thing.',
     ],
   },
 }
