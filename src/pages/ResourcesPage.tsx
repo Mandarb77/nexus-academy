@@ -1,54 +1,18 @@
 /*
  * Field Guide — resource hub (`/resources`)
  *
- * Beyond the Tiles (DB-driven possibilities) above static tool quick-reference sections.
+ * Beyond the Tiles → Reading the guild pages key → Learn the tools.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import { BeyondTileCard } from '../components/beyondTiles/BeyondTileCard'
 import { BeyondTileProposalForm } from '../components/beyondTiles/BeyondTileProposalForm'
+import { ReadingGuildPagesKey } from '../components/fieldGuide/ReadingGuildPagesKey'
+import { LearnToolsSection } from '../components/learnTools/LearnToolsSection'
 import { MainNav } from '../components/MainNav'
 import { normalizeBeyondRow } from '../lib/beyondTiles'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { BeyondTileRow } from '../types/beyondTile'
-
-type ResourceSection = {
-  title: string
-  description: string
-}
-
-const SECTIONS: ResourceSection[] = [
-  {
-    title: 'TinkerCAD',
-    description:
-      'Helpful links, videos, and quick references for learning TinkerCAD will live here. (Placeholder content.)',
-  },
-  {
-    title: '3D Printing',
-    description:
-      'Printer basics, file prep tips, troubleshooting, and safety reminders will be collected here. (Placeholder content.)',
-  },
-  {
-    title: 'Laser Cutting',
-    description:
-      'Materials, settings, safety, and best practices for laser cutting will be organized here. (Placeholder content.)',
-  },
-  {
-    title: 'Sticker Making',
-    description:
-      'Design, cutting, weeding, transfer, and finishing steps for stickers will be documented here. (Placeholder content.)',
-  },
-  {
-    title: 'Paper Folding',
-    description:
-      'Paper engineering and folding references (creases, tabs, templates) will be added here. (Placeholder content.)',
-  },
-  {
-    title: 'micro:bit',
-    description:
-      'micro:bit coding, wiring, sensors, and project ideas will be posted here. (Placeholder content.)',
-  },
-]
 
 export function ResourcesPage() {
   const [entries, setEntries] = useState<BeyondTileRow[]>([])
@@ -87,7 +51,7 @@ export function ResourcesPage() {
         <header className="page-header bench-page-title-row">
           <h1 className="page-title bench-page-title">Field Guide</h1>
           <p className="muted page-subtitle">
-            Quick references, links, and videos (we’ll add the real content over time).
+            Possibilities, guild keys, and tool resources for the workshop.
           </p>
         </header>
 
@@ -122,24 +86,9 @@ export function ResourcesPage() {
           <BeyondTileProposalForm onSubmitted={() => void loadBeyond()} />
         </section>
 
-        <div className="stack beyond-tiles-tool-sections">
-          {SECTIONS.map((s) => (
-            <section key={s.title} className="card" aria-label={`${s.title} resources`}>
-              <h2 className="bench-card-heading">{s.title}</h2>
-              <p className="muted bench-card-lead">{s.description}</p>
-              <div
-                className="card bench-inset-card"
-                role="note"
-                aria-label={`${s.title} placeholder area`}
-              >
-                <strong className="bench-inset-card__title">Links & videos (coming soon)</strong>
-                <p className="bench-inset-card__body">
-                  We’ll add curated links, short videos, and examples here.
-                </p>
-              </div>
-            </section>
-          ))}
-        </div>
+        <ReadingGuildPagesKey />
+
+        <LearnToolsSection />
       </main>
     </div>
   )

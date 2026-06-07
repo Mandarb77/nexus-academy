@@ -3472,6 +3472,145 @@ body:has(.bench-chrome) {
   align-self: flex-start;
 }
 
+/* Field Guide — Reading the guild pages key */
+.field-guide-key {
+  margin-bottom: 2rem;
+  padding: 0.85rem 1rem 0.95rem;
+}
+
+.field-guide-key__title {
+  margin: 0 0 0.55rem;
+  font-size: clamp(1.05rem, 2.2vw, 1.2rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
+}
+
+.field-guide-key__list {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.field-guide-key__list li + li {
+  margin-top: 0.35rem;
+}
+
+/* Field Guide — Learn the tools */
+.learn-tools-section {
+  margin-bottom: 2rem;
+}
+
+.learn-tools-section__title {
+  margin: 0 0 1rem;
+  font-size: clamp(1.15rem, 2.5vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
+}
+
+.learn-tools-guild + .learn-tools-guild {
+  margin-top: 1.35rem;
+}
+
+.learn-tools-guild__heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.learn-tools-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.learn-tools-link {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  background: var(--color-panel);
+}
+
+.learn-tools-link__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-ink-primary);
+  text-decoration: none;
+}
+
+.learn-tools-link__title:hover {
+  text-decoration: underline;
+}
+
+.learn-tools-link__desc {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.learn-tools-link__credit {
+  margin: 0.4rem 0 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--color-rule-light);
+  font-size: 0.78rem;
+}
+
+.learn-tools-student {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-rule-light);
+}
+
+.learn-tools-student__heading {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.learn-tools-student__lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  max-width: 36rem;
+}
+
+.learn-tools-propose__trigger {
+  font-size: 0.82rem;
+}
+
+.learn-tools-propose__heading {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.learn-tools-propose__success {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.teacher-learn-guild-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
 .bench-chrome .gold-currency-text {
   color: var(--color-forge);
 }

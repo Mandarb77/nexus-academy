@@ -70,6 +70,14 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             Beyond
           </NavLink>
           <NavLink
+            to="/teacher/learn"
+            className={({ isActive }) =>
+              `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
+            }
+          >
+            Learn
+          </NavLink>
+          <NavLink
             to="/teacher/shop"
             className={({ isActive }) =>
               `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
