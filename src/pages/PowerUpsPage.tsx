@@ -4,8 +4,10 @@
  * Tappable flip cards about Maine places, makers, and materials. No WP, no assessment.
  */
 
+import { DispatchFragmentCard } from '../components/DispatchFragmentCard'
 import { MainNav } from '../components/MainNav'
 import { WhereYouAreCard } from '../components/WhereYouAreCard'
+import { DISPATCH_FRAGMENTS } from '../lib/dispatchFragments'
 import { WHERE_YOU_ARE_CARDS } from '../lib/whereYouAreCards'
 
 export function PowerUpsPage() {
@@ -19,6 +21,10 @@ export function PowerUpsPage() {
             Not homework · Not assessed · Just stuff about this place
           </p>
         </header>
+
+        {DISPATCH_FRAGMENTS.map((fragment) => (
+          <DispatchFragmentCard key={fragment.title} fragment={fragment} />
+        ))}
 
         <div className="where-you-are__grid">
           {WHERE_YOU_ARE_CARDS.map((card) => (

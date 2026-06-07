@@ -5497,6 +5497,43 @@ body:has(.bench-chrome) {
   color: var(--color-ink-tertiary);
 }
 
+.dispatch-fragment {
+  margin-bottom: 1.5rem;
+  padding: 1.15rem 1.25rem 1.35rem;
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: 2px;
+}
+
+.dispatch-fragment__title {
+  margin: 0 0 0.65rem;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-ink-primary);
+}
+
+.dispatch-fragment__label {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--color-ink-tertiary);
+}
+
+.dispatch-fragment__body {
+  margin: 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  white-space: pre-line;
+  color: var(--color-ink-secondary);
+}
+
 .where-you-are__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
