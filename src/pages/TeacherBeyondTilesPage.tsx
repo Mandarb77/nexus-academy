@@ -22,7 +22,6 @@ const BLANK = {
   title: '',
   body: '',
   guildTags: [] as BeyondGuildTag[],
-  recipientWaiting: false,
 }
 
 export function TeacherBeyondTilesPage() {
@@ -37,7 +36,6 @@ export function TeacherBeyondTilesPage() {
   const [title, setTitle] = useState(BLANK.title)
   const [body, setBody] = useState(BLANK.body)
   const [guildTags, setGuildTags] = useState<BeyondGuildTag[]>(BLANK.guildTags)
-  const [recipientWaiting, setRecipientWaiting] = useState(BLANK.recipientWaiting)
 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -53,7 +51,7 @@ export function TeacherBeyondTilesPage() {
     setLoading(true)
     const { data, error } = await supabase
       .from('beyond_tiles')
-      .select('id, title, body, guild_tags, recipient_waiting, credit_line, status, submitted_by, sort_order, created_at, updated_at')
+      .select('id, title, body, guild_tags, credit_line, status, submitted_by, sort_order, created_at, updated_at')
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true })
     setLoading(false)
@@ -77,7 +75,6 @@ export function TeacherBeyondTilesPage() {
     setTitle('')
     setBody('')
     setGuildTags([])
-    setRecipientWaiting(false)
     setSaveError(null)
     setSaveSuccess(null)
   }
@@ -87,7 +84,6 @@ export function TeacherBeyondTilesPage() {
     setTitle(row.title)
     setBody(row.body)
     setGuildTags(row.guild_tags.length ? row.guild_tags : [])
-    setRecipientWaiting(row.recipient_waiting)
     setSaveError(null)
     setSaveSuccess(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -128,7 +124,6 @@ export function TeacherBeyondTilesPage() {
       title: trimmedTitle,
       body: body.trim(),
       guild_tags: guildTags,
-      recipient_waiting: recipientWaiting,
       updated_at: new Date().toISOString(),
     }
 
@@ -282,11 +277,6 @@ export function TeacherBeyondTilesPage() {
           </div>
         </fieldset>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', marginBottom: '1rem' }}>
-          <input type="checkbox" checked={recipientWaiting} onChange={(e) => setRecipientWaiting(e.target.checked)} />
-          Recipient waiting
-        </label>
-
         {saveError ? <p className="error" role="alert">{saveError}</p> : null}
         {saveSuccess ? <p style={{ color: '#16a34a', fontWeight: 600 }} role="status">{saveSuccess}</p> : null}
 
@@ -311,7 +301,6 @@ export function TeacherBeyondTilesPage() {
                   <p style={{ margin: '0.35rem 0 0', fontSize: '0.88rem' }}>{row.body}</p>
                   <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.82rem' }}>
                     {formatBeyondGuildTags(row.guild_tags)}
-                    {row.recipient_waiting ? ' · recipient waiting' : ''}
                   </p>
                   {isStudentSubmitted(row) ? (
                     <label className="patent-field" style={{ display: 'block', marginTop: '0.65rem' }}>
@@ -373,7 +362,6 @@ export function TeacherBeyondTilesPage() {
                   <p style={{ margin: '0.35rem 0 0', fontSize: '0.88rem' }}>{row.body}</p>
                   <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.82rem' }}>
                     {formatBeyondGuildTags(row.guild_tags)}
-                    {row.recipient_waiting ? ' · recipient waiting' : ''}
                   </p>
                   {isStudentSubmitted(row) && row.credit_line?.trim() ? (
                     <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.82rem' }}>

@@ -3396,30 +3396,10 @@ body:has(.bench-chrome) {
   color: var(--color-ink-secondary);
 }
 
-.beyond-tile-card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem 0.65rem;
-  margin-top: 0.55rem;
-}
-
 .beyond-tile-card__tags {
-  margin: 0;
+  margin: 0.55rem 0 0;
   font-size: 0.78rem;
   letter-spacing: 0.03em;
-}
-
-.beyond-tile-card__recipient-pill {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: lowercase;
-  padding: 0.18rem 0.45rem;
-  border-radius: 2px;
-  color: #9a3412;
-  background: color-mix(in srgb, #ea580c 10%, var(--color-panel));
-  border: 1px solid color-mix(in srgb, #ea580c 28%, var(--color-rule-light));
 }
 
 .beyond-tile-card__credit {

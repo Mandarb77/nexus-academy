@@ -27,7 +27,7 @@ export function ResourcesPage() {
     setLoadingBeyond(true)
     const { data, error } = await supabase
       .from('beyond_tiles')
-      .select('id, title, body, guild_tags, recipient_waiting, credit_line, status, submitted_by, sort_order')
+      .select('id, title, body, guild_tags, credit_line, status, submitted_by, sort_order')
       .eq('status', 'approved')
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true })
@@ -61,9 +61,8 @@ export function ResourcesPage() {
               Beyond the Tiles
             </h2>
             <p className="muted beyond-tiles-section__subhead">
-              These are possibilities. Things that could exist. Some have a recipient already waiting. Some are just a
-              good idea looking for the right maker. None of them fit inside a quest tile — and that&apos;s exactly why
-              they&apos;re here.
+              These are possibilities. Things that could exist. Some are just a good idea looking for the right maker.
+              None of them fit inside a quest tile — and that&apos;s exactly why they&apos;re here.
             </p>
           </header>
 

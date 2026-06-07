@@ -18,7 +18,6 @@ export function BeyondTileProposalForm({ onSubmitted }: Props) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [guildTags, setGuildTags] = useState<BeyondGuildTag[]>([])
-  const [recipientWaiting, setRecipientWaiting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -41,7 +40,6 @@ export function BeyondTileProposalForm({ onSubmitted }: Props) {
     setTitle('')
     setBody('')
     setGuildTags([])
-    setRecipientWaiting(false)
     setError(null)
     setSuccess(false)
     setOpen(false)
@@ -74,7 +72,6 @@ export function BeyondTileProposalForm({ onSubmitted }: Props) {
       title: trimmedTitle,
       body: body.trim(),
       guild_tags: guildTags,
-      recipient_waiting: recipientWaiting,
       status: 'pending',
       submitted_by: user.id,
       sort_order: 9999,
@@ -89,7 +86,6 @@ export function BeyondTileProposalForm({ onSubmitted }: Props) {
     setTitle('')
     setBody('')
     setGuildTags([])
-    setRecipientWaiting(false)
     setOpen(false)
     setSuccess(true)
     onSubmitted?.()
@@ -160,15 +156,6 @@ export function BeyondTileProposalForm({ onSubmitted }: Props) {
           ))}
         </div>
       </fieldset>
-
-      <label className="beyond-tiles-propose__recipient" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', marginBottom: '1rem' }}>
-        <input
-          type="checkbox"
-          checked={recipientWaiting}
-          onChange={(e) => setRecipientWaiting(e.target.checked)}
-        />
-        Recipient waiting
-      </label>
 
       {error ? <p className="error" role="alert">{error}</p> : null}
 

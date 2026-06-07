@@ -45,7 +45,6 @@ export function normalizeBeyondRow(raw: Record<string, unknown>): BeyondTileRow 
     title: (raw.title as string) ?? '',
     body: (raw.body as string) ?? '',
     guild_tags: Array.isArray(tags) ? (tags as BeyondGuildTag[]) : [],
-    recipient_waiting: Boolean(raw.recipient_waiting),
     credit_line: (raw.credit_line as string | null) ?? null,
     status: (raw.status as BeyondTileRow['status']) ?? 'pending',
     submitted_by: (raw.submitted_by as string | null) ?? null,

@@ -7,7 +7,6 @@ export type BeyondTileRow = {
   title: string
   body: string
   guild_tags: BeyondGuildTag[]
-  recipient_waiting: boolean
   credit_line: string | null
   status: BeyondTileStatus
   submitted_by: string | null
