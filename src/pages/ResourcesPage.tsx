@@ -1,18 +1,24 @@
 /*
  * Field Guide — resource hub (`/resources`)
  *
- * Beyond the Tiles → Reading the guild pages key → Learn the tools.
+ * Hero: quote rotator + anchor nav → Learn the tools → Beyond the Tiles → guild pages key.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import { BeyondTileCard } from '../components/beyondTiles/BeyondTileCard'
 import { BeyondTileProposalForm } from '../components/beyondTiles/BeyondTileProposalForm'
+import { FieldGuideAnchorNav } from '../components/fieldGuide/FieldGuideAnchorNav'
+import { FieldGuideQuoteRotator } from '../components/fieldGuide/FieldGuideQuoteRotator'
 import { ReadingGuildPagesKey } from '../components/fieldGuide/ReadingGuildPagesKey'
 import { LearnToolsSection } from '../components/learnTools/LearnToolsSection'
 import { MainNav } from '../components/MainNav'
 import { normalizeBeyondRow } from '../lib/beyondTiles'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { BeyondTileRow } from '../types/beyondTile'
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 export function ResourcesPage() {
   const [entries, setEntries] = useState<BeyondTileRow[]>([])
@@ -45,17 +51,28 @@ export function ResourcesPage() {
   }, [loadBeyond])
 
   return (
-    <div className="app-shell bench-chrome">
+    <div className="app-shell bench-chrome field-guide-page">
       <MainNav />
       <main className="page">
-        <header className="page-header bench-page-title-row">
+        <header className="field-guide-page__header">
           <h1 className="page-title bench-page-title">Field Guide</h1>
-          <p className="muted page-subtitle">
-            Possibilities, guild keys, and tool resources for the workshop.
-          </p>
         </header>
 
-        <section className="beyond-tiles-section" aria-labelledby="beyond-tiles-heading">
+        <div className="field-guide-hero">
+          <FieldGuideQuoteRotator />
+          <FieldGuideAnchorNav
+            onLearn={() => scrollToSection('field-guide-learn')}
+            onBeyond={() => scrollToSection('field-guide-beyond')}
+          />
+        </div>
+
+        <LearnToolsSection sectionId="field-guide-learn" />
+
+        <section
+          id="field-guide-beyond"
+          className="beyond-tiles-section field-guide-scroll-target"
+          aria-labelledby="beyond-tiles-heading"
+        >
           <header className="beyond-tiles-section__header">
             <h2 id="beyond-tiles-heading" className="beyond-tiles-section__title">
               Beyond the Tiles
@@ -86,8 +103,6 @@ export function ResourcesPage() {
         </section>
 
         <ReadingGuildPagesKey />
-
-        <LearnToolsSection />
       </main>
     </div>
   )

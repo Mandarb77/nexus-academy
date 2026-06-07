@@ -3344,6 +3344,111 @@ body:has(.bench-chrome) {
   margin: 0;
 }
 
+/* Field Guide — page shell */
+.field-guide-page .field-guide-page__header {
+  margin-bottom: 0.75rem;
+}
+
+.field-guide-page .field-guide-page__header .page-title {
+  margin: 0;
+}
+
+.field-guide-hero {
+  margin-bottom: 2.5rem;
+}
+
+.field-guide-quote {
+  min-height: 6.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 0.25rem;
+}
+
+.field-guide-quote__block {
+  margin: 0;
+  max-width: 38rem;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.field-guide-quote__block--visible {
+  opacity: 1;
+}
+
+.field-guide-quote__text {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-ui);
+  font-size: clamp(0.95rem, 2.2vw, 1.08rem);
+  font-style: italic;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  color: var(--color-ink-secondary);
+}
+
+.field-guide-quote__attrib {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-tertiary);
+}
+
+.field-guide-anchors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .field-guide-anchors {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field-guide-anchor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.9rem 1rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.field-guide-anchor:hover {
+  border-color: var(--color-rule-strong);
+  background: color-mix(in srgb, var(--color-ground) 35%, var(--color-panel));
+}
+
+.field-guide-anchor:focus-visible {
+  outline: 1px solid var(--color-rule-strong);
+  outline-offset: 2px;
+}
+
+.field-guide-anchor__title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--color-ink-primary);
+}
+
+.field-guide-anchor__sub {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.field-guide-scroll-target {
+  scroll-margin-top: 1rem;
+}
+
 /* Field Guide — Beyond the Tiles */
 .beyond-tiles-section {
   margin-bottom: 2.5rem;
@@ -3452,9 +3557,10 @@ body:has(.bench-chrome) {
   align-self: flex-start;
 }
 
-/* Field Guide — Reading the guild pages key */
+/* Field Guide — Reading the guild pages key (bottom reference) */
 .field-guide-key {
-  margin-bottom: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
   padding: 0.85rem 1rem 0.95rem;
 }
 
@@ -3502,8 +3608,13 @@ body:has(.bench-chrome) {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-ink-secondary);
 }
+
+.learn-tools-guild__heading--forge { color: var(--color-forge); }
+.learn-tools-guild__heading--void { color: var(--color-void); }
+.learn-tools-guild__heading--prism { color: var(--color-prism); }
+.learn-tools-guild__heading--silicon { color: var(--color-silicon); }
+.learn-tools-guild__heading--folded { color: var(--color-folded); }
 
 .learn-tools-list {
   list-style: none;

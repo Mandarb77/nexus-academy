@@ -10,7 +10,19 @@ import type { LearnToolResourceRow } from '../../types/learnToolResource'
 import { LearnToolLink } from './LearnToolLink'
 import { ToolResourceProposalForm } from './ToolResourceProposalForm'
 
-export function LearnToolsSection() {
+type Props = {
+  sectionId?: string
+}
+
+const GUILD_HEADING_MOD: Record<string, string> = {
+  Forge: 'forge',
+  Void: 'void',
+  Prism: 'prism',
+  Silicon: 'silicon',
+  Folded: 'folded',
+}
+
+export function LearnToolsSection({ sectionId = 'field-guide-learn' }: Props) {
   const [resources, setResources] = useState<LearnToolResourceRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -44,10 +56,14 @@ export function LearnToolsSection() {
   const byGuild = groupResourcesByGuild(resources)
 
   return (
-    <section className="learn-tools-section" aria-labelledby="learn-tools-heading">
+    <section
+      id={sectionId}
+      className="learn-tools-section field-guide-scroll-target"
+      aria-labelledby="learn-tools-heading"
+    >
       <header className="learn-tools-section__header">
         <h2 id="learn-tools-heading" className="learn-tools-section__title">
-          Learn the tools
+          Learn the Tools
         </h2>
       </header>
 
@@ -61,7 +77,11 @@ export function LearnToolsSection() {
           if (!links.length) return null
           return (
             <div key={guild} className="learn-tools-guild">
-              <h3 className="learn-tools-guild__heading">{LEARN_TOOL_GUILD_HEADINGS[guild]}</h3>
+              <h3
+                className={`learn-tools-guild__heading learn-tools-guild__heading--${GUILD_HEADING_MOD[guild] ?? 'default'}`}
+              >
+                {LEARN_TOOL_GUILD_HEADINGS[guild]}
+              </h3>
               <ul className="learn-tools-list">
                 {links.map((resource) => (
                   <LearnToolLink key={resource.id} resource={resource} />
