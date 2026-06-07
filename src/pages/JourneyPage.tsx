@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { guildHeading } from '../lib/guildTree'
 import { ApprovedQuestView } from '../components/ApprovedQuestView'
+import { GradesReferenceHover } from '../components/GradesReferenceHover'
 import { fetchJourneyPatentReadView, type JourneyPatentReadViewModel } from '../lib/journeyPatentReadView'
 import { getPatentRoute } from '../lib/patentRoutes'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
@@ -504,6 +505,8 @@ export function JourneyPage() {
           })}
         </ol>
       )}
+
+      <GradesReferenceHover />
     </div>
   )
 }

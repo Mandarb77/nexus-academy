@@ -1171,7 +1171,137 @@ a.btn-primary {
   border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
+/* Record — static grade reference (hover / focus, no student data) */
+.bench-chrome.journey-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
 
+.journey-grades-ref {
+  margin-top: auto;
+  padding-top: 2.25rem;
+  padding-bottom: 0.35rem;
+  display: flex;
+  justify-content: center;
+}
+
+.journey-grades-ref__wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.journey-grades-ref__trigger {
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--color-ink-tertiary);
+  background: none;
+  border: none;
+  padding: 0.2rem 0.35rem;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
+}
+
+.journey-grades-ref__trigger:hover,
+.journey-grades-ref__trigger:focus-visible {
+  color: var(--color-ink-secondary);
+}
+
+.journey-grades-ref__trigger:focus-visible {
+  outline: 1px solid var(--color-rule-strong);
+  outline-offset: 2px;
+}
+
+.journey-grades-ref__icon {
+  font-size: 0.78rem;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.journey-grades-ref__label {
+  text-transform: lowercase;
+}
+
+.journey-grades-ref__card {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.45rem);
+  transform: translateX(-50%);
+  width: min(21.5rem, calc(100vw - 2.5rem));
+  padding: 0.85rem 1rem 0.9rem;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.14s ease, visibility 0.14s ease;
+  z-index: 30;
+  box-shadow: none;
+}
+
+.journey-grades-ref__wrap:hover .journey-grades-ref__card,
+.journey-grades-ref__wrap:focus-within .journey-grades-ref__card {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.journey-grades-ref__title {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
+  line-height: 1.3;
+}
+
+.journey-grades-ref__list {
+  margin: 0;
+  padding: 0;
+}
+
+.journey-grades-ref__row {
+  display: grid;
+  grid-template-columns: 1.65rem 1fr;
+  gap: 0.35rem 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.journey-grades-ref__row:last-of-type {
+  margin-bottom: 0.65rem;
+}
+
+.journey-grades-ref__letter {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-secondary);
+}
+
+.journey-grades-ref__body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary);
+}
+
+.journey-grades-ref__footer {
+  margin: 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--color-rule-light);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
 
 .skill-tree-top {
   margin-bottom: 1.5rem;
