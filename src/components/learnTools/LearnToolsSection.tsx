@@ -7,6 +7,7 @@ import {
 } from '../../lib/learnToolResources'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 import type { LearnToolResourceRow } from '../../types/learnToolResource'
+import { HowToFindWhatYouNeed } from './HowToFindWhatYouNeed'
 import { LearnToolLink } from './LearnToolLink'
 import { ToolResourceProposalForm } from './ToolResourceProposalForm'
 
@@ -66,6 +67,8 @@ export function LearnToolsSection({ sectionId = 'field-guide-learn' }: Props) {
           Learn the Tools
         </h2>
       </header>
+
+      <HowToFindWhatYouNeed />
 
       {loading ? (
         <p className="muted">Loading resources…</p>
