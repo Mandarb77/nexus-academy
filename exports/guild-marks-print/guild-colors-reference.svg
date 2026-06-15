@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+  width="8.5in"
+  height="7.583333333333333in"
+  viewBox="0 0 680 728"
+  role="img"
+  aria-label="Nexus Academy guild color reference">
+  <title>Nexus Academy guild color reference</title>
+  <desc>Nexus Academy guild mark — vector art for large-format print. Source: nexus-academy GuildMark component.</desc>
+  <rect width="680" height="728" fill="#FFFFFF"/>
+  <text x="48" y="40" font-family="Cinzel, 'Times New Roman', serif" font-size="22" letter-spacing="2" fill="#1A1714">Nexus Academy — Guild Colors</text>
+  
+  <rect x="48" y="64" width="88" height="48" fill="#C47B2B" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="84" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">FORGE</text>
+  <text x="156" y="104" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#C47B2B</text>
+  <rect x="48" y="136" width="88" height="48" fill="#378ADD" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="156" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">PRISM ORDER</text>
+  <text x="156" y="176" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#378ADD</text>
+  <rect x="48" y="208" width="88" height="48" fill="#D85A30" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="228" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">FOLDED PATH</text>
+  <text x="156" y="248" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#D85A30</text>
+  <rect x="48" y="280" width="88" height="48" fill="#6B5B8A" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="300" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">SILICON COVENANT</text>
+  <text x="156" y="320" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#6B5B8A</text>
+  <rect x="48" y="352" width="88" height="48" fill="#2A6B6B" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="372" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">VOID NAVIGATORS</text>
+  <text x="156" y="392" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#2A6B6B</text>
+  <rect x="48" y="424" width="88" height="48" fill="#1A1714" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="444" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">Mark fill</text>
+  <text x="156" y="464" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#1A1714</text>
+  <rect x="48" y="496" width="88" height="48" fill="#F0EBE1" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="516" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">Cartouche panel</text>
+  <text x="156" y="536" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#F0EBE1</text>
+  <rect x="48" y="568" width="88" height="48" fill="#B8B2A6" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="588" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">Cartouche border</text>
+  <text x="156" y="608" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#B8B2A6</text>
+  <rect x="48" y="640" width="88" height="48" fill="#4A453F" stroke="#B8B2A6" stroke-width="1"/>
+  <text x="156" y="660" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1714">Label ink</text>
+  <text x="156" y="680" font-family="DM Mono, ui-monospace, monospace" font-size="13" fill="#4A453F">#4A453F</text>
+</svg>

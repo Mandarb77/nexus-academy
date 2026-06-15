@@ -1,0 +1,61 @@
+{
+  "guilds": {
+    "forge": {
+      "label": "FORGE",
+      "slug": "forge",
+      "hex": "#C47B2B",
+      "rgb": [
+        196,
+        123,
+        43
+      ]
+    },
+    "prism": {
+      "label": "PRISM ORDER",
+      "slug": "prism",
+      "hex": "#378ADD",
+      "rgb": [
+        55,
+        138,
+        221
+      ]
+    },
+    "folded": {
+      "label": "FOLDED PATH",
+      "slug": "folded",
+      "hex": "#D85A30",
+      "rgb": [
+        216,
+        90,
+        48
+      ]
+    },
+    "silicon": {
+      "label": "SILICON COVENANT",
+      "slug": "silicon",
+      "hex": "#6B5B8A",
+      "rgb": [
+        107,
+        91,
+        138
+      ]
+    },
+    "void": {
+      "label": "VOID NAVIGATORS",
+      "slug": "void",
+      "hex": "#2A6B6B",
+      "rgb": [
+        42,
+        107,
+        107
+      ]
+    }
+  },
+  "supporting": {
+    "markFill": "#1A1714",
+    "cartouchePanel": "#F0EBE1",
+    "cartoucheBorder": "#B8B2A6",
+    "labelInk": "#4A453F"
+  },
+  "generatedAt": "2026-06-15T12:34:03.931Z"
+}

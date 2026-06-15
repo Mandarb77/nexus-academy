@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+  width="3in"
+  height="3.7in"
+  viewBox="0 0 300 370"
+  role="img"
+  aria-label="PRISM ORDER guild cartouche">
+  <title>PRISM ORDER guild cartouche</title>
+  <desc>Nexus Academy guild mark — vector art for large-format print. Source: nexus-academy GuildMark component.</desc>
+  <rect width="300" height="370" fill="#F0EBE1"/>
+  <ellipse cx="150" cy="158" rx="120" ry="124.32" fill="#F0EBE1" stroke="#B8B2A6" stroke-width="2"/>
+  <g transform="translate(90 72) scale(1.85)">
+    <g stroke="#378ADD" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="none">
+          <ellipse cx="60" cy="86" rx="52" ry="78"/>
+          <line x1="68" y1="86" x2="106" y2="86"/>
+          <line x1="66" y1="81" x2="100" y2="51"/>
+          <line x1="63" y1="79" x2="83" y2="25"/>
+          <line x1="57" y1="79" x2="37" y2="25"/>
+          <line x1="54" y1="81" x2="20" y2="51"/>
+          <line x1="52" y1="86" x2="14" y2="86"/>
+          <line x1="54" y1="91" x2="20" y2="121"/>
+          <line x1="57" y1="93" x2="37" y2="147"/>
+          <line x1="63" y1="93" x2="83" y2="147"/>
+          <line x1="66" y1="91" x2="100" y2="121"/>
+          <line x1="58.5" y1="78" x2="58.5" y2="18"/>
+          <line x1="61.5" y1="78" x2="61.5" y2="18"/>
+          <line x1="58.5" y1="94" x2="58.5" y2="154"/>
+          <line x1="61.5" y1="94" x2="61.5" y2="154"/>
+          <circle cx="60" cy="86" r="8"/>
+        </g>
+  </g>
+  <text x="150" y="338"
+    text-anchor="middle"
+    font-family="Cinzel, 'Times New Roman', serif"
+    font-size="13"
+    font-weight="500"
+    letter-spacing="3.2"
+    fill="#4A453F">PRISM ORDER</text>
+</svg>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+  width="3in"
+  height="3.7in"
+  viewBox="0 0 300 370"
+  role="img"
+  aria-label="VOID NAVIGATORS guild cartouche">
+  <title>VOID NAVIGATORS guild cartouche</title>
+  <desc>Nexus Academy guild mark — vector art for large-format print. Source: nexus-academy GuildMark component.</desc>
+  <rect width="300" height="370" fill="#F0EBE1"/>
+  <ellipse cx="150" cy="158" rx="120" ry="124.32" fill="#F0EBE1" stroke="#B8B2A6" stroke-width="2"/>
+  <g transform="translate(90 72) scale(1.85)">
+    <g stroke="#2A6B6B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="none">
+          <ellipse cx="60" cy="88" rx="54" ry="80"/>
+          <rect x="26" y="60" width="68" height="68"/>
+          <circle cx="60" cy="94" r="34"/>
+          <line x1="60" y1="51" x2="33" y2="128"/>
+          <line x1="60" y1="51" x2="87" y2="128"/>
+          <circle cx="60" cy="40" r="11"/>
+          <circle cx="60" cy="40" r="5"/>
+        </g>
+        <polygon points="60,74 66,78 62,86 69,98 62,112 64,122 60,152 56,122 58,112 51,98 58,86 54,78" fill="#1A1714"/>
+  </g>
+  <text x="150" y="338"
+    text-anchor="middle"
+    font-family="Cinzel, 'Times New Roman', serif"
+    font-size="13"
+    font-weight="500"
+    letter-spacing="3.2"
+    fill="#4A453F">VOID NAVIGATORS</text>
+</svg>
