@@ -24,12 +24,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { isTeacherProfile } from '../lib/teacher'
+import { isTeacherPreviewBrowse } from '../lib/teacher'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
-import { ledgerContentForTile } from '../lib/patentLedgerContent'
+import { ledgerContentForTile, PATENT_CLOSING_QUOTE } from '../lib/patentLedgerContent'
 import { canAccessVoidTile1Proto } from '../lib/voidProtoAccess'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
 import { serverSuggestedPatentPhase } from '../lib/patentPhaseBootstrap'
@@ -195,7 +195,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const { user, profile, studentPreviewMode } = useAuth()
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
-  const previewBrowse = studentPreviewMode && isTeacherProfile(profile)
+  const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
 
   const content = useMemo(() => ledgerContentForTile(tile), [tile])
   const steps = content.steps
@@ -1026,7 +1026,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
             {tile.tile_description?.trim() ? (
               <div className="ways-hint" style={{ borderTop: 'none', marginTop: 0 }}>
                 <strong style={{ display: 'block', marginBottom: '0.25rem' }}>Quest brief</strong>
-                {tile.tile_description.trim()}
+                <span className="quest-brief-body">{tile.tile_description.trim()}</span>
               </div>
             ) : null}
 
@@ -1459,10 +1459,9 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
             {submitApprovalError ? <div className="status-banner returned" role="alert">{submitApprovalError}</div> : null}
           </div>
 
-          {/* Closing quote — TBD Card 09 */}
           <div className="closing">
             <span className="closing-mark">❧</span>
-            <div className="closing-text">[Closing quote — TBD, Card 09]</div>
+            <div className="closing-text">{PATENT_CLOSING_QUOTE}</div>
           </div>
 
           {/* DEV-ONLY tester control — never shipped to production (import.meta.env.DEV). */}

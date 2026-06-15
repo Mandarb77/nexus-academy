@@ -13,10 +13,12 @@ import { QuestLockedGate } from '../components/QuestLockedGate'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { isStickerQuestLocked } from '../lib/stickerTile'
+import { isTeacherPreviewBrowse } from '../lib/teacher'
 
 export function PatentStickerPage() {
   const { tileId } = useParams<{ tileId: string }>()
-  const { signOut } = useAuth()
+  const { signOut, profile, studentPreviewMode } = useAuth()
+  const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
   const { tiles, loading, refresh, completionByTileId, canUseDb, tileBySlug } = useSkillTree()
 
   // ---------------------------------------------------------------------------
@@ -28,7 +30,7 @@ export function PatentStickerPage() {
   }, [tiles, tileId])
 
   const completion = tile ? completionByTileId.get(tile.id) : undefined
-  const stickerLocked = Boolean(tile && isStickerQuestLocked(tile))
+  const stickerLocked = Boolean(tile && isStickerQuestLocked(tile) && !previewBrowse)
 
   if (!tileId) return <Navigate to="/tree/folded" replace />
 

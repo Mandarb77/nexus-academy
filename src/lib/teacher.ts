@@ -11,3 +11,11 @@ import type { Profile } from '../types/profile'
 export function isTeacherProfile(profile: Profile | null | undefined): boolean {
   return profile?.role === 'teacher'
 }
+
+/** Teacher walking the app as a student — unlock quests and browse patents read-only. */
+export function isTeacherPreviewBrowse(
+  studentPreviewMode: boolean,
+  profile: Profile | null | undefined,
+): boolean {
+  return studentPreviewMode && isTeacherProfile(profile)
+}

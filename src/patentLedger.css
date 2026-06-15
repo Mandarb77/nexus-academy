@@ -338,6 +338,11 @@
   line-height: 1.7;
 }
 
+.patent-ledger-root .quest-brief-body {
+  display: block;
+  white-space: pre-line;
+}
+
 /* ── Submit button ───────────────────────────────────────────────────── */
 .patent-ledger-root .submit-btn {
   display: block;

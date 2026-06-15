@@ -18,6 +18,9 @@ export type LedgerContent = {
   footerNote: string | null
 }
 
+/** Card 09 — closing ❧ line on every patent ledger variant. */
+export const PATENT_CLOSING_QUOTE = 'What you gave away is the only part that stays.'
+
 function parseLedgerResources(raw: unknown): LedgerResource[] {
   if (!Array.isArray(raw)) return []
   const out: LedgerResource[] = []

@@ -6,7 +6,9 @@
 
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import type { TileCompletionState } from '../hooks/useSkillTree'
+import { isTeacherPreviewBrowse } from '../lib/teacher'
 import { tileUnlockStatus } from '../lib/tileUnlock'
 import type { TileRow } from '../types/tile'
 
@@ -25,9 +27,13 @@ export function QuestLockedGate({
   backPath,
   children,
 }: Props) {
+  const { profile, studentPreviewMode } = useAuth()
+  const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
   const completion = completionByTileId.get(tile.id)
   const status = completion?.status
-  const unlock = tileUnlockStatus(tile, tileBySlug, completionByTileId)
+  const unlock = tileUnlockStatus(tile, tileBySlug, completionByTileId, {
+    unlockAll: previewBrowse,
+  })
   const inProgress = status === 'pending' || status === 'returned' || status === 'approved'
   const blocked = unlock.locked && !inProgress
 

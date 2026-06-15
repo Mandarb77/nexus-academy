@@ -37,7 +37,10 @@ export function tileUnlockStatus(
   tile: TileRow,
   tileBySlug: Map<string, TileRow>,
   completionByTileId: Map<string, TileCompletionState>,
+  options?: { unlockAll?: boolean },
 ): TileUnlockStatus {
+  if (options?.unlockAll) return { locked: false }
+
   const slugs = tile.unlock_after_slugs ?? []
   if (!slugs.length) return { locked: false }
 

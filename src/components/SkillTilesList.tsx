@@ -8,6 +8,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import type { QuestKind, TileRow } from '../types/tile'
 import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
 import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
@@ -18,6 +19,7 @@ import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
 import { isCustomTile, resolvedTileSteps } from '../lib/customTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
 import { STICKER_STEPS } from '../lib/stickerSteps'
+import { isTeacherPreviewBrowse } from '../lib/teacher'
 import { tileUnlockStatus } from '../lib/tileUnlock'
 
 type Props = {
@@ -56,6 +58,8 @@ export function SkillTilesList({
   canUseDb,
 }: Props) {
   const navigate = useNavigate()
+  const { profile, studentPreviewMode } = useAuth()
+  const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
 
   /*
    * Pedagogical sort: anchor cohort around flagship builds first; bury “coming soon” sticker
@@ -101,8 +105,10 @@ export function SkillTilesList({
            * `STICKER_QUEST_COMING_SOON` is the only tile that shows a hard lock while still
            * existing in the DB — avoids deleting curriculum content while the room is not ready.
            */
-          const isComingSoon = isStickerQuestLocked(tile)
-          const unlock = tileUnlockStatus(tile, tileBySlug, completionByTileId)
+          const isComingSoon = !previewBrowse && isStickerQuestLocked(tile)
+          const unlock = tileUnlockStatus(tile, tileBySlug, completionByTileId, {
+            unlockAll: previewBrowse,
+          })
           const isQuestLocked =
             unlock.locked && !isApproved && !isPending && !isReturned
 
