@@ -4,7 +4,7 @@
  * Source design authored as standalone HTML; ported here scoped under `.patent-ledger-root`
  * so the bare `textarea` / `input[type="text"]` rules do NOT leak into the rest of the SPA.
  * Three tab-switched panels (Plan / Work / Record), Roman-numeral side tabs, ruled-underline
- * inputs on transparent paper. Typefaces loaded in index.html: Cinzel, Crimson Pro, IM Fell English.
+ * inputs on transparent paper. Typefaces loaded in index.html: Cinzel, Zilla Slab, Atkinson Hyperlegible.
  */
 
 .patent-ledger-root {
@@ -21,12 +21,17 @@
   --pl-border:    #C8BC9E;
   --border-dark:  #A89060;
   --tab-inactive: #D8CEAE;
+  --hint:         #9A8850;
+  --placeholder:  #C4B88A;
+  --step-num:     #C4B88A;
+  --font-question: 'Zilla Slab', Georgia, serif;
+  --font-answer: 'Atkinson Hyperlegible', system-ui, sans-serif;
 
   display: flex;
   justify-content: center;
   padding: 2rem 3rem 2rem 2rem; /* extra right for tabs */
   background: #E8E2D4;
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: var(--font-answer);
 }
 
 .patent-ledger-root *,
@@ -88,7 +93,7 @@
 .patent-ledger-root .tab-num {
   position: relative;
   z-index: 2;
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 13px;
   color: var(--ink-faint);
@@ -133,7 +138,7 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cpolygon points='36,4 56,14 68,34 58,56 36,68 14,58 4,36 14,14' fill='none' stroke='%238B6914' stroke-width='1.5'/%3E%3Crect x='32' y='29' width='8' height='17' rx='1' fill='%238B6914'/%3E%3Crect x='26' y='22' width='20' height='9' rx='1.5' fill='%238B6914'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-size: contain;
-  opacity: 0.05;
+  opacity: 0.025;
   pointer-events: none;
   z-index: 0;
 }
@@ -207,7 +212,7 @@
 }
 
 .patent-ledger-root .id-value {
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 13px;
   color: var(--ink);
@@ -228,8 +233,8 @@
   justify-content: space-between;
 }
 
-.patent-ledger-root .quest-name { font-family: 'IM Fell English', serif; font-size: 17px; color: var(--ink); }
-.patent-ledger-root .entry-num { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 11px; color: var(--border-dark); white-space: nowrap; }
+.patent-ledger-root .quest-name { font-family: var(--font-question); font-weight: 500; font-size: 17px; color: var(--ink); }
+.patent-ledger-root .entry-num { font-family: var(--font-question); font-style: italic; font-size: 11px; color: var(--border-dark); white-space: nowrap; }
 
 /* ── Panels ──────────────────────────────────────────────────────────── */
 .patent-ledger-root .panel { display: none; padding: 1.5rem 2rem; }
@@ -247,19 +252,20 @@
 .patent-ledger-root .ledger-row:last-of-type { border-bottom: none; }
 
 .patent-ledger-root .row-num {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 11px;
-  color: var(--ink-ghost);
+  color: var(--step-num);
   padding-top: 0.15rem;
 }
 
 .patent-ledger-root .row-body { padding-left: 0.2rem; }
 
 .patent-ledger-root .row-q {
-  font-family: 'Crimson Pro', serif;
-  font-size: 16px;
+  font-family: var(--font-question);
+  font-size: 15px;
   font-weight: 500;
+  font-style: normal;
   color: var(--ink);
   line-height: 1.35;
   margin-bottom: 0.15rem;
@@ -269,10 +275,10 @@
 .patent-ledger-root .row-q .req { color: #8B3A1A; margin-left: 2px; }
 
 .patent-ledger-root .row-hint {
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-question);
   font-style: italic;
-  font-size: 12.5px;
-  color: var(--ink-faint);
+  font-size: 12px;
+  color: var(--hint);
   display: block;
   margin-bottom: 0.35rem;
 }
@@ -286,8 +292,10 @@
   border-bottom: 1px solid var(--pl-border) !important;
   border-radius: 0;
   padding: 0.35rem 0.15rem !important;
-  font-family: 'Crimson Pro', serif !important;
-  font-size: 16px !important;
+  font-family: var(--font-answer) !important;
+  font-size: 15px !important;
+  font-weight: 400;
+  font-style: normal;
   color: var(--ink) !important;
   -webkit-text-fill-color: var(--ink) !important;
   resize: none;
@@ -304,8 +312,8 @@
 
 .patent-ledger-root textarea::placeholder,
 .patent-ledger-root input[type="text"]::placeholder {
-  color: var(--ink-ghost) !important;
-  -webkit-text-fill-color: var(--ink-ghost) !important;
+  color: var(--placeholder) !important;
+  -webkit-text-fill-color: var(--placeholder) !important;
   font-style: italic;
 }
 
@@ -321,8 +329,7 @@
 
 /* ── Empathy footnote — marginal note, not a form element ────────────── */
 .patent-ledger-root .ways-hint {
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
+  font-family: var(--font-answer);
   font-size: 12.5px;
   color: var(--ink-faint);
   margin-top: 0.7rem;
@@ -353,8 +360,7 @@
 
 /* ── Gate notice ─────────────────────────────────────────────────────── */
 .patent-ledger-root .gate-note {
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
+  font-family: var(--font-answer);
   font-size: 11.5px;
   color: var(--border-dark);
   display: flex;
@@ -371,7 +377,7 @@
   padding: 0.45rem 0.75rem;
   border: 1px solid var(--pl-border);
   border-left: 3px solid var(--gold);
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 12.5px;
   color: var(--ink-light);
@@ -400,7 +406,7 @@
 }
 
 .patent-ledger-root .cl-status {
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 12px;
   color: var(--ink-faint);
@@ -414,7 +420,7 @@
   gap: 0.6rem;
   padding: 0.45rem 0;
   border-bottom: 1px solid #E4DAC0;
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--font-answer);
   font-size: 15px;
   color: var(--ink-light);
   line-height: 1.45;
@@ -444,10 +450,10 @@
 .patent-ledger-root .cb.checked::after { content: '✓'; color: var(--cream); font-size: 8px; line-height: 1; }
 
 .patent-ledger-root .step-num {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 11px;
-  color: var(--ink-ghost);
+  color: var(--step-num);
   min-width: 14px;
   margin-top: 3px;
   flex-shrink: 0;
@@ -542,10 +548,10 @@
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 12px;
-  color: var(--pl-border);
+  color: var(--placeholder);
   pointer-events: none;
   white-space: nowrap;
 }
@@ -619,8 +625,7 @@
   border: none !important;
   border-bottom: 1px solid var(--pl-border) !important;
   background: transparent !important;
-  font-family: 'IM Fell English', serif !important;
-  font-style: italic;
+  font-family: var(--font-answer) !important;
   font-size: 13px !important;
   color: var(--ink-light) !important;
   -webkit-text-fill-color: var(--ink-light) !important;
@@ -639,7 +644,7 @@
 .patent-ledger-root .closing-mark { color: var(--gold); font-size: 14px; display: block; margin-bottom: 0.35rem; }
 
 .patent-ledger-root .closing-text {
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-question);
   font-style: italic;
   font-size: 12px;
   color: var(--border-dark);
@@ -648,8 +653,7 @@
 
 /* ── Loading / approved states ───────────────────────────────────────── */
 .patent-ledger-root .pl-loading {
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
+  font-family: var(--font-answer);
   color: var(--ink-light);
   padding: 2rem;
   text-align: center;

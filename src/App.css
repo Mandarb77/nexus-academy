@@ -5656,9 +5656,9 @@ body:has(.bench-chrome) {
 
 .dispatch-fragment__title {
   margin: 0 0 0.65rem;
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 1.45rem;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.2;
   color: var(--color-ink-primary);
 }
@@ -5676,7 +5676,7 @@ body:has(.bench-chrome) {
 
 .dispatch-fragment__body {
   margin: 0;
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 0.98rem;
   line-height: 1.55;
   white-space: pre-line;
@@ -5799,9 +5799,9 @@ body:has(.bench-chrome) {
 
 .where-card__name {
   margin: 0;
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 1.55rem;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.15;
   color: var(--color-ink-primary);
 }
@@ -5821,7 +5821,7 @@ body:has(.bench-chrome) {
   margin: auto 0 0;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-rule-light);
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 0.95rem;
   font-style: italic;
   line-height: 1.45;
@@ -5830,7 +5830,7 @@ body:has(.bench-chrome) {
 
 .where-card__story {
   margin: 0;
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 0.92rem;
   line-height: 1.5;
   color: var(--color-ink-secondary);
@@ -5844,7 +5844,7 @@ body:has(.bench-chrome) {
 
 .where-card__kicker {
   margin: 0;
-  font-family: 'Crimson Pro', Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 0.88rem;
   font-style: italic;
   line-height: 1.45;
