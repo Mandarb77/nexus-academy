@@ -48,6 +48,44 @@ const INK_SECONDARY = '#4A453F'
 
 type GuildSlug = keyof typeof GUILDS
 
+/** Native mark geometry — outer oval center and radii in 120×172 viewBox */
+const MARK_LAYOUT: Record<GuildSlug, { cx: number; cy: number; rx: number; ry: number }> = {
+  void: { cx: 60, cy: 88, rx: 54, ry: 80 },
+  silicon: { cx: 60, cy: 86, rx: 52, ry: 78 },
+  folded: { cx: 60, cy: 86, rx: 52, ry: 78 },
+  prism: { cx: 60, cy: 86, rx: 52, ry: 78 },
+  forge: { cx: 60, cy: 86, rx: 52, ry: 78 },
+}
+
+const MARK_VIEW_W = 120
+const MARK_VIEW_H = 172
+
+function centeredMarkTransform(
+  slug: GuildSlug,
+  targetCx: number,
+  targetCy: number,
+  scale: number,
+): string {
+  const { cx, cy } = MARK_LAYOUT[slug]
+  return `translate(${targetCx} ${targetCy}) scale(${scale}) translate(${-cx} ${-cy})`
+}
+
+function cartoucheFrame(
+  slug: GuildSlug,
+  targetCx: number,
+  targetCy: number,
+  scale: number,
+  pad = 7,
+) {
+  const { rx, ry } = MARK_LAYOUT[slug]
+  return {
+    cx: targetCx,
+    cy: targetCy,
+    rx: rx * scale + pad,
+    ry: ry * scale + pad,
+  }
+}
+
 function markPaths(slug: GuildSlug, stroke: string, fill: string): string {
   const g = (inner: string) =>
     `<g stroke="${stroke}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="none">${inner}</g>`
@@ -179,7 +217,7 @@ function svgHeader(title: string, width: string, height: string, viewBox: string
 
 function markOnlySvg(slug: GuildSlug): string {
   const guild = GUILDS[slug]
-  return `${svgHeader(`${guild.label} guild mark`, '4in', '5.733in', '-8 -8 136 188')}
+  return `${svgHeader(`${guild.label} guild mark`, '4in', '5.733in', `0 0 ${MARK_VIEW_W} ${MARK_VIEW_H}`)}
   <rect width="100%" height="100%" fill="none"/>
   ${markPaths(slug, guild.hex, MARK_FILL)}
 </svg>
@@ -190,19 +228,19 @@ function cartoucheSvg(slug: GuildSlug): string {
   const guild = GUILDS[slug]
   const w = 300
   const h = 370
-  const cx = w / 2
-  const frameW = 240
-  const frameH = 296
-  const rx = frameW / 2
-  const ry = frameH * 0.42
+  const cardCx = w / 2
+  const labelBand = 52
+  const markCenterY = (h - labelBand) / 2
+  const scale = 1.52
+  const frame = cartoucheFrame(slug, cardCx, markCenterY, scale)
 
   return `${svgHeader(`${guild.label} guild cartouche`, '3in', '3.7in', `0 0 ${w} ${h}`)}
   <rect width="${w}" height="${h}" fill="${PANEL}"/>
-  <ellipse cx="${cx}" cy="158" rx="${rx}" ry="${ry}" fill="${PANEL}" stroke="${RULE}" stroke-width="2"/>
-  <g transform="translate(${cx - 60} 72) scale(1.85)">
+  <ellipse cx="${frame.cx}" cy="${frame.cy}" rx="${frame.rx}" ry="${frame.ry}" fill="${PANEL}" stroke="${RULE}" stroke-width="2"/>
+  <g transform="${centeredMarkTransform(slug, cardCx, markCenterY, scale)}">
     ${markPaths(slug, guild.hex, MARK_FILL)}
   </g>
-  <text x="${cx}" y="338"
+  <text x="${cardCx}" y="${h - 18}"
     text-anchor="middle"
     font-family="Cinzel, 'Times New Roman', serif"
     font-size="13"
@@ -258,25 +296,27 @@ function posterSheetSvg(): string {
       const guild = GUILDS[slug]
       const x = pad + i * (cardW + gap)
       const y = pad + 80
-      const cx = x + cardW / 2
-      const rx = 108
-      const ry = 124
+      const cardCx = x + cardW / 2
+      const labelBand = 56
+      const markCenterY = y + (cardH - labelBand) / 2
+      const scale = 1.52
+      const frame = cartoucheFrame(slug, cardCx, markCenterY, scale)
 
       return `
   <g>
     <rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" fill="${PANEL}" stroke="${RULE}" stroke-width="1.5"/>
-    <ellipse cx="${cx}" cy="${y + 188}" rx="${rx}" ry="${ry}" fill="${PANEL}" stroke="${RULE}" stroke-width="2"/>
-    <g transform="translate(${cx - 60} ${y + 100}) scale(1.85)">
+    <ellipse cx="${frame.cx}" cy="${frame.cy}" rx="${frame.rx}" ry="${frame.ry}" fill="${PANEL}" stroke="${RULE}" stroke-width="2"/>
+    <g transform="${centeredMarkTransform(slug, cardCx, markCenterY, scale)}">
       ${markPaths(slug, guild.hex, MARK_FILL)}
     </g>
-    <text x="${cx}" y="${y + cardH - 36}"
+    <text x="${cardCx}" y="${y + cardH - 36}"
       text-anchor="middle"
       font-family="Cinzel, 'Times New Roman', serif"
       font-size="15"
       font-weight="500"
       letter-spacing="3.5"
       fill="${INK_SECONDARY}">${guild.label}</text>
-    <text x="${cx}" y="${y + cardH - 14}"
+    <text x="${cardCx}" y="${y + cardH - 14}"
       text-anchor="middle"
       font-family="DM Mono, ui-monospace, monospace"
       font-size="11"

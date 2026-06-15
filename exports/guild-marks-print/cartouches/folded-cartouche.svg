@@ -8,8 +8,8 @@
   <title>FOLDED PATH guild cartouche</title>
   <desc>Nexus Academy guild mark — vector art for large-format print. Source: nexus-academy GuildMark component.</desc>
   <rect width="300" height="370" fill="#F0EBE1"/>
-  <ellipse cx="150" cy="158" rx="120" ry="124.32" fill="#F0EBE1" stroke="#B8B2A6" stroke-width="2"/>
-  <g transform="translate(90 72) scale(1.85)">
+  <ellipse cx="150" cy="159" rx="86.04" ry="125.56" fill="#F0EBE1" stroke="#B8B2A6" stroke-width="2"/>
+  <g transform="translate(150 159) scale(1.52) translate(-60 -86)">
     <g stroke="#D85A30" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="none">
           <ellipse cx="60" cy="86" rx="52" ry="78"/>
           <g transform="translate(60 92) scale(0.22)">
@@ -33,7 +33,7 @@
           </g>
         </g>
   </g>
-  <text x="150" y="338"
+  <text x="150" y="352"
     text-anchor="middle"
     font-family="Cinzel, 'Times New Roman', serif"
     font-size="13"
