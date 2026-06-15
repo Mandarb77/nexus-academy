@@ -118,7 +118,7 @@ Full guild curricula are **editable `tiles` rows** — not hardcoded in React. E
 
 ### Silicon Covenant (`052`, guild = `Silicon Covenant`)
 
-8 tiles; chips use `platform` / `technique`. Same unlock shape as Forge (`silicon-01` … `silicon-boss`).
+8 tiles; chips use `platform` / `technique`. Tier 1 linear through gate; stretch tiles 4+5 parallel after gate; Tier 2 gates parallel after gate; boss after **both** gates.
 
 ### Prism Order (`054`, guild = `Prism`)
 

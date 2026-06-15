@@ -1,0 +1,83 @@
+{
+  "generatedFrom": "supabase/migrations/051–057 quest tree seeds (main branch)",
+  "totalTiles": 42,
+  "guilds": [
+    {
+      "guild": "Forge",
+      "displayName": "Forge Covenant",
+      "tileCount": 8,
+      "tiles": [
+        "Tile 1 · the mark's home",
+        "Tile 2 · a thing that fits a thing",
+        "Tile 3 · two parts, one fit · the gate",
+        "Tile 4 · the thing that moves",
+        "Tile 5 · borrowed and changed",
+        "Gate A · the cross-guild fit",
+        "Gate B · reverse engineer + replace",
+        "Boss fight · student proposed"
+      ]
+    },
+    {
+      "guild": "Prism",
+      "displayName": "Prism Order",
+      "tileCount": 10,
+      "tiles": [
+        "Tile 1 · A Name Worth Keeping",
+        "Tile 2 · The Story Object",
+        "Tile 3 · Layers of Meaning · the gate",
+        "Tile 4 · Light and Shadow",
+        "Tile 5 · Borrowed and Changed",
+        "Tile 6A · The Archive",
+        "Tile 7A · Restore What Faded",
+        "Tile 6B · The Thing That Organizes",
+        "Tile 7B · A Place for Everything",
+        "What Deserves to Be Remembered?"
+      ]
+    },
+    {
+      "guild": "Folded Path",
+      "displayName": "Folded Path",
+      "tileCount": 8,
+      "tiles": [
+        "Tile 1 · First Cut",
+        "Tile 2 · Made for Someone",
+        "Tile 3 · The Thing That Moves · the gate",
+        "Tile 4 · One Shirt, One Person",
+        "Tile 5 · Complicated and Beautiful",
+        "Tile 6 · Every Color in Its Place",
+        "The Readfield Book",
+        "The Most Beautiful Thing You Know How to Make"
+      ]
+    },
+    {
+      "guild": "Silicon Covenant",
+      "displayName": "Silicon Covenant",
+      "tileCount": 8,
+      "tiles": [
+        "SIGNAL",
+        "LISTENER",
+        "HONEST MACHINE · the gate",
+        "WHEN AND",
+        "UNDER THE SURFACE",
+        "COMMISSION",
+        "FIELD WORK",
+        "YOUR CALL"
+      ]
+    },
+    {
+      "guild": "Void Navigators",
+      "displayName": "Void Navigators",
+      "tileCount": 8,
+      "tiles": [
+        "Tile 1 · The mark's origin",
+        "Tile 2 · First cut for someone",
+        "Tile 3 · Inlay · the competence gate",
+        "Tile 4 · Three bears",
+        "Tile 5 · Restore or replace",
+        "Gate A · Joinery",
+        "Gate B · Imported 3D relief",
+        "Boss fight · Student proposed"
+      ]
+    }
+  ]
+}
