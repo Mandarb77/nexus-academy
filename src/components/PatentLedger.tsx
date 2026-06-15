@@ -24,6 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { isTeacherProfile } from '../lib/teacher'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
@@ -191,9 +192,10 @@ function SignaturePad({
 // -----------------------------------------------------------------------------
 
 export function PatentLedger({ tile, refresh, completionStatus }: Props) {
-  const { user, profile } = useAuth()
+  const { user, profile, studentPreviewMode } = useAuth()
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
+  const previewBrowse = studentPreviewMode && isTeacherProfile(profile)
 
   const content = useMemo(() => ledgerContentForTile(tile), [tile])
   const steps = content.steps
@@ -464,10 +466,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const uploadRequired = !bypassApprovals
 
   const maxPhase = useMemo((): 1 | 2 | 3 => {
+    if (previewBrowse) return 3
     if (!planSubmitted) return 1
     if (!checklistApproved && !(bypassApprovals && checklistSubmitted)) return 2
     return 3
-  }, [planSubmitted, checklistApproved, bypassApprovals, checklistSubmitted])
+  }, [previewBrowse, planSubmitted, checklistApproved, bypassApprovals, checklistSubmitted])
 
   useEffect(() => {
     if (!initialised) return
@@ -475,7 +478,8 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   }, [initialised, maxPhase])
 
   const goPhase = (p: 1 | 2 | 3) => {
-    const next = Math.min(Math.max(p, 1), maxPhase) as 1 | 2 | 3
+    const cap = previewBrowse ? 3 : maxPhase
+    const next = Math.min(Math.max(p, 1), cap) as 1 | 2 | 3
     setPhase(next)
     try {
       sessionStorage.setItem(phaseKey, String(next))
@@ -486,6 +490,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
   // --- Persistence helpers ---
   const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
+    if (previewBrowse) return
     if (!pid || (checklistSubmitted && !checklistApproved)) return
     const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
     if (error) console.error('[PatentLedger] checklist save:', error.message)
@@ -496,13 +501,14 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     value: string,
     pid: string,
   ) => {
+    if (previewBrowse) return
     if (!pid) return
     const { error } = await supabase.from('patents').update({ [fieldName]: value }).eq('id', pid)
     if (error) console.error(`[PatentLedger] ${fieldName} save:`, error.message)
   }
 
   const handleFileUpload = async (file: File) => {
-    if (!user?.id || !plan.id) return
+    if (previewBrowse || !user?.id || !plan.id) return
     setUploading(true)
     setUploadError(null)
     try {
@@ -527,7 +533,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
      recipient). Writes `delivery_url` best-effort — needs migration 044, but the storage
      upload + preview still work if the column is missing. */
   const handleDeliveryUpload = async (file: File) => {
-    if (!user?.id || !plan.id) return
+    if (previewBrowse || !user?.id || !plan.id) return
     setDeliveryUploading(true)
     setDeliveryError(null)
     try {
@@ -566,7 +572,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
   // --- Student actions ---
   const onSubmitPlan = async () => {
-    if (planStep1FieldsLocked) return
+    if (previewBrowse || planStep1FieldsLocked) return
     if (!patent.field1.trim()) {
       setPlanSubmitError('Answer row i before submitting your plan.')
       return
@@ -608,7 +614,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   }
 
   const onSubmitChecklist = async () => {
-    if (!plan.id || !allDone || checklistSubmitted) return
+    if (previewBrowse || !plan.id || !allDone || checklistSubmitted) return
     if (uploadRequired && !uploadUrl) return
     setSubmittingChecklist(true)
     try {
@@ -628,6 +634,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   }
 
   const onSubmitRecord = async () => {
+    if (previewBrowse) return
     setSubmitApprovalError(null)
     if (!user?.id || !plan.id) {
       setSubmitApprovalError('Submit your plan first.')
@@ -748,7 +755,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
   const isApproved = completionStatus === 'approved'
   const isFinalPending = completionStatus === 'pending'
-  const readOnly = isApproved
+  const readOnly = isApproved || previewBrowse
   /* Autopopulate: the plan's submit date once it exists, otherwise today (the day it's being filled). */
   const dateText = formatLedgerDate(planCreatedAt ?? new Date().toISOString())
   const entryText = entryNumber != null ? String(entryNumber).padStart(2, '0') : '___'
@@ -759,7 +766,9 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     { n: 3, numeral: 'iii' },
   ]
 
-  const workStatusText = !planSubmitted
+  const workStatusText = previewBrowse
+    ? 'Teacher preview'
+    : !planSubmitted
     ? 'Submit the plan first'
     : !planApprovedForChecklist
       ? 'Awaiting teacher approval'
@@ -780,7 +789,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
               type="button"
               role="tab"
               aria-selected={phase === n}
-              disabled={n > maxPhase}
+              disabled={!previewBrowse && n > maxPhase}
               className={`side-tab${phase === n ? ' active' : ''}`}
               onClick={() => goPhase(n)}
             >
@@ -990,6 +999,12 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
             <span className="quest-name">{tile.skill_name}</span>
             <span className="entry-num">Entry no. {entryText}</span>
           </div>
+
+          {previewBrowse ? (
+            <div className="status-banner" role="status" style={{ margin: '0 2rem 1rem' }}>
+              Teacher preview — all three tabs are unlocked. Fields and submissions are read-only.
+            </div>
+          ) : null}
 
           {/* ── Panel i — The Plan ── */}
           <div className={`panel${phase === 1 ? ' active' : ''}`} role="tabpanel">
@@ -1217,7 +1232,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
               </>
             ) : null}
 
-            {!canStartChecklist && planSubmitted ? (
+            {!previewBrowse && !canStartChecklist && planSubmitted ? (
               <div className="gate-note">
                 <span>🔒</span> The checklist unlocks after your teacher approves your plan.
               </div>
@@ -1396,7 +1411,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                       type="text"
                       disabled
                       placeholder="—"
-                      value={isApproved ? String(tile.wp_display ?? tile.wp_value ?? '') : ''}
+                      value={isApproved || previewBrowse ? String(tile.wp_display ?? tile.wp_value ?? '') : ''}
                       readOnly
                     />
                   </div>
@@ -1406,7 +1421,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                       type="text"
                       disabled
                       placeholder="—"
-                      value={isApproved ? String(tile.gold_display ?? tile.gold_value ?? '') : ''}
+                      value={isApproved || previewBrowse ? String(tile.gold_display ?? tile.gold_value ?? '') : ''}
                       readOnly
                     />
                   </div>
