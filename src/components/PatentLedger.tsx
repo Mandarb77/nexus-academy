@@ -38,6 +38,12 @@ import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/paten
 import { patentRowMatchesTile, patentTileIdCandidates } from '../lib/patentTileQuery'
 import { skillTreeGuildModifier, guildHeading } from '../lib/guildTree'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
+import {
+  type RecordFieldKey,
+  recordFieldValue,
+  recordPromptsForTile,
+  recordSubmitReady,
+} from '../lib/recordPrompts'
 import '../patentLedger.css'
 
 type Props = {
@@ -46,11 +52,18 @@ type Props = {
   completionStatus: SkillCompletionStatus | undefined
 }
 
-type PatentDraft = { field1: string; field3: string; field4: string; field5: string; field6: string }
+type PatentDraft = {
+  field1: string
+  field3: string
+  field4: string
+  field5: string
+  field6: string
+  field7: string
+}
 type PlanStatus = UiPatentPlanStatus
 type PlanState = { id: string; status: PlanStatus }
 
-const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '', field5: '', field6: '' }
+const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '', field5: '', field6: '', field7: '' }
 const VIDEO_RE = /\.(mp4|webm|mov|avi|m4v)$/i
 
 function guildBackRoute(guild: string): string {
@@ -198,6 +211,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
 
   const content = useMemo(() => ledgerContentForTile(tile), [tile])
+  const recordRows = useMemo(() => recordPromptsForTile(tile), [tile])
   const steps = content.steps
   const checklistFooterNote = content.footerNote
   const backRoute = guildBackRoute(tile.guild)
@@ -379,17 +393,18 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     /* Best-effort: field_5 + signature (043) + delivery_url (044). Ignore errors if columns absent. */
     const { data: extra, error: extraErr } = await supabase
       .from('patents')
-      .select('field_5, field_6, maker_signature_url, delivery_url')
+      .select('field_5, field_6, field_7, maker_signature_url, delivery_url')
       .eq('id', row.id)
       .maybeSingle()
     if (!extraErr && extra) {
       const ex = extra as {
         field_5: string | null
         field_6: string | null
+        field_7: string | null
         maker_signature_url: string | null
         delivery_url: string | null
       }
-      setPatent((p) => ({ ...p, field5: ex.field_5 ?? '', field6: ex.field_6 ?? '' }))
+      setPatent((p) => ({ ...p, field5: ex.field_5 ?? '', field6: ex.field_6 ?? '', field7: ex.field_7 ?? '' }))
       setSignatureUrl(ex.maker_signature_url ?? null)
       setDeliveryUrl(ex.delivery_url ?? null)
     }
@@ -641,8 +656,8 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       return
     }
     const pid = plan.id
-    if (!patent.field3.trim() || !patent.field4.trim()) {
-      setSubmitApprovalError('Answer rows v and vi before submitting.')
+    if (!recordSubmitReady(tile, patent)) {
+      setSubmitApprovalError('Answer every required Record row before submitting.')
       return
     }
     if (!allDone) {
@@ -669,6 +684,10 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       if (patent.field6.trim()) {
         const { error: f6Err } = await supabase.from('patents').update({ field_6: patent.field6 }).eq('id', pid)
         if (f6Err) console.warn('[PatentLedger] field_6 skipped (apply migration 046):', f6Err.message)
+      }
+      if (patent.field7.trim()) {
+        const { error: f7Err } = await supabase.from('patents').update({ field_7: patent.field7 }).eq('id', pid)
+        if (f7Err) console.warn('[PatentLedger] field_7 skipped (apply migration 072):', f7Err.message)
       }
       await persistSignature(pid)
 
@@ -756,6 +775,28 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const isApproved = completionStatus === 'approved'
   const isFinalPending = completionStatus === 'pending'
   const readOnly = isApproved || previewBrowse
+  const recordPatentValues = {
+    field3: patent.field3,
+    field4: patent.field4,
+    field5: patent.field5,
+    field6: patent.field6,
+    field7: patent.field7,
+  }
+  const setRecordField = (field: RecordFieldKey, value: string) => {
+    if (field === 'field_3') {
+      setPatent((p) => ({ ...p, field3: value }))
+      if (plan.id) void saveFieldToDb('field_3', value, plan.id)
+      return
+    }
+    if (field === 'field_4') {
+      setPatent((p) => ({ ...p, field4: value }))
+      if (plan.id) void saveFieldToDb('field_4', value, plan.id)
+      return
+    }
+    if (field === 'field_5') setPatent((p) => ({ ...p, field5: value }))
+    else if (field === 'field_6') setPatent((p) => ({ ...p, field6: value }))
+    else setPatent((p) => ({ ...p, field7: value }))
+  }
   /* Autopopulate: the plan's submit date once it exists, otherwise today (the day it's being filled). */
   const dateText = formatLedgerDate(planCreatedAt ?? new Date().toISOString())
   const entryText = entryNumber != null ? String(entryNumber).padStart(2, '0') : '___'
@@ -1274,80 +1315,44 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
               </div>
             ) : null}
 
-            <div className="ledger-row">
-              <span className="row-num">v.</span>
-              <div className="row-body">
-                <span className="row-q">
-                  What did you make, and what makes it yours?<span className="req">*</span>
-                </span>
-                <span className="row-hint">Where did you go beyond the example?</span>
-                <textarea
-                  rows={3}
-                  value={patent.field3}
-                  disabled={readOnly}
-                  placeholder="e.g. I made a wolf figure and carved a notch so it stands on its own — that wasn't in the example."
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setPatent((p) => ({ ...p, field3: v }))
-                    if (plan.id) void saveFieldToDb('field_3', v, plan.id)
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="ledger-row">
-              <span className="row-num">vi.</span>
-              <div className="row-body">
-                <span className="row-q">
-                  What failed, and what did you change?<span className="req">*</span>
-                </span>
-                <textarea
-                  rows={3}
-                  value={patent.field4}
-                  disabled={readOnly}
-                  placeholder="e.g. My first print's legs snapped, so I made them thicker and printed it again."
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setPatent((p) => ({ ...p, field4: v }))
-                    if (plan.id) void saveFieldToDb('field_4', v, plan.id)
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="ledger-row">
-              <span className="row-num">vii.</span>
-              <div className="row-body">
-                <span className="row-q">Maine connection?</span>
-                <span className="row-hint">Optional — a place, a person, a tradition this connects to.</span>
-                <textarea
-                  rows={2}
-                  value={patent.field5}
-                  disabled={readOnly}
-                  placeholder="e.g. It's modeled on the gray wolves at the Maine Wildlife Park in Gray."
-                  onChange={(e) => setPatent((p) => ({ ...p, field5: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="ledger-row" style={{ borderBottom: 'none' }}>
-              <span className="row-num">viii.</span>
-              <div className="row-body">
-                <span className="row-q">Who taught you?</span>
-                <span className="row-hint">Optional — a person who showed you a technique or helped you think it through.</span>
-                <input
-                  type="text"
-                  value={patent.field6}
-                  disabled={readOnly}
-                  placeholder="e.g. Ms. Rivera showed me how to mirror vinyl before cutting."
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setPatent((p) => ({ ...p, field6: v }))
-                    if (plan.id) void saveFieldToDb('field_6', v, plan.id)
-                  }}
-                />
-              </div>
-            </div>
+            {recordRows.map((row, idx) => {
+              const value = recordFieldValue(recordPatentValues, row.field)
+              const isLast = idx === recordRows.length - 1
+              const multiline = row.multiline !== false
+              return (
+                <div
+                  key={`${row.field}-${row.rowNum ?? 'x'}-${idx}`}
+                  className="ledger-row"
+                  style={isLast ? { borderBottom: 'none' } : undefined}
+                >
+                  {row.rowNum ? <span className="row-num">{row.rowNum}.</span> : <span className="row-num" aria-hidden />}
+                  <div className="row-body">
+                    <span className="row-q">
+                      {row.label}
+                      {row.required ? <span className="req">*</span> : null}
+                    </span>
+                    {row.hint?.trim() ? <span className="row-hint">{row.hint.trim()}</span> : null}
+                    {multiline ? (
+                      <textarea
+                        rows={row.field === 'field_5' ? 2 : 3}
+                        value={value}
+                        disabled={readOnly}
+                        placeholder={row.placeholder ?? undefined}
+                        onChange={(e) => setRecordField(row.field, e.target.value)}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={value}
+                        disabled={readOnly}
+                        placeholder={row.placeholder ?? undefined}
+                        onChange={(e) => setRecordField(row.field, e.target.value)}
+                      />
+                    )}
+                  </div>
+                </div>
+              )
+            })}
 
             {/* Delivery proof — photo/video of the finished piece, ideally with the recipient */}
             <div className="ledger-row" style={{ borderBottom: 'none' }}>
@@ -1447,8 +1452,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                   !canUseDb ||
                   submittingPatent ||
                   isFinalPending ||
-                  !patent.field3.trim() ||
-                  !patent.field4.trim() ||
+                  !recordSubmitReady(tile, patent) ||
                   (!checklistApproved && !bypassApprovals)
                 }
                 onClick={() => void onSubmitRecord()}

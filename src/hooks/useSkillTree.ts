@@ -43,7 +43,15 @@ function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
         chips = null
       }
     }
-    return { ...r, steps, chips: Array.isArray(chips) ? (chips as TileChip[]) : null } as TileRow
+    let record_prompts = r.record_prompts
+    if (typeof record_prompts === 'string') {
+      try {
+        record_prompts = JSON.parse(record_prompts) as unknown
+      } catch {
+        record_prompts = null
+      }
+    }
+    return { ...r, steps, chips: Array.isArray(chips) ? (chips as TileChip[]) : null, record_prompts } as TileRow
   })
 }
 
@@ -186,7 +194,7 @@ export function useSkillTree() {
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
       .select(
-        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps, checklist_footer_note, flow_in_style',
+        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps, checklist_footer_note, flow_in_style, record_prompts',
       )
       .order('guild', { ascending: true })
       .order('sort_order', { ascending: true })
