@@ -101,6 +101,32 @@ export function ResourcesPage() {
               </p>
             </header>
 
+            <p className="muted beyond-tiles-section__intro">
+              Nothing here is required. Nothing here earns WP or gold. These are things you do because you want to,
+              not because the tree asks you to.
+            </p>
+
+            <ul className="learn-tools-list beyond-tiles-static-list">
+              <li className="learn-tools-link beyond-tiles-static-card">
+                <h3 className="beyond-tiles-static-card__title">Redo it.</h3>
+                <p className="learn-tools-link__desc">
+                  Your Maker&apos;s Mark, your game piece, your holder — anything you made early in the year, when you knew less than you know now. If you look at something you made in week one and think I could do that better, you&apos;re right, and you&apos;re allowed to. Redesign it. Recut it. The new version becomes the one that matters. The old one doesn&apos;t disappear — it&apos;s just the early work, the way every maker has early work.
+                </p>
+              </li>
+              <li className="learn-tools-link beyond-tiles-static-card">
+                <h3 className="beyond-tiles-static-card__title">The presentation case.</h3>
+                <p className="learn-tools-link__desc">
+                  Your Maker&apos;s Mark and your game piece were never just for the wall board. Design and CNC-route a small box, foam cut precisely to hold both pieces — your stamp and its holder, sitting in a case you also made. This uses everything you already know: vector design, CNC routing, foam inlay, box construction. Done well, it&apos;s not a school project anymore. It&apos;s the kind of object you could put in a portfolio, hand to an admissions reviewer, or just keep on a shelf because it&apos;s genuinely good.
+                </p>
+              </li>
+              <li className="learn-tools-link beyond-tiles-static-card">
+                <h3 className="beyond-tiles-static-card__title">Anything else like this.</h3>
+                <p className="learn-tools-link__desc">
+                  If you made something early and you&apos;ve outgrown it, that&apos;s not a problem to fix quietly. Tell Mr. Cook. The system doesn&apos;t have a category for everything you might want to remake — that&apos;s the point. You don&apos;t need permission. You&apos;re a maker. Make it again, better.
+                </p>
+              </li>
+            </ul>
+
             {loadingBeyond ? (
               <p className="muted">Loading possibilities…</p>
             ) : beyondError ? (
