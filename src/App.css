@@ -3558,7 +3558,7 @@ body:has(.bench-chrome) {
   line-height: 1.5;
 }
 
-.beyond-tiles-static-list {
+.learn-tools-list.beyond-tiles-static-list {
   margin-bottom: 1.35rem;
 }
 
