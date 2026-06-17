@@ -24,7 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { isTeacherPreviewBrowse } from '../lib/teacher'
+import { isTeacherPreviewBrowse, isTeacherProfile } from '../lib/teacher'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
@@ -209,6 +209,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const navigate = useNavigate()
   const studentId = user?.id ?? 'anonymous'
   const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
+  const teacherView = isTeacherProfile(profile)
 
   const content = useMemo(() => ledgerContentForTile(tile), [tile])
   const recordRows = useMemo(() => recordPromptsForTile(tile), [tile])
@@ -1236,11 +1237,26 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
             {resources.length > 0 ? (
               <div className="res-row">
-                {resources.map((r) => (
-                  <a key={r.url} className="res-btn" href={r.url} target="_blank" rel="noopener noreferrer">
-                    {r.label} →
-                  </a>
-                ))}
+                {resources.map((r) => {
+                  const key = r.pending ? `pending-${r.label}` : r.url
+                  if (r.pending || !r.url?.trim()) {
+                    return (
+                      <span key={key} className="res-btn res-btn-pending" aria-disabled="true">
+                        {r.label}
+                        {teacherView ? (
+                          <span className="res-btn-needs-link">Needs link</span>
+                        ) : (
+                          <span className="res-btn-coming-soon"> (coming soon)</span>
+                        )}
+                      </span>
+                    )
+                  }
+                  return (
+                    <a key={key} className="res-btn" href={r.url} target="_blank" rel="noopener noreferrer">
+                      {r.label} →
+                    </a>
+                  )
+                })}
               </div>
             ) : null}
 

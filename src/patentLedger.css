@@ -485,6 +485,29 @@
 
 .patent-ledger-root .res-btn:hover { border-color: var(--rust); }
 
+.patent-ledger-root .res-btn-pending {
+  cursor: default;
+  opacity: 0.8;
+  color: var(--muted-text, #666);
+}
+
+.patent-ledger-root .res-btn-pending:hover { border-color: var(--border-dark); }
+
+.patent-ledger-root .res-btn-needs-link {
+  margin-left: 0.35rem;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  color: #ca8a04;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.patent-ledger-root .res-btn-coming-soon {
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
 .patent-ledger-root .upload-block {
   border: 1px dashed var(--border-dark);
   background: transparent;

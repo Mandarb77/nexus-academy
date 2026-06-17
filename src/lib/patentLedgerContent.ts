@@ -26,10 +26,11 @@ function parseLedgerResources(raw: unknown): LedgerResource[] {
   const out: LedgerResource[] = []
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue
+    const pending = Boolean((item as { pending?: boolean }).pending)
     const url = (item as { url?: string }).url?.trim()
-    if (!url) continue
+    if (!url && !pending) continue
     const label = (item as { label?: string }).label?.trim() || 'Open resource'
-    out.push({ label, url })
+    out.push({ label, ...(url ? { url } : {}), ...(pending ? { pending: true } : {}) })
   }
   return out
 }
@@ -54,8 +55,9 @@ export function ledgerContentForTile(tile: TileRow): LedgerContent {
   const seen = new Set<string>()
   const resources: LedgerResource[] = []
   for (const r of [...fromTile, ...fromSteps]) {
-    if (seen.has(r.url)) continue
-    seen.add(r.url)
+    const key = r.pending ? `pending:${r.label}` : r.url
+    if (!key || seen.has(key)) continue
+    seen.add(key)
     resources.push(r)
   }
 

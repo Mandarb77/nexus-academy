@@ -18,7 +18,7 @@ export type StepConfig = {
 
 export type QuestKind = 'required' | 'stretch' | 'tier2' | 'boss'
 
-export type LedgerResource = { label: string; url: string }
+export type LedgerResource = { label: string; url?: string; pending?: boolean }
 
 export type TileChipKind =
   | 'tinkercad_tool'
