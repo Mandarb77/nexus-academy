@@ -2692,6 +2692,13 @@ a.btn-primary {
   gap: 0.65rem;
 }
 
+.teacher-panel-student-roster-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
 .teacher-panel-student-row {
   width: 100%;
   text-align: left;
@@ -2724,6 +2731,21 @@ a.btn-primary {
 
 .teacher-panel-student-row-meta {
   font-size: 0.9rem;
+}
+
+.teacher-panel-archive-student {
+  align-self: stretch;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .teacher-panel-student-roster-row {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-panel-archive-student {
+    width: 100%;
+  }
 }
 
 .teacher-panel-student-detail {

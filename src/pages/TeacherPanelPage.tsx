@@ -197,6 +197,7 @@ export function TeacherPanelPage() {
   const [actingChecklistId, setActingChecklistId] = useState<string | null>(null)
   const [actingChecklistKind, setActingChecklistKind] = useState<'approve' | 'return' | null>(null)
   const [studentsBusy, setStudentsBusy] = useState(false)
+  const [archivingStudentId, setArchivingStudentId] = useState<string | null>(null)
   const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
     () => new Map(),
   )
@@ -771,6 +772,7 @@ export function TeacherPanelPage() {
       .from('profiles')
       .select('id, display_name, wp, gold, rank, role')
       .eq('role', 'student')
+      .is('archived_from_class_at', null)
       .order('display_name', { ascending: true })
     setStudentsBusy(false)
     if (error) {
@@ -797,6 +799,38 @@ export function TeacherPanelPage() {
     () => (selectedStudentId ? students.find((s) => s.id === selectedStudentId) ?? null : null),
     [students, selectedStudentId],
   )
+
+  const archiveStudentFromRoster = async (student: StudentSummary) => {
+    if (!isSupabaseConfigured || archivingStudentId) return
+    const name = student.display_name?.trim() || `Student (${student.id.slice(0, 8)}…)`
+    const ok = window.confirm(
+      `Archive ${name} from the student progress list? This keeps their account and history, but hides them from this roster.`,
+    )
+    if (!ok) return
+
+    setArchivingStudentId(student.id)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ archived_from_class_at: new Date().toISOString() })
+      .eq('id', student.id)
+      .eq('role', 'student')
+    setArchivingStudentId(null)
+
+    if (error) {
+      setAdminMessage(`Could not archive student: ${error.message}`)
+      return
+    }
+
+    setAdminMessage(`${name} was archived from the student progress list.`)
+    if (selectedStudentId === student.id) {
+      setSelectedStudentId(null)
+      setStudentProfile(null)
+      setStudentSkills([])
+      setStudentInventory([])
+      setStudentRedemptions([])
+    }
+    void loadStudents()
+  }
 
   // ---------------------------------------------------------------------------
   // Student drill-down — profile + skill history + shop rows (tiles joined for labels)
@@ -1424,21 +1458,32 @@ export function TeacherPanelPage() {
               <ul className="teacher-panel-students">
                 {students.map((s) => {
                   const name = s.display_name?.trim() || `Student (${s.id.slice(0, 8)}…)`
+                  const archiving = archivingStudentId === s.id
                   return (
                     <li key={s.id}>
-                      <button
-                        type="button"
-                        className="teacher-panel-student-row"
-                        onClick={() => {
-                          setSelectedStudentId(s.id)
-                          void loadStudentDetail(s.id)
-                        }}
-                      >
-                        <span className="teacher-panel-student-row-name">{name}</span>
-                        <span className="teacher-panel-student-row-meta muted">
-                          {s.wp} WP · {s.gold} gold · {s.rank ?? 'Initiate'}
-                        </span>
-                      </button>
+                      <div className="teacher-panel-student-roster-row">
+                        <button
+                          type="button"
+                          className="teacher-panel-student-row"
+                          onClick={() => {
+                            setSelectedStudentId(s.id)
+                            void loadStudentDetail(s.id)
+                          }}
+                        >
+                          <span className="teacher-panel-student-row-name">{name}</span>
+                          <span className="teacher-panel-student-row-meta muted">
+                            {s.wp} WP · {s.gold} gold · {s.rank ?? 'Initiate'}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary teacher-panel-archive-student"
+                          disabled={Boolean(archivingStudentId)}
+                          onClick={() => void archiveStudentFromRoster(s)}
+                        >
+                          {archiving ? 'Archiving…' : 'Archive'}
+                        </button>
+                      </div>
                     </li>
                   )
                 })}
