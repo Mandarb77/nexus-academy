@@ -45,6 +45,14 @@ export const FIELD_GUIDE_QUOTE_SEED: FieldGuideQuote[] = [
     attribution: 'Steve Jobs',
   },
   {
+    text: 'Make the thing with the stuff!',
+    attribution: 'Mr. Cook',
+  },
+  {
+    text: "I don't care what you make, just make it cool and make it awesome.",
+    attribution: 'Mr. Cook',
+  },
+  {
     text: 'I will remember.',
     attribution: 'Sofija Kakauskus, 1870',
   },
