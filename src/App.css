@@ -4137,10 +4137,9 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf {
-  border: 1px solid var(--color-rule-light);
-  border-radius: 2px;
-  background: var(--color-panel);
-  overflow: hidden;
+  border: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle {
@@ -4163,6 +4162,9 @@ body:has(.bench-chrome) {
   padding: 0.75rem 1rem;
   width: 100%;
   box-sizing: border-box;
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  background: var(--color-panel);
   /* Keep tier tiles uniform height regardless of copy wrapping. */
   height: 6.25rem;
 }
@@ -4220,18 +4222,18 @@ body:has(.bench-chrome) {
   align-self: center;
 }
 
-.bench-chrome.shop-page .shop-shelf--forge.shop-shelf--open,
-.bench-chrome.shop-page .shop-shelf--forge:hover {
+.bench-chrome.shop-page .shop-shelf--forge.shop-shelf--open .shop-shelf-toggle-inner,
+.bench-chrome.shop-page .shop-shelf--forge:hover .shop-shelf-toggle-inner {
   border-color: var(--color-forge);
 }
 
-.bench-chrome.shop-page .shop-shelf--prism.shop-shelf--open,
-.bench-chrome.shop-page .shop-shelf--prism:hover {
+.bench-chrome.shop-page .shop-shelf--prism.shop-shelf--open .shop-shelf-toggle-inner,
+.bench-chrome.shop-page .shop-shelf--prism:hover .shop-shelf-toggle-inner {
   border-color: var(--color-prism);
 }
 
-.bench-chrome.shop-page .shop-shelf--folded.shop-shelf--open,
-.bench-chrome.shop-page .shop-shelf--folded:hover {
+.bench-chrome.shop-page .shop-shelf--folded.shop-shelf--open .shop-shelf-toggle-inner,
+.bench-chrome.shop-page .shop-shelf--folded:hover .shop-shelf-toggle-inner {
   border-color: var(--color-folded);
 }
 
@@ -4264,8 +4266,9 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf-panel {
-  padding: 0 1rem 1rem;
-  border-top: 1px solid var(--color-rule-light);
+  margin-top: 2rem;
+  padding: 0;
+  border-top: 0;
 }
 
 .bench-chrome.shop-page .shop-shelf-empty {
@@ -4277,25 +4280,34 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-items-grid {
   list-style: none;
-  margin: 0.75rem 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-  gap: 0.75rem;
+  gap: 0;
 }
 
 .bench-chrome.shop-page .shop-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  padding: 0.85rem 0.9rem;
+  padding: 1.275rem 0.9rem;
   margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
-.bench-chrome.shop-page .shop-item--forge { border-left: 2px solid var(--color-forge); }
-.bench-chrome.shop-page .shop-item--prism { border-left: 2px solid var(--color-prism); }
-.bench-chrome.shop-page .shop-item--folded { border-left: 2px solid var(--color-folded); }
+.bench-chrome.shop-page .shop-item + .shop-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  right: 1rem;
+  border-top: 1px solid #d4cdb8;
+}
 
 .bench-chrome.shop-page .shop-item__head {
   display: flex;
@@ -4305,19 +4317,19 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-item__glyph-wrap {
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   display: grid;
   place-items: center;
-  border: 1px solid var(--color-rule-light);
-  border-radius: 2px;
-  background: var(--color-ground);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--color-ink-secondary);
 }
 
 .bench-chrome.shop-page .shop-item-glyph {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .bench-chrome.shop-page .shop-item__title {
@@ -4357,6 +4369,9 @@ body:has(.bench-chrome) {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem 0.75rem;
+  padding-top: 0.35rem;
+  background: transparent;
+  border: 0;
 }
 
 .bench-chrome.shop-page .shop-item__price {
