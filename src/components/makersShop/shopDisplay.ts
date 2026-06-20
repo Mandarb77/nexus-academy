@@ -24,12 +24,12 @@ export function displayShelfTitle(tierName: string): string {
 
 /** One-line shelf blurb for tiled tier headers (falls back when DB subtitle is empty). */
 export function tierShortDescription(tierName: string, subtitle?: string | null): string {
+  const n = tierName.trim().toLowerCase()
+  if (n === 'convenience') return "Fran's at the counter. Barry's in the back. They've seen all of this before."
+  if (n === 'craft') return "These are behind the counter. Fran will get them down if Mr. Cook says it's time."
+  if (n === 'legacy') return 'Leave something behind.'
   const sub = subtitle?.trim()
   if (sub) return sub
-  const n = tierName.trim().toLowerCase()
-  if (n === 'convenience') return 'Quick perks & daily trades'
-  if (n === 'craft') return 'Tools, materials & making'
-  if (n === 'legacy') return 'Lasting workshop honors'
   return 'Workshop rewards'
 }
 

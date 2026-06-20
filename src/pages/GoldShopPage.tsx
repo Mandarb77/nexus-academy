@@ -240,9 +240,9 @@ export function GoldShopPage() {
         <MainNav />
         <div className="shop-top-row bench-page-title-row">
           <div>
-            <h1 className="bench-page-title">Supply</h1>
+            <h1 className="bench-page-title">Fran and Barry&apos;s Supply Co.</h1>
             <p className="muted shop-subtitle">
-              Trade gold for workshop rewards. Open a shelf to see what you can buy.
+              Fran&apos;s at the counter. Barry&apos;s in the back. Open a shelf and see what they&apos;ve got.
             </p>
           </div>
           <div className="shop-header-actions">

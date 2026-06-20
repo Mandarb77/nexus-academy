@@ -4081,6 +4081,7 @@ body:has(.bench-chrome) {
 /* Supply (/shop) — guild-style tier tiles + item grid */
 .bench-chrome.shop-page .bench-page-title {
   font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.65rem, 4.2vw, 2.25rem);
   font-weight: 700;
 }
 
@@ -4213,10 +4214,10 @@ body:has(.bench-chrome) {
 .bench-chrome.shop-page .shop-shelf-desc {
   margin: 0 0 0.25rem;
   font-family: 'Lora', Georgia, serif;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 400;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: #5a4030;
   line-height: 1.25;
   display: -webkit-box;
@@ -4422,6 +4423,14 @@ body:has(.bench-chrome) {
   font-family: 'Lora', Georgia, serif;
   font-weight: 400;
   font-size: 0.75rem;
+}
+
+.bench-chrome.shop-page .shop-item__note--locked {
+  font-family: 'Caveat', cursive;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #5a4030;
+  line-height: 1.25;
 }
 
 .bench-chrome.shop-page .shop-item__buy {

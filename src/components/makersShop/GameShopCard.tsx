@@ -63,26 +63,25 @@ function PurchaseButton({
         {busy ? (
           'Trading…'
         ) : catalogLocked ? (
-          'Locked'
+          'Ask Fran'
         ) : dailyBlocked ? (
           'Back tomorrow'
         ) : canAfford ? (
           'Trade'
         ) : (
-          <>
-            Insufficient <span className="gold-currency-text">gold</span>
-          </>
+          'Not yet, kid'
         )}
       </button>
     </div>
   )
 }
 
-function lockLabel(item: ShopCatalogItem, catalogLocked: boolean): string {
+function lockLabel(catalogLocked: boolean): string {
   if (!catalogLocked) return ''
-  const gate = item.gate_requirement?.trim()
-  return gate || 'Locked'
+  return 'Ask Fran'
 }
+
+const LOCKED_GATE_NOTE = 'Mr. Cook keeps the key on this one. Talk to him.'
 
 function BenchShopCard(props: GameShopCardProps) {
   const {
@@ -100,7 +99,7 @@ function BenchShopCard(props: GameShopCardProps) {
   } = props
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
-  const hasFlavor = Boolean(item.flavor_text?.trim())
+  const hasFlavor = !catalogLocked && Boolean(item.flavor_text?.trim())
 
   const purchaseProps = {
     layout: 'bench' as const,
@@ -137,7 +136,7 @@ function BenchShopCard(props: GameShopCardProps) {
       </div>
       <div className="shop-item__foot">
         {catalogLocked ? (
-          <span className="shop-item__price shop-item__price--locked">{lockLabel(item, true)}</span>
+          <span className="shop-item__price shop-item__price--locked">{lockLabel(true)}</span>
         ) : (
           <span className="shop-item__price">
             <span className="shop-item__price-value">{price}</span>{' '}
@@ -146,8 +145,8 @@ function BenchShopCard(props: GameShopCardProps) {
         )}
         <PurchaseButton {...purchaseProps} />
       </div>
-      {catalogLocked && item.gate_requirement?.trim() ? (
-        <p className="shop-item__note muted">{item.gate_requirement.trim()}</p>
+      {catalogLocked ? (
+        <p className="shop-item__note shop-item__note--locked muted">{LOCKED_GATE_NOTE}</p>
       ) : null}
       {stockStatus?.limited && !catalogLocked ? (
         <p className="shop-item__note muted">
@@ -178,7 +177,7 @@ function LegacyShopCard(props: GameShopCardProps) {
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
   const purchaseBlocked = !catalogLocked && price != null && (!canAfford || dailyBlocked)
-  const hasFlavor = Boolean(item.flavor_text?.trim())
+  const hasFlavor = !catalogLocked && Boolean(item.flavor_text?.trim())
 
   const cardMods = [
     'makers-shop-card',
@@ -229,7 +228,7 @@ function LegacyShopCard(props: GameShopCardProps) {
           <div className="makers-shop-card__price-row" aria-live="polite">
             {catalogLocked ? (
               <span className="makers-shop-card__price makers-shop-card__price--locked">
-                {lockLabel(item, true)}
+                {lockLabel(true)}
               </span>
             ) : (
               <>
@@ -240,8 +239,10 @@ function LegacyShopCard(props: GameShopCardProps) {
             )}
           </div>
 
-          {catalogLocked && item.gate_requirement?.trim() ? (
-            <p className="makers-shop-card__inline-note">{item.gate_requirement.trim()}</p>
+          {catalogLocked ? (
+            <p className="makers-shop-card__inline-note makers-shop-card__inline-note--locked">
+              {LOCKED_GATE_NOTE}
+            </p>
           ) : null}
           {stockStatus?.limited && !catalogLocked ? (
             <p className="makers-shop-card__inline-note">
