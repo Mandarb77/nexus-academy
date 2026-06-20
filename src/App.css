@@ -4155,6 +4155,15 @@ body:has(.bench-chrome) {
   text-align: left;
 }
 
+.bench-chrome.shop-page .shop-shelf-toggle::after {
+  content: '';
+  display: block;
+  height: 4px;
+  margin: -0.12rem 0 0;
+  background: #8b6f47;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
 .bench-chrome.shop-page .shop-shelf-toggle-inner {
   display: flex;
   align-items: stretch;
@@ -4162,11 +4171,25 @@ body:has(.bench-chrome) {
   padding: 0.75rem 1rem;
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--color-rule-light);
-  border-radius: 2px;
-  background: var(--color-panel);
+  border: 1px solid #3a2820;
+  border-radius: 4px;
+  background: #f1e8d2;
+  box-shadow: 0 2px 4px rgba(58, 40, 32, 0.15);
+  transform-origin: center bottom;
   /* Keep tier tiles uniform height regardless of copy wrapping. */
   height: 6.25rem;
+}
+
+.bench-chrome.shop-page .shop-shelf--forge .shop-shelf-toggle-inner {
+  transform: rotate(-1deg);
+}
+
+.bench-chrome.shop-page .shop-shelf--prism .shop-shelf-toggle-inner {
+  transform: rotate(0.5deg);
+}
+
+.bench-chrome.shop-page .shop-shelf--folded .shop-shelf-toggle-inner {
+  transform: rotate(-0.5deg);
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle-copy {
@@ -4180,9 +4203,9 @@ body:has(.bench-chrome) {
 .bench-chrome.shop-page .shop-shelf-title {
   margin: 0 0 0.2rem;
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-ink-primary);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #3a2820;
   letter-spacing: 0.02em;
   line-height: 1.2;
 }
@@ -4191,10 +4214,10 @@ body:has(.bench-chrome) {
   margin: 0 0 0.25rem;
   font-family: 'Lora', Georgia, serif;
   font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-ink-secondary);
+  color: #5a4030;
   line-height: 1.25;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -4203,12 +4226,12 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf-hint {
-  font-family: 'Lora', Georgia, serif;
-  font-size: 0.68rem;
+  font-family: 'Caveat', cursive;
+  font-size: 0.84rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-ink-tertiary);
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: rgba(90, 64, 48, 0.74);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -4216,25 +4239,26 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf-chevron {
-  font-size: 0.85rem;
-  color: var(--color-ink-tertiary);
-  flex-shrink: 0;
-  align-self: center;
+  display: none;
 }
 
 .bench-chrome.shop-page .shop-shelf--forge.shop-shelf--open .shop-shelf-toggle-inner,
 .bench-chrome.shop-page .shop-shelf--forge:hover .shop-shelf-toggle-inner {
-  border-color: var(--color-forge);
+  border-color: #3a2820;
 }
 
 .bench-chrome.shop-page .shop-shelf--prism.shop-shelf--open .shop-shelf-toggle-inner,
 .bench-chrome.shop-page .shop-shelf--prism:hover .shop-shelf-toggle-inner {
-  border-color: var(--color-prism);
+  border-color: #3a2820;
 }
 
 .bench-chrome.shop-page .shop-shelf--folded.shop-shelf--open .shop-shelf-toggle-inner,
 .bench-chrome.shop-page .shop-shelf--folded:hover .shop-shelf-toggle-inner {
-  border-color: var(--color-folded);
+  border-color: #3a2820;
+}
+
+.bench-chrome.shop-page .shop-tier-badge {
+  display: none;
 }
 
 .bench-chrome.shop-page .shop-tier-badge__frame {
@@ -4266,7 +4290,7 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf-panel {
-  margin-top: 2rem;
+  margin-top: 1.25rem;
   padding: 0;
   border-top: 0;
 }
