@@ -105,6 +105,8 @@ type StudentSkillCompletion = {
 
 type StudentInventoryRow = {
   id: string
+  student_id: string
+  owner_role?: string | null
   item_name: string
   item_description: string
   gold_cost: number
@@ -857,7 +859,7 @@ export function TeacherPanelPage() {
           .order('created_at', { ascending: false }),
         supabase
           .from('inventory')
-          .select('id, item_name, item_description, gold_cost, status, created_at')
+          .select('id, student_id, item_name, item_description, gold_cost, status, created_at')
           .eq('student_id', studentId)
           .order('created_at', { ascending: false }),
         supabase
@@ -899,6 +901,47 @@ export function TeacherPanelPage() {
           : null,
       )
 
+      let inventoryRows = (invRes.data ?? []) as StudentInventoryRow[]
+      const selectedDisplayName = ((p?.display_name as string | null) ?? '').trim()
+      if (inventoryRows.length === 0 && selectedDisplayName) {
+        const { data: sameNameProfiles, error: sameNameError } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('display_name', selectedDisplayName)
+
+        if (sameNameError) {
+          setAdminMessage(`Could not check matching profiles for inventory: ${sameNameError.message}`)
+          return
+        }
+
+        const ownerRoleById = new Map<string, string | null>()
+        const relatedIds = (sameNameProfiles ?? [])
+          .map((profileRow) => {
+            const id = profileRow.id as string
+            ownerRoleById.set(id, (profileRow.role as string | null) ?? null)
+            return id
+          })
+          .filter((id) => id !== studentId)
+
+        if (relatedIds.length > 0) {
+          const { data: fallbackInventory, error: fallbackInventoryError } = await supabase
+            .from('inventory')
+            .select('id, student_id, item_name, item_description, gold_cost, status, created_at')
+            .in('student_id', relatedIds)
+            .order('created_at', { ascending: false })
+
+          if (fallbackInventoryError) {
+            setAdminMessage(`Could not load matching profile inventory: ${fallbackInventoryError.message}`)
+            return
+          }
+
+          inventoryRows = ((fallbackInventory ?? []) as StudentInventoryRow[]).map((row) => ({
+            ...row,
+            owner_role: ownerRoleById.get(row.student_id) ?? null,
+          }))
+        }
+      }
+
       const skillList = skillsRes.data ?? []
       const tileIds = [...new Set(skillList.map((r) => r.tile_id as string))]
       const tileById = new Map<string, { guild: string; skill_name: string }>()
@@ -930,7 +973,7 @@ export function TeacherPanelPage() {
           tile: tileById.get(r.tile_id as string) ?? null,
         })),
       )
-      setStudentInventory((invRes.data ?? []) as StudentInventoryRow[])
+      setStudentInventory(inventoryRows)
       setStudentRedemptions((redRes.data ?? []) as StudentRedemptionRow[])
     },
     [],
@@ -1526,6 +1569,9 @@ export function TeacherPanelPage() {
                           <span className="teacher-panel-mini-title">{r.item_name}</span>
                           <span className="teacher-panel-mini-meta muted">
                             {r.status} · {r.gold_cost} gold
+                            {r.student_id !== selectedStudentId ? (
+                              <> · saved under {r.owner_role === 'teacher' ? 'teacher preview' : 'matching'} profile</>
+                            ) : null}
                           </span>
                         </li>
                       ))}
