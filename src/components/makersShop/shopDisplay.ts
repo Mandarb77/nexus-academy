@@ -22,17 +22,6 @@ export function displayShelfTitle(tierName: string): string {
   return tierName.trim()
 }
 
-/** One-line shelf blurb for tiled tier headers (falls back when DB subtitle is empty). */
-export function tierShortDescription(tierName: string, subtitle?: string | null): string {
-  const n = tierName.trim().toLowerCase()
-  if (n === 'convenience') return "Fran's at the counter. Barry's in the back. They've seen all of this before."
-  if (n === 'craft') return "These are behind the counter. Fran will get them down if Mr. Cook says it's time."
-  if (n === 'legacy') return 'Leave something behind.'
-  const sub = subtitle?.trim()
-  if (sub) return sub
-  return 'Workshop rewards'
-}
-
 export function tierSlugId(tierName: string): string {
   return tierName.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
 }

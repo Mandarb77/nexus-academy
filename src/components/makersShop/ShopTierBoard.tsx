@@ -3,9 +3,11 @@
  */
 
 import type { ShopCatalogItem, ShopStockStatus, ShopTierEmbed } from '../../types/shopCatalog'
+import conveniencesSign from '../../assets/conveniences-sign.png'
+import craftSign from '../../assets/craft-sign.png'
+import legacySign from '../../assets/legacy-sign.png'
 import { GameShopCard } from './GameShopCard'
-import { ShopTierBadge } from './ShopTierBadge'
-import { displayShelfTitle, shelfAccentForTier, tierShortDescription, tierSlugId } from './shopDisplay'
+import { displayShelfTitle, shelfAccentForTier, tierSlugId } from './shopDisplay'
 
 type TierGroup = { tier: ShopTierEmbed; items: ShopCatalogItem[] }
 
@@ -20,6 +22,13 @@ type Props = {
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   onBuy: (item: ShopCatalogItem) => void
+}
+
+function signImageForTier(tierName: string): string {
+  const n = tierName.trim().toLowerCase()
+  if (n === 'convenience') return conveniencesSign
+  if (n === 'craft') return craftSign
+  return legacySign
 }
 
 export function ShopTierBoard({
@@ -37,8 +46,8 @@ export function ShopTierBoard({
   const { tier, items } = group
   const shelfTitle = displayShelfTitle(tier.name)
   const accent = shelfAccentForTier(tier.name)
-  const desc = tierShortDescription(tier.name, tier.subtitle)
   const slug = tierSlugId(tier.name)
+  const signSrc = signImageForTier(tier.name)
 
   return (
     <section
@@ -54,19 +63,10 @@ export function ShopTierBoard({
         onClick={onToggle}
       >
         <div className="shop-shelf-toggle-inner">
-          <ShopTierBadge accent={accent} label={shelfTitle} />
-          <div className="shop-shelf-toggle-copy">
-            <h2 id={`shop-shelf-${slug}`} className="shop-shelf-title">
-              {shelfTitle}
-            </h2>
-            <p className="shop-shelf-desc">{desc}</p>
-            <span className="shop-shelf-hint" aria-hidden="true">
-              {open ? 'Hide items' : `${items.length} item${items.length === 1 ? '' : 's'}`}
-            </span>
-          </div>
-          <span className="shop-shelf-chevron" aria-hidden="true">
-            {open ? '▼' : '▶'}
-          </span>
+          <h2 id={`shop-shelf-${slug}`} className="visually-hidden">
+            {shelfTitle}
+          </h2>
+          <img className="shop-shelf-sign" src={signSrc} alt={`${shelfTitle} shelf`} />
         </div>
       </button>
 

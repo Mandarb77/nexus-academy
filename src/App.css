@@ -4157,141 +4157,45 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle::after {
-  content: '';
-  display: block;
-  height: 4px;
-  margin: -0.12rem 0 0;
-  background: #8b6f47;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+  content: none;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle-inner {
-  display: flex;
-  align-items: stretch;
-  gap: 0.85rem 1rem;
-  padding: 0.75rem 1rem;
+  display: block;
+  padding: 0;
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #3a2820;
-  border-radius: 4px;
-  background: #f1e8d2;
-  box-shadow: 0 2px 4px rgba(58, 40, 32, 0.15);
-  transform-origin: center bottom;
-  /* Keep tier tiles uniform height regardless of copy wrapping. */
-  height: 6.25rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  height: auto;
 }
 
-.bench-chrome.shop-page .shop-shelf--forge .shop-shelf-toggle-inner {
+.bench-chrome.shop-page .shop-shelf-sign {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform-origin: center center;
+}
+
+.bench-chrome.shop-page .shop-shelf--forge .shop-shelf-sign {
   transform: rotate(-1deg);
 }
 
-.bench-chrome.shop-page .shop-shelf--prism .shop-shelf-toggle-inner {
-  transform: rotate(0.5deg);
+.bench-chrome.shop-page .shop-shelf--prism .shop-shelf-sign {
+  transform: rotate(1deg);
 }
 
-.bench-chrome.shop-page .shop-shelf--folded .shop-shelf-toggle-inner {
+.bench-chrome.shop-page .shop-shelf--folded .shop-shelf-sign {
   transform: rotate(-0.5deg);
 }
 
-.bench-chrome.shop-page .shop-shelf-toggle-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.bench-chrome.shop-page .shop-shelf-title {
-  margin: 0 0 0.2rem;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #3a2820;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-}
-
-.bench-chrome.shop-page .shop-shelf-desc {
-  margin: 0 0 0.25rem;
-  font-family: 'Lora', Georgia, serif;
-  font-size: 0.82rem;
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
-  color: #5a4030;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.bench-chrome.shop-page .shop-shelf-hint {
-  font-family: 'Caveat', cursive;
-  font-size: 0.84rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  text-transform: none;
-  color: rgba(90, 64, 48, 0.74);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bench-chrome.shop-page .shop-shelf-chevron {
-  display: none;
-}
-
-.bench-chrome.shop-page .shop-shelf--forge.shop-shelf--open .shop-shelf-toggle-inner,
-.bench-chrome.shop-page .shop-shelf--forge:hover .shop-shelf-toggle-inner {
-  border-color: #3a2820;
-}
-
-.bench-chrome.shop-page .shop-shelf--prism.shop-shelf--open .shop-shelf-toggle-inner,
-.bench-chrome.shop-page .shop-shelf--prism:hover .shop-shelf-toggle-inner {
-  border-color: #3a2820;
-}
-
-.bench-chrome.shop-page .shop-shelf--folded.shop-shelf--open .shop-shelf-toggle-inner,
-.bench-chrome.shop-page .shop-shelf--folded:hover .shop-shelf-toggle-inner {
-  border-color: #3a2820;
-}
-
-.bench-chrome.shop-page .shop-tier-badge {
-  display: none;
-}
-
-.bench-chrome.shop-page .shop-tier-badge__frame {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.25rem;
-  height: 4rem;
-  border-radius: 50% / 42%;
-  border: 1px solid var(--color-rule-strong);
-  background: var(--color-ground);
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--color-ink-secondary);
-  flex-shrink: 0;
-}
-
-.bench-chrome.shop-page .shop-tier-badge--forge { --shop-badge-ink: var(--color-forge); }
-.bench-chrome.shop-page .shop-tier-badge--prism { --shop-badge-ink: var(--color-prism); }
-.bench-chrome.shop-page .shop-tier-badge--folded { --shop-badge-ink: var(--color-folded); }
-
-.bench-chrome.shop-page .shop-tier-badge--forge .shop-tier-badge__frame,
-.bench-chrome.shop-page .shop-tier-badge--prism .shop-tier-badge__frame,
-.bench-chrome.shop-page .shop-tier-badge--folded .shop-tier-badge__frame {
-  color: var(--shop-badge-ink, var(--color-ink-secondary));
-  border-color: var(--shop-badge-ink, var(--color-rule-strong));
-}
-
 .bench-chrome.shop-page .shop-shelf-panel {
-  margin-top: 1.25rem;
+  margin-top: 32px;
   padding: 0;
   border-top: 0;
 }
