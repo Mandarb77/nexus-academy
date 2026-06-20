@@ -252,7 +252,7 @@ export function TeacherResetPage() {
     if (!isSupabaseConfigured || busy) return
     setMessage(null)
     const ok = window.confirm(
-      'This will reset all student WP, gold, rank, and completions. This cannot be undone. Are you sure?',
+      'This will reset all student WP, gold, and completions. This cannot be undone. Are you sure?',
     )
     if (!ok) return
 
@@ -263,7 +263,7 @@ export function TeacherResetPage() {
     {
       const { error } = await supabase
         .from('profiles')
-        .update({ wp: 0, gold: 0, rank: 'Initiate' })
+        .update({ wp: 0, gold: 0 })
         .neq('id', ZERO_UUID)
       if (error) {
         console.error('full reset: profiles update failed:', error)
@@ -349,7 +349,7 @@ export function TeacherResetPage() {
     setMessage(null)
     const name = selectedStudent?.display_name?.trim() || `Student (${studentId.slice(0, 8)}…)`
     const ok = window.confirm(
-      `This will reset WP, gold, rank, and all related data for ${name}. This cannot be undone. Are you sure?`,
+      `This will reset WP, gold, and all related data for ${name}. This cannot be undone. Are you sure?`,
     )
     if (!ok) return
     setBusy(true)
@@ -358,7 +358,7 @@ export function TeacherResetPage() {
     {
       const { error } = await supabase
         .from('profiles')
-        .update({ wp: 0, gold: 0, rank: 'Initiate' })
+        .update({ wp: 0, gold: 0 })
         .eq('id', studentId)
       if (error) {
         console.error('student reset: profiles update failed:', error)

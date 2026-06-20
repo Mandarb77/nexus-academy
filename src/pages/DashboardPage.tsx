@@ -142,10 +142,6 @@ export function DashboardPage() {
             <dt>Gold</dt>
             <dd>{profile?.gold ?? 0}</dd>
           </div>
-          <div className="stat">
-            <dt>Rank</dt>
-            <dd>{profile?.rank ?? 'Initiate'}</dd>
-          </div>
         </dl>
         <p className="muted dash-blurb">
           Use <strong>Teacher panel</strong> to approve or return student skill completions.

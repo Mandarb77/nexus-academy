@@ -509,10 +509,6 @@ a.btn-primary {
   color: var(--text-h);
 }
 
-.student-home-stat-value--rank {
-  font-size: 1.25rem;
-}
-
 .student-home-stat--gold {
   padding-top: 0.25rem;
   border-top: 1px solid var(--border);
@@ -522,61 +518,6 @@ a.btn-primary {
 .student-home-stat--gold .student-home-stat-value {
   color: var(--gold-text-bright);
 }
-
-.student-home-progress-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.student-home-progress-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.35rem 1rem;
-}
-
-.student-home-progress-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text);
-}
-
-.student-home-progress-target {
-  font-size: 0.9rem;
-  color: var(--text-h);
-  font-weight: 500;
-}
-
-.rank-progress-track {
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-
-.rank-progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #6d28d9, #a78bfa);
-  transition: width 0.4s ease;
-}
-
-.student-home-progress-caption {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-.student-home-progress-caption strong {
-  color: var(--text-h);
-}
-
-
 
 .student-home-guilds {
   margin-top: 0;
@@ -3154,11 +3095,6 @@ a.btn-primary {
   line-height: 1.45;
 }
 
-.gold-shop-rank-req {
-  margin: 0;
-  font-size: 0.86rem;
-}
-
 .gold-shop-card--dimmed {
   background: var(--code-bg);
   border-color: var(--border);
@@ -5529,40 +5465,6 @@ body:has(.bench-chrome) {
 .student-home .student-home-stat--gold .student-home-stat-label,
 .student-home .student-home-stat--gold .student-home-stat-value {
   color: var(--color-forge);
-}
-
-/* Progress block */
-.student-home .student-home-progress-title {
-  font-family: var(--font-ui);
-  letter-spacing: 0.1em;
-  color: var(--color-ink-secondary);
-}
-
-.student-home .student-home-progress-target {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--color-ink-tertiary);
-}
-
-.student-home .rank-progress-track {
-  background: var(--color-ground);
-  border: 1px solid var(--color-rule-strong);
-  border-radius: 2px;
-}
-
-.student-home .rank-progress-fill {
-  background: var(--color-ink-primary);
-  border-radius: 0;
-}
-
-.student-home .student-home-progress-caption {
-  font-family: var(--font-ui);
-  color: var(--color-ink-secondary);
-}
-
-.student-home .student-home-progress-caption strong {
-  font-weight: 600;
-  color: var(--color-ink-primary);
 }
 
 /* Section heading */

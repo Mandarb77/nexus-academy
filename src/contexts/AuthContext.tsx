@@ -2,7 +2,7 @@
  * Authentication and profile context for the whole SPA
  *
  * Wraps Supabase Auth (`getSession`, `onAuthStateChange`) and the `profiles` row
- * (WP, gold, rank, role, display name). Student pages read `profile` for economy
+ * (WP, gold, role, display name). Student pages read `profile` for economy
  * state; teacher pages use `role`. `refreshProfile` is called after skill approvals
  * and from a Realtime listener on the signed-in user’s profile so WP changes from
  * the server appear without a full reload. `studentPreviewMode` lets teachers walk
@@ -30,7 +30,7 @@ import type { Profile } from '../types/profile'
 
 /* Narrow select keeps payload small and types in sync with `types/profile.ts`. */
 const PROFILE_COLUMNS =
-  'id, email, display_name, wp, gold, rank, role, portfolio_quote' as const
+  'id, email, display_name, wp, gold, role, portfolio_quote' as const
 
 function displayNameFromUser(user: User): string {
   const meta = user.user_metadata
@@ -49,7 +49,6 @@ async function ensureProfileIfMissing(user: User): Promise<void> {
     display_name: displayNameFromUser(user),
     wp: 0,
     gold: 0,
-    rank: 'Initiate',
     role: 'student',
   })
   /* Race on first login: two tabs or retry can insert twice — 23505 is unique violation, safe to ignore. */

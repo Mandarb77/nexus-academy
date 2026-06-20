@@ -90,7 +90,6 @@ type StudentSummary = {
   display_name: string | null
   wp: number
   gold: number
-  rank: string | null
 }
 
 type StudentSkillCompletion = {
@@ -778,7 +777,7 @@ export function TeacherPanelPage() {
     setStudentsBusy(true)
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, display_name, wp, gold, rank, role')
+      .select('id, display_name, wp, gold, role')
       .eq('role', 'student')
       .is('archived_from_class_at', null)
       .order('display_name', { ascending: true })
@@ -794,7 +793,6 @@ export function TeacherPanelPage() {
       display_name: (p.display_name as string | null) ?? null,
       wp: (p.wp as number) ?? 0,
       gold: (p.gold as number) ?? 0,
-      rank: (p.rank as string | null) ?? null,
     }))
     setStudents(list)
   }, [])
@@ -852,7 +850,7 @@ export function TeacherPanelPage() {
       const [profRes, skillsRes, invRes, redRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, display_name, wp, gold, rank, role')
+          .select('id, display_name, wp, gold, role')
           .eq('id', studentId)
           .maybeSingle(),
         supabase
@@ -899,7 +897,6 @@ export function TeacherPanelPage() {
               display_name: (p.display_name as string | null) ?? null,
               wp: (p.wp as number) ?? 0,
               gold: (p.gold as number) ?? 0,
-              rank: (p.rank as string | null) ?? null,
             }
           : null,
       )
@@ -1003,7 +1000,7 @@ export function TeacherPanelPage() {
       .update({ wp: nextWp, gold: nextGold })
       .eq('id', selectedStudentId)
       .eq('role', 'student')
-      .select('id, display_name, wp, gold, rank')
+      .select('id, display_name, wp, gold')
       .maybeSingle()
     setAwardingStudentId(null)
 
@@ -1021,7 +1018,6 @@ export function TeacherPanelPage() {
       display_name: (data.display_name as string | null) ?? null,
       wp: (data.wp as number) ?? 0,
       gold: (data.gold as number) ?? 0,
-      rank: (data.rank as string | null) ?? null,
     }
     setStudentProfile(updated)
     setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
@@ -1522,10 +1518,6 @@ export function TeacherPanelPage() {
                       <dt>Gold</dt>
                       <dd>{studentProfile?.gold ?? selectedStudent?.gold ?? 0}</dd>
                     </div>
-                    <div>
-                      <dt>Rank</dt>
-                      <dd>{studentProfile?.rank ?? selectedStudent?.rank ?? 'Initiate'}</dd>
-                    </div>
                   </dl>
                 </div>
 
@@ -1711,7 +1703,7 @@ export function TeacherPanelPage() {
                         >
                           <span className="teacher-panel-student-row-name">{name}</span>
                           <span className="teacher-panel-student-row-meta muted">
-                            {s.wp} WP · {s.gold} gold · {s.rank ?? 'Initiate'}
+                            {s.wp} WP · {s.gold} gold
                           </span>
                         </button>
                         <button

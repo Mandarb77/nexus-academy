@@ -69,7 +69,7 @@ export function SkillTilesList({
     const aOrder = a.sort_order ?? 0
     const bOrder = b.sort_order ?? 0
     if (aOrder !== bOrder) return aOrder - bOrder
-    const rank = (t: TileRow) => {
+    const sortPriority = (t: TileRow) => {
       if (isPersonalGamePieceTile(t)) return 0
       if (isPopUpCardTile(t)) return 0
       if (isVoidTile1Tile(t)) return 0 /* Void proto: flagship tier-1 build, same band as game piece */
@@ -78,7 +78,7 @@ export function SkillTilesList({
       if (isStickerQuestLocked(t)) return 4
       return 3
     }
-    const d = rank(a) - rank(b)
+    const d = sortPriority(a) - sortPriority(b)
     if (d !== 0) return d
     return (a.skill_name ?? '').localeCompare(b.skill_name ?? '', undefined, { sensitivity: 'base' })
   })
