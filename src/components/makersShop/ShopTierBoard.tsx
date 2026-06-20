@@ -7,7 +7,7 @@ import conveniencesSign from '../../assets/conveniences-sign.png'
 import craftSign from '../../assets/craft-sign.png'
 import legacySign from '../../assets/legacy-sign.png'
 import { GameShopCard } from './GameShopCard'
-import { displayShelfTitle, shelfAccentForTier, tierSlugId } from './shopDisplay'
+import { displayShelfTitle, shelfAccentForTier, tierShortDescription, tierSlugId } from './shopDisplay'
 
 type TierGroup = { tier: ShopTierEmbed; items: ShopCatalogItem[] }
 
@@ -48,6 +48,7 @@ export function ShopTierBoard({
   const accent = shelfAccentForTier(tier.name)
   const slug = tierSlugId(tier.name)
   const signSrc = signImageForTier(tier.name)
+  const desc = tierShortDescription(tier.name, tier.subtitle)
 
   return (
     <section
@@ -67,6 +68,7 @@ export function ShopTierBoard({
             {shelfTitle}
           </h2>
           <img className="shop-shelf-sign" src={signSrc} alt={`${shelfTitle} shelf`} />
+          <p className="shop-shelf-desc">{desc}</p>
         </div>
       </button>
 

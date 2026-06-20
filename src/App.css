@@ -4179,19 +4179,17 @@ body:has(.bench-chrome) {
   height: auto;
   object-fit: contain;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  transform-origin: center center;
 }
 
-.bench-chrome.shop-page .shop-shelf--forge .shop-shelf-sign {
-  transform: rotate(-1deg);
-}
-
-.bench-chrome.shop-page .shop-shelf--prism .shop-shelf-sign {
-  transform: rotate(1deg);
-}
-
-.bench-chrome.shop-page .shop-shelf--folded .shop-shelf-sign {
-  transform: rotate(-0.5deg);
+.bench-chrome.shop-page .shop-shelf-desc {
+  margin: 0.85rem 0 0;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #5a4030;
+  line-height: 1.35;
 }
 
 .bench-chrome.shop-page .shop-shelf-panel {

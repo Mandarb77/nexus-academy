@@ -22,6 +22,15 @@ export function displayShelfTitle(tierName: string): string {
   return tierName.trim()
 }
 
+/** One-line shelf blurb shown beneath the Supply sign images. */
+export function tierShortDescription(tierName: string, subtitle?: string | null): string {
+  const n = tierName.trim().toLowerCase()
+  if (n === 'convenience') return "Fran's at the counter. Barry's in the back. They've seen all of this before."
+  if (n === 'craft') return "These are behind the counter. Fran will get them down if Mr. Cook says it's time."
+  if (n === 'legacy') return 'Leave something behind.'
+  return subtitle?.trim() || 'Workshop rewards'
+}
+
 export function tierSlugId(tierName: string): string {
   return tierName.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
 }
