@@ -102,13 +102,21 @@ export function GoldShopPage() {
     }
   }, [])
 
-  const showToast = useCallback((next: Omit<ShopToast, 'id'>, duration = 3600) => {
+  const showToast = useCallback((next: Omit<ShopToast, 'id'>, duration = 5000) => {
     if (toastTimer.current != null) window.clearTimeout(toastTimer.current)
     setToast({ ...next, id: Date.now() })
     toastTimer.current = window.setTimeout(() => {
       setToast(null)
       toastTimer.current = null
     }, duration)
+  }, [])
+
+  const dismissToast = useCallback(() => {
+    if (toastTimer.current != null) {
+      window.clearTimeout(toastTimer.current)
+      toastTimer.current = null
+    }
+    setToast(null)
   }, [])
 
   const pulseGold = useCallback(() => {
@@ -285,15 +293,14 @@ export function GoldShopPage() {
       setTradedKey(null)
       tradedTimer.current = null
     }, 1500)
-    if (typeof result.new_gold === 'number') {
-      setDisplayGold(result.new_gold)
-      pulseGold()
-    }
+    const newGold = typeof result.new_gold === 'number' ? result.new_gold : Math.max(0, gold - item.price_gold)
+    setDisplayGold(newGold)
+    pulseGold()
     markKitHasNewItem()
     showToast({
       kind: 'success',
       message: `${item.name} added to your Kit`,
-      detail: `- ${item.price_gold} gold`,
+      detail: `${item.price_gold} gold spent · ${newGold} gold left`,
     })
     await refreshProfile()
     if ((item.max_purchases_per_chicago_school_day ?? 0) >= 1) {
@@ -340,10 +347,17 @@ export function GoldShopPage() {
       ) : null}
 
       {toast ? (
-        <div className={`shop-toast shop-toast--${toast.kind}`} role={toast.kind === 'error' ? 'alert' : 'status'}>
+        <button
+          type="button"
+          className={`shop-toast shop-toast--${toast.kind}`}
+          role={toast.kind === 'error' ? 'alert' : 'status'}
+          onClick={dismissToast}
+          aria-label="Dismiss notification"
+        >
           <p className="shop-toast__message">{toast.message}</p>
           {toast.detail ? <p className="shop-toast__detail">{toast.detail}</p> : null}
-        </div>
+          <span className="shop-toast__dismiss">Click to dismiss</span>
+        </button>
       ) : null}
 
       {!catalogLoading && tierGroups.length > 0 ? (

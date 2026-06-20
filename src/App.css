@@ -4159,17 +4159,24 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-toast {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  max-width: min(100%, 34rem);
-  margin: 0 0 1rem;
-  padding: 0.7rem 0.95rem;
-  border: 1px solid var(--color-rule-strong);
-  border-radius: 2px;
+  position: fixed;
+  top: 1.25rem;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: min(calc(100vw - 2rem), 26rem);
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--color-rule-strong);
+  border-radius: 4px;
   background: var(--color-panel);
   color: #5a4030;
-  box-shadow: 0 4px 10px rgba(58, 40, 32, 0.12);
+  box-shadow: 0 8px 22px rgba(58, 40, 32, 0.22);
+  transform: translateX(-50%);
+  cursor: pointer;
+  text-align: left;
 }
 
 .bench-chrome.shop-page .shop-toast--error {
@@ -4183,15 +4190,22 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-toast__message {
   font-family: 'Lora', Georgia, serif;
-  font-size: 0.9rem;
-  font-weight: 400;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .bench-chrome.shop-page .shop-toast__detail {
   font-family: 'Caveat', cursive;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.bench-chrome.shop-page .shop-toast__dismiss {
+  margin-top: 0.2rem;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.68rem;
+  color: var(--color-ink-tertiary);
 }
 
 .bench-chrome.shop-page .shop-shelves--tiles {
