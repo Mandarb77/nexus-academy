@@ -1,3 +1,12 @@
+/*
+ * Tiny cross-page signal for Supply purchases.
+ *
+ * A purchase happens on `/shop`, but the visible reminder lives in `MainNav` and clears
+ * from `/inventory`. localStorage keeps the dot through route changes/page reloads, and
+ * the custom event updates the current tab immediately because `storage` only fires in
+ * other tabs.
+ */
+
 const KIT_NEW_ITEM_KEY = 'nexus-kit-has-new-item'
 export const KIT_NEW_ITEM_EVENT = 'nexus-kit-new-item-change'
 

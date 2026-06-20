@@ -66,8 +66,10 @@ export function GoldShopPage() {
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [catalogLoading, setCatalogLoading] = useState(true)
   const [buyingKey, setBuyingKey] = useState<string | null>(null)
+  // Purchase feedback stays item-scoped so confirmation appears where the student clicked.
   const [tradedKey, setTradedKey] = useState<string | null>(null)
   const [toast, setToast] = useState<ShopToast | null>(null)
+  // Mirror profile gold locally so the balance can update before refreshProfile finishes.
   const [displayGold, setDisplayGold] = useState(profile?.gold ?? 0)
   const [goldChanged, setGoldChanged] = useState(false)
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
@@ -298,6 +300,7 @@ export function GoldShopPage() {
     setDisplayGold(newGold)
     pulseGold()
     markKitHasNewItem()
+    // This inline toast carries the three trust-building facts: what changed, cost, and new balance.
     showToast({
       kind: 'success',
       itemKey: item.item_key,

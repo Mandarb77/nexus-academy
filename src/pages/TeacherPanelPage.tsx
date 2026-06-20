@@ -904,6 +904,12 @@ export function TeacherPanelPage() {
       let inventoryRows = (invRes.data ?? []) as StudentInventoryRow[]
       const selectedDisplayName = ((p?.display_name as string | null) ?? '').trim()
       if (inventoryRows.length === 0 && selectedDisplayName) {
+        /*
+         * Teacher "Preview as student" uses the teacher's own auth profile, so test
+         * purchases can land on a same-name teacher profile instead of the roster
+         * student row. Surface those rows here and label them rather than hiding
+         * what the teacher just tested.
+         */
         const { data: sameNameProfiles, error: sameNameError } = await supabase
           .from('profiles')
           .select('id, role')
@@ -980,6 +986,11 @@ export function TeacherPanelPage() {
   )
 
   const awardSelectedStudent = async () => {
+    /*
+     * Testing helper: adjust the selected roster student's economy totals without
+     * creating skill completions. This is intentionally direct so shop/progression
+     * flows can be tested without fabricating quest history.
+     */
     if (!isSupabaseConfigured || !selectedStudentId || awardingStudentId) return
     const wpAmount = Math.max(0, Math.floor(Number(awardWpAmount) || 0))
     const goldAmount = Math.max(0, Math.floor(Number(awardGoldAmount) || 0))
@@ -1033,6 +1044,11 @@ export function TeacherPanelPage() {
   }
 
   const awardPreviewProfile = async () => {
+    /*
+     * Preview mode does not impersonate a roster student; it browses student pages
+     * through the signed-in teacher profile. This separate control funds that
+     * preview profile so Supply and WP flows can be tested as the teacher.
+     */
     if (!isSupabaseConfigured || !profile?.id || previewAwarding) return
     const wpAmount = Math.max(0, Math.floor(Number(previewAwardWpAmount) || 0))
     const goldAmount = Math.max(0, Math.floor(Number(previewAwardGoldAmount) || 0))

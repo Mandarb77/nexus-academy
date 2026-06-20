@@ -90,6 +90,11 @@ function lockLabel(catalogLocked: boolean): string {
 
 const LOCKED_GATE_NOTE = 'Mr. Cook keeps the key on this one. Talk to him.'
 
+/*
+ * Render purchase feedback inside the purchased card instead of as a global toast.
+ * Students were missing top-of-page messages, so the confirmation now appears in
+ * the same visual spot as the Trade button they just clicked.
+ */
 function ShopItemToast({
   toast,
   onDismissToast,

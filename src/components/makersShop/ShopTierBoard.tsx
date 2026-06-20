@@ -28,6 +28,7 @@ type Props = {
 }
 
 function signImageForTier(tierName: string): string {
+  // These are hand-painted shelf signs; avoid text overlays so the asset is the header.
   const n = tierName.trim().toLowerCase()
   if (n === 'convenience') return conveniencesSign
   if (n === 'craft') return craftSign
@@ -99,6 +100,8 @@ export function ShopTierBoard({
                 const busy = buyingKey === item.item_key
                 const canBuy =
                   !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
+                // Only the item that triggered the transaction should show the confirmation.
+                const itemToast = toast?.itemKey === item.item_key ? toast : null
 
                 return (
                   <GameShopCard
@@ -113,7 +116,7 @@ export function ShopTierBoard({
                     canBuy={canBuy}
                     busy={busy}
                     traded={tradedKey === item.item_key}
-                    toast={toast?.itemKey === item.item_key ? toast : null}
+                    toast={itemToast}
                     onDismissToast={onDismissToast}
                     isSupabaseConfigured={isSupabaseConfigured}
                     catalogLoading={catalogLoading}

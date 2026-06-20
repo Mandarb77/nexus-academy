@@ -28,7 +28,7 @@ import type { Profile } from '../types/profile'
 // Module helpers — profile row shape, first-time insert, fetch with backoff
 // -----------------------------------------------------------------------------
 
-/* Narrow select keeps payload small and types in sync with `types/profile.ts`. */
+/* Narrow select keeps payload small and ignores legacy DB columns that the app no longer surfaces. */
 const PROFILE_COLUMNS =
   'id, email, display_name, wp, gold, role, portfolio_quote' as const
 
