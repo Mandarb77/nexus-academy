@@ -17,6 +17,7 @@ type GameShopCardProps = {
   canAfford: boolean
   canBuy: boolean
   busy: boolean
+  traded: boolean
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   onBuy: (item: ShopCatalogItem) => void
@@ -30,6 +31,7 @@ function PurchaseButton({
   canAfford,
   canBuy,
   busy,
+  traded,
   isSupabaseConfigured,
   catalogLoading,
   onBuy,
@@ -42,6 +44,7 @@ function PurchaseButton({
   | 'canAfford'
   | 'canBuy'
   | 'busy'
+  | 'traded'
   | 'isSupabaseConfigured'
   | 'catalogLoading'
   | 'onBuy'
@@ -57,10 +60,12 @@ function PurchaseButton({
             ? `btn-secondary shop-item__buy${canBuy ? ' shop-item__buy--ready' : ''}`
             : `makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`
         }
-        disabled={!isSupabaseConfigured || catalogLocked || !canBuy || busy || catalogLoading}
+        disabled={!isSupabaseConfigured || catalogLocked || !canBuy || busy || traded || catalogLoading}
         onClick={() => onBuy(item)}
       >
-        {busy ? (
+        {traded ? (
+          'TRADED'
+        ) : busy ? (
           'Trading…'
         ) : catalogLocked ? (
           'ASK FRAN'
@@ -93,6 +98,7 @@ function BenchShopCard(props: GameShopCardProps) {
     canAfford,
     canBuy,
     busy,
+    traded,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -109,6 +115,7 @@ function BenchShopCard(props: GameShopCardProps) {
     canAfford,
     canBuy,
     busy,
+    traded,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -170,6 +177,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     canAfford,
     canBuy,
     busy,
+    traded,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -206,6 +214,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     canAfford,
     canBuy,
     busy,
+    traded,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,

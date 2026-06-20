@@ -7,10 +7,11 @@
  * the laptop’s local midnight.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
+import { markKitHasNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { isSameEasternCalendarDay } from '../lib/schoolDayEastern'
 import type { ShopCatalogItem, ShopStockStatus, ShopTierEmbed } from '../types/shopCatalog'
@@ -19,6 +20,13 @@ type RpcResult = {
   ok?: boolean
   error?: string
   new_gold?: number
+}
+
+type ShopToast = {
+  id: number
+  kind: 'success' | 'error'
+  message: string
+  detail?: string
 }
 
 function tierFromRow(row: ShopCatalogItem): ShopTierEmbed | null {
@@ -57,12 +65,18 @@ export function GoldShopPage() {
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [catalogLoading, setCatalogLoading] = useState(true)
   const [buyingKey, setBuyingKey] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
+  const [tradedKey, setTradedKey] = useState<string | null>(null)
+  const [toast, setToast] = useState<ShopToast | null>(null)
+  const [displayGold, setDisplayGold] = useState(profile?.gold ?? 0)
+  const [goldChanged, setGoldChanged] = useState(false)
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
   const [stockByItemId, setStockByItemId] = useState<Map<string, ShopStockStatus>>(new Map())
   const [openTiers, setOpenTiers] = useState<Set<string>>(() => new Set())
+  const toastTimer = useRef<number | null>(null)
+  const tradedTimer = useRef<number | null>(null)
+  const goldTimer = useRef<number | null>(null)
 
-  const gold = profile?.gold ?? 0
+  const gold = displayGold
 
   const sortedCatalog = useMemo(() => sortCatalogRows(catalog), [catalog])
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
@@ -75,6 +89,50 @@ export function GoldShopPage() {
       return next
     })
   }, [])
+
+  useEffect(() => {
+    setDisplayGold(profile?.gold ?? 0)
+  }, [profile?.gold])
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current != null) window.clearTimeout(toastTimer.current)
+      if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
+      if (goldTimer.current != null) window.clearTimeout(goldTimer.current)
+    }
+  }, [])
+
+  const showToast = useCallback((next: Omit<ShopToast, 'id'>, duration = 3600) => {
+    if (toastTimer.current != null) window.clearTimeout(toastTimer.current)
+    setToast({ ...next, id: Date.now() })
+    toastTimer.current = window.setTimeout(() => {
+      setToast(null)
+      toastTimer.current = null
+    }, duration)
+  }, [])
+
+  const pulseGold = useCallback(() => {
+    if (goldTimer.current != null) window.clearTimeout(goldTimer.current)
+    setGoldChanged(true)
+    goldTimer.current = window.setTimeout(() => {
+      setGoldChanged(false)
+      goldTimer.current = null
+    }, 900)
+  }, [])
+
+  function purchaseErrorMessage(errorCode?: string, item?: ShopCatalogItem): string {
+    if (errorCode === 'insufficient_gold') return 'Not enough gold.'
+    if (errorCode === 'unknown_item') return 'Unknown item.'
+    if (errorCode === 'daily_purchase_limit' || errorCode === 'phone_time_limit') {
+      return 'You already purchased this today.'
+    }
+    if (errorCode === 'item_locked') {
+      return item?.gate_requirement?.trim() || 'Mr. Cook needs to approve this first.'
+    }
+    if (errorCode === 'not_for_sale') return 'This item is not for sale.'
+    if (errorCode === 'semester_stock_exhausted') return 'No stock left this semester.'
+    return 'Purchase could not be completed.'
+  }
 
   const refreshStockStatus = useCallback(async (rows: ShopCatalogItem[]) => {
     if (!isSupabaseConfigured) {
@@ -191,15 +249,26 @@ export function GoldShopPage() {
   }, [refreshDailyLimits, refreshStockStatus])
 
   async function buy(item: ShopCatalogItem) {
-    if (!isSupabaseConfigured || item.is_locked || item.price_gold == null) return
-    setMessage(null)
+    if (!isSupabaseConfigured) {
+      showToast({ kind: 'error', message: 'Shop is not connected right now.' })
+      return
+    }
+    if (item.is_locked) {
+      showToast({ kind: 'error', message: 'Mr. Cook needs to approve this first.' })
+      return
+    }
+    if (item.price_gold == null) {
+      showToast({ kind: 'error', message: 'This item is not for sale.' })
+      return
+    }
+    setToast(null)
     setBuyingKey(item.item_key)
     const { data, error } = await supabase.rpc('buy_shop_item', {
       p_item_key: item.item_key,
     })
     setBuyingKey(null)
     if (error) {
-      setMessage(error.message)
+      showToast({ kind: 'error', message: error.message })
       return
     }
     const result = data as RpcResult
@@ -207,31 +276,30 @@ export function GoldShopPage() {
       if (result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit') {
         setDailyBlockedIds((prev) => new Set(prev).add(item.id))
       }
-      setMessage(
-        result?.error === 'insufficient_gold'
-          ? 'Not enough gold.'
-          : result?.error === 'unknown_item'
-            ? 'Unknown item.'
-            : result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit'
-              ? 'You already purchased this today (New York time).'
-              : result?.error === 'item_locked'
-                ? item.gate_requirement?.trim()
-                  ? item.gate_requirement.trim()
-                  : 'This reward is locked.'
-                : result?.error === 'not_for_sale'
-                  ? 'This item is not for sale.'
-                  : result?.error === 'semester_stock_exhausted'
-                    ? 'No stock left this semester.'
-                    : 'Purchase could not be completed.',
-      )
+      showToast({ kind: 'error', message: purchaseErrorMessage(result?.error, item) })
       return
     }
+    if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
+    setTradedKey(item.item_key)
+    tradedTimer.current = window.setTimeout(() => {
+      setTradedKey(null)
+      tradedTimer.current = null
+    }, 1500)
+    if (typeof result.new_gold === 'number') {
+      setDisplayGold(result.new_gold)
+      pulseGold()
+    }
+    markKitHasNewItem()
+    showToast({
+      kind: 'success',
+      message: `${item.name} added to your Kit`,
+      detail: `- ${item.price_gold} gold`,
+    })
     await refreshProfile()
     if ((item.max_purchases_per_chicago_school_day ?? 0) >= 1) {
       setDailyBlockedIds((prev) => new Set(prev).add(item.id))
     }
     void refreshStockStatus(catalog)
-    setMessage(null)
   }
 
   return (
@@ -246,7 +314,7 @@ export function GoldShopPage() {
             </p>
           </div>
           <div className="shop-header-actions">
-            <div className="shop-gold-stat" aria-live="polite">
+            <div className={`shop-gold-stat${goldChanged ? ' shop-gold-stat--changed' : ''}`} aria-live="polite">
               <span className="shop-gold-stat__label">Gold</span>
               <span className="shop-gold-stat__value">{gold}</span>
             </div>
@@ -271,16 +339,11 @@ export function GoldShopPage() {
         </p>
       ) : null}
 
-      {message ? (
-        <p className="shop-alert" role="status">
-          {message === 'Not enough gold.' ? (
-            <>
-              Not enough <span className="gold-currency-text">gold</span>.
-            </>
-          ) : (
-            message
-          )}
-        </p>
+      {toast ? (
+        <div className={`shop-toast shop-toast--${toast.kind}`} role={toast.kind === 'error' ? 'alert' : 'status'}>
+          <p className="shop-toast__message">{toast.message}</p>
+          {toast.detail ? <p className="shop-toast__detail">{toast.detail}</p> : null}
+        </div>
       ) : null}
 
       {!catalogLoading && tierGroups.length > 0 ? (
@@ -297,6 +360,7 @@ export function GoldShopPage() {
               stockByItemId={stockByItemId}
               isSupabaseConfigured={isSupabaseConfigured}
               catalogLoading={catalogLoading}
+              tradedKey={tradedKey}
               onBuy={buy}
             />
           ))}

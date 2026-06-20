@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
+import { clearKitNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InventoryRow } from '../types/inventory'
 
@@ -80,6 +81,10 @@ export function InventoryPage() {
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    clearKitNewItem()
+  }, [])
 
   const requestUse = async (row: InventoryRow) => {
     if (!studentId || !isSupabaseConfigured) return

@@ -3302,6 +3302,7 @@ a.btn-primary {
 }
 
 .student-nav-link {
+  position: relative;
   font-family: var(--font-ui);
   font-size: 0.72rem;
   font-weight: 500;
@@ -3313,6 +3314,23 @@ a.btn-primary {
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: none;
+}
+
+.student-nav-link__label {
+  display: inline-block;
+}
+
+.student-nav-link__dot {
+  position: absolute;
+  top: 0.12rem;
+  right: 0.1rem;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--color-forge);
+  box-shadow:
+    0 0 0 2px var(--color-panel),
+    0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
 .student-nav-link:hover {
@@ -4107,6 +4125,16 @@ body:has(.bench-chrome) {
   border-radius: 2px;
   background: var(--color-panel);
   min-width: 6.5rem;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.bench-chrome.shop-page .shop-gold-stat--changed {
+  border-color: var(--color-forge);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(117, 76, 38, 0.18);
 }
 
 .bench-chrome.shop-page .shop-gold-stat__label {
@@ -4128,6 +4156,42 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-alert {
   margin: 0 0 1rem;
+}
+
+.bench-chrome.shop-page .shop-toast {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  max-width: min(100%, 34rem);
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--color-rule-strong);
+  border-radius: 2px;
+  background: var(--color-panel);
+  color: #5a4030;
+  box-shadow: 0 4px 10px rgba(58, 40, 32, 0.12);
+}
+
+.bench-chrome.shop-page .shop-toast--error {
+  border-color: #9f4f36;
+}
+
+.bench-chrome.shop-page .shop-toast__message,
+.bench-chrome.shop-page .shop-toast__detail {
+  margin: 0;
+}
+
+.bench-chrome.shop-page .shop-toast__message {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.bench-chrome.shop-page .shop-toast__detail {
+  font-family: 'Caveat', cursive;
+  font-size: 1.05rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .bench-chrome.shop-page .shop-shelves--tiles {

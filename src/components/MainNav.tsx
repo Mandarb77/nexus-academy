@@ -9,8 +9,10 @@
  * see port 5173/5174 debugging copy — only developers running Vite locally.
  */
 
+import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { hasNewKitItem, KIT_NEW_ITEM_EVENT } from '../lib/kitNotification'
 import { isTeacherProfile } from '../lib/teacher'
 import { StudentPreviewBanner } from './StudentPreviewBanner'
 
@@ -23,6 +25,17 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
   const { profile, studentPreviewMode, toggleStudentPreview } = useAuth()
   const navigate = useNavigate()
   const teacher = isTeacherProfile(profile)
+  const [kitHasNewItem, setKitHasNewItem] = useState(() => hasNewKitItem())
+
+  useEffect(() => {
+    const syncKitBadge = () => setKitHasNewItem(hasNewKitItem())
+    window.addEventListener(KIT_NEW_ITEM_EVENT, syncKitBadge)
+    window.addEventListener('storage', syncKitBadge)
+    return () => {
+      window.removeEventListener(KIT_NEW_ITEM_EVENT, syncKitBadge)
+      window.removeEventListener('storage', syncKitBadge)
+    }
+  }, [])
 
   if (variant === 'teacher') {
     return (
@@ -176,7 +189,8 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
           }
         >
-          Kit
+          <span className="student-nav-link__label">Kit</span>
+          {kitHasNewItem ? <span className="student-nav-link__dot" aria-label="New item in Kit" /> : null}
         </NavLink>
         <NavLink
           to="/resources"

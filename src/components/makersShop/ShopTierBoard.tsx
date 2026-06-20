@@ -21,6 +21,7 @@ type Props = {
   stockByItemId: Map<string, ShopStockStatus>
   isSupabaseConfigured: boolean
   catalogLoading: boolean
+  tradedKey: string | null
   onBuy: (item: ShopCatalogItem) => void
 }
 
@@ -41,6 +42,7 @@ export function ShopTierBoard({
   stockByItemId,
   isSupabaseConfigured,
   catalogLoading,
+  tradedKey,
   onBuy,
 }: Props) {
   const { tier, items } = group
@@ -106,6 +108,7 @@ export function ShopTierBoard({
                     canAfford={canAfford}
                     canBuy={canBuy}
                     busy={busy}
+                    traded={tradedKey === item.item_key}
                     isSupabaseConfigured={isSupabaseConfigured}
                     catalogLoading={catalogLoading}
                     onBuy={onBuy}
