@@ -18,6 +18,8 @@ type GameShopCardProps = {
   canBuy: boolean
   busy: boolean
   traded: boolean
+  toast?: { kind: 'success' | 'error'; message: string; detail?: string } | null
+  onDismissToast: () => void
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   onBuy: (item: ShopCatalogItem) => void
@@ -88,6 +90,29 @@ function lockLabel(catalogLocked: boolean): string {
 
 const LOCKED_GATE_NOTE = 'Mr. Cook keeps the key on this one. Talk to him.'
 
+function ShopItemToast({
+  toast,
+  onDismissToast,
+}: {
+  toast?: { kind: 'success' | 'error'; message: string; detail?: string } | null
+  onDismissToast: () => void
+}) {
+  if (!toast) return null
+  return (
+    <button
+      type="button"
+      className={`shop-toast shop-toast--${toast.kind}`}
+      role={toast.kind === 'error' ? 'alert' : 'status'}
+      onClick={onDismissToast}
+      aria-label="Dismiss notification"
+    >
+      <p className="shop-toast__message">{toast.message}</p>
+      {toast.detail ? <p className="shop-toast__detail">{toast.detail}</p> : null}
+      <span className="shop-toast__dismiss">Click to dismiss</span>
+    </button>
+  )
+}
+
 function BenchShopCard(props: GameShopCardProps) {
   const {
     item,
@@ -99,6 +124,8 @@ function BenchShopCard(props: GameShopCardProps) {
     canBuy,
     busy,
     traded,
+    toast,
+    onDismissToast,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -127,6 +154,7 @@ function BenchShopCard(props: GameShopCardProps) {
         catalogLocked ? ' shop-item--locked' : ''
       }${canBuy ? ' shop-item--ready' : ''}`}
     >
+      <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
       <div className="shop-item__head">
         <div className="shop-item__glyph-wrap" aria-hidden>
           <ShopItemGlyph variant={variant} className="shop-item-glyph" />
@@ -178,6 +206,8 @@ function LegacyShopCard(props: GameShopCardProps) {
     canBuy,
     busy,
     traded,
+    toast,
+    onDismissToast,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -223,6 +253,7 @@ function LegacyShopCard(props: GameShopCardProps) {
   return (
     <li className={cardMods}>
       <div className="makers-shop-card__frame">
+        <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
         <div className="makers-shop-card__rail" aria-hidden />
         <h3 className={titleMods}>{item.name}</h3>
         <p className="makers-shop-card__desc">{item.description}</p>

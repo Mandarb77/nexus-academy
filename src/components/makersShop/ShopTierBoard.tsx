@@ -22,6 +22,8 @@ type Props = {
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   tradedKey: string | null
+  toast: { kind: 'success' | 'error'; itemKey: string; message: string; detail?: string } | null
+  onDismissToast: () => void
   onBuy: (item: ShopCatalogItem) => void
 }
 
@@ -43,6 +45,8 @@ export function ShopTierBoard({
   isSupabaseConfigured,
   catalogLoading,
   tradedKey,
+  toast,
+  onDismissToast,
   onBuy,
 }: Props) {
   const { tier, items } = group
@@ -109,6 +113,8 @@ export function ShopTierBoard({
                     canBuy={canBuy}
                     busy={busy}
                     traded={tradedKey === item.item_key}
+                    toast={toast?.itemKey === item.item_key ? toast : null}
+                    onDismissToast={onDismissToast}
                     isSupabaseConfigured={isSupabaseConfigured}
                     catalogLoading={catalogLoading}
                     onBuy={onBuy}

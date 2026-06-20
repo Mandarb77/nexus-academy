@@ -25,6 +25,7 @@ type RpcResult = {
 type ShopToast = {
   id: number
   kind: 'success' | 'error'
+  itemKey: string
   message: string
   detail?: string
 }
@@ -258,15 +259,15 @@ export function GoldShopPage() {
 
   async function buy(item: ShopCatalogItem) {
     if (!isSupabaseConfigured) {
-      showToast({ kind: 'error', message: 'Shop is not connected right now.' })
+      showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
       return
     }
     if (item.is_locked) {
-      showToast({ kind: 'error', message: 'Mr. Cook needs to approve this first.' })
+      showToast({ kind: 'error', itemKey: item.item_key, message: 'Mr. Cook needs to approve this first.' })
       return
     }
     if (item.price_gold == null) {
-      showToast({ kind: 'error', message: 'This item is not for sale.' })
+      showToast({ kind: 'error', itemKey: item.item_key, message: 'This item is not for sale.' })
       return
     }
     setToast(null)
@@ -276,7 +277,7 @@ export function GoldShopPage() {
     })
     setBuyingKey(null)
     if (error) {
-      showToast({ kind: 'error', message: error.message })
+      showToast({ kind: 'error', itemKey: item.item_key, message: error.message })
       return
     }
     const result = data as RpcResult
@@ -284,7 +285,7 @@ export function GoldShopPage() {
       if (result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit') {
         setDailyBlockedIds((prev) => new Set(prev).add(item.id))
       }
-      showToast({ kind: 'error', message: purchaseErrorMessage(result?.error, item) })
+      showToast({ kind: 'error', itemKey: item.item_key, message: purchaseErrorMessage(result?.error, item) })
       return
     }
     if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
@@ -299,6 +300,7 @@ export function GoldShopPage() {
     markKitHasNewItem()
     showToast({
       kind: 'success',
+      itemKey: item.item_key,
       message: `${item.name} added to your Kit`,
       detail: `${item.price_gold} gold spent · ${newGold} gold left`,
     })
@@ -346,20 +348,6 @@ export function GoldShopPage() {
         </p>
       ) : null}
 
-      {toast ? (
-        <button
-          type="button"
-          className={`shop-toast shop-toast--${toast.kind}`}
-          role={toast.kind === 'error' ? 'alert' : 'status'}
-          onClick={dismissToast}
-          aria-label="Dismiss notification"
-        >
-          <p className="shop-toast__message">{toast.message}</p>
-          {toast.detail ? <p className="shop-toast__detail">{toast.detail}</p> : null}
-          <span className="shop-toast__dismiss">Click to dismiss</span>
-        </button>
-      ) : null}
-
       {!catalogLoading && tierGroups.length > 0 ? (
         <div className="shop-shelves shop-shelves--tiles">
           {tierGroups.map((group) => (
@@ -375,6 +363,8 @@ export function GoldShopPage() {
               isSupabaseConfigured={isSupabaseConfigured}
               catalogLoading={catalogLoading}
               tradedKey={tradedKey}
+              toast={toast}
+              onDismissToast={dismissToast}
               onBuy={buy}
             />
           ))}
