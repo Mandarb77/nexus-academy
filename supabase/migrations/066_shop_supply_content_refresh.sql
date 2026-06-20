@@ -6,11 +6,11 @@
 -- ---------------------------------------------------------------------------
 
 update public.shop_tiers
-set subtitle = 'Barry stocks it. Fran prices it. Neither of them is judging you.'
+set subtitle = 'Fran''s at the counter. Barry''s in the back. They''ve seen all of this before.'
 where name = 'Convenience';
 
 update public.shop_tiers
-set subtitle = 'The good stuff. You''ve earned the right to ask for it.'
+set subtitle = 'These are behind the counter. Fran will get them down if Mr. Cook says it''s time.'
 where name = 'Craft';
 
 update public.shop_tiers
@@ -51,8 +51,8 @@ values
     'Curly maple session',
     'A board of curly maple, yours for one project. Fran keeps it somewhere. Barry won''t say where. Ask Mr. Cook.',
     (select id from public.shop_tiers where name = 'Craft'),
-    35, true, 'Requires Void Gate 3.', true, 10, null,
-    null, null, 'Void Gate 3'
+    35, true, 'Mr. Cook keeps the key on this one. Talk to him.', true, 10, null,
+    null, null, 'Mr. Cook keeps the key on this one. Talk to him.'
   ),
   (
     'evening_lab_session',
@@ -67,8 +67,8 @@ values
     'Filament selection',
     'Any combination of filament colors for one print run. Glow in the dark, carbon fiber, silk, rainbow — whatever serves the project.',
     (select id from public.shop_tiers where name = 'Craft'),
-    25, true, 'Requires Forge Gate.', true, 30, null,
-    null, null, 'Forge Gate 3'
+    25, true, 'Mr. Cook keeps the key on this one. Talk to him.', true, 30, null,
+    null, null, 'Mr. Cook keeps the key on this one. Talk to him.'
   ),
   (
     'twenty_dollar_run',

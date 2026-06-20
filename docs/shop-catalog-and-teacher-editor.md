@@ -49,7 +49,7 @@ Developer notes for editable **Supply** (`/shop`) items: DB catalog, purchase RP
 | `price_gold` | Cost; `null` when locked with no price |
 | `is_active` | `false` hides from Supply |
 | `is_locked` | **Enforcement** — students cannot buy while true |
-| `gate_requirement` | **Display only** when locked (e.g. “Unlocks at Void Gate 3”) |
+| `gate_requirement` | **Display only** when locked (e.g. “Mr. Cook keeps the key on this one. Talk to him.”) |
 | `convenience_band` | `in_room` \| `out_of_room` (Convenience only) |
 | `stock_per_semester` | Global cap; `null` = unlimited |
 | `max_purchases_per_chicago_school_day` | Per-student daily cap (America/New_York) |

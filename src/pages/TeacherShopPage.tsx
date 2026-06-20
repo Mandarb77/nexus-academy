@@ -237,7 +237,7 @@ export function TeacherShopPage() {
             <h1 className="teacher-panel-title bench-page-title">Shop catalog</h1>
             <p className="muted teacher-panel-subtitle">
               Edit Supply shelves: Convenience (gold), Craft (unlock when not locked), Legacy (price + unlock).
-              Gate text is shown to students when locked; enforcement uses <strong>Locked</strong> until guild gates ship.
+              Gate text is shown to students when locked; enforcement still uses the locked flag until guild gates ship.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => void signOut()}>
@@ -309,7 +309,12 @@ export function TeacherShopPage() {
         {tierName === 'Craft' ? (
           <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
             <span className="patent-label">Gate requirement (display when locked)</span>
-            <input type="text" value={gateRequirement} placeholder="e.g. Unlocks at Void Gate 3" onChange={(e) => setGateRequirement(e.target.value)} />
+            <input
+              type="text"
+              value={gateRequirement}
+              placeholder="Mr. Cook keeps the key on this one. Talk to him."
+              onChange={(e) => setGateRequirement(e.target.value)}
+            />
           </label>
         ) : null}
 

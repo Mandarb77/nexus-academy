@@ -481,6 +481,14 @@
   color: var(--ms-ink-muted);
 }
 
+.makers-shop-card__inline-note--locked {
+  font-family: 'Caveat', cursive;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #5a4030;
+  line-height: 1.25;
+}
+
 .makers-shop-card__accordion {
   margin-top: 0.5rem;
 }

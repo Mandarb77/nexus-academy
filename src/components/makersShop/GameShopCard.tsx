@@ -63,13 +63,13 @@ function PurchaseButton({
         {busy ? (
           'Trading…'
         ) : catalogLocked ? (
-          'Ask Fran'
+          'ASK FRAN'
         ) : dailyBlocked ? (
           'Back tomorrow'
         ) : canAfford ? (
           'Trade'
         ) : (
-          'Not yet, kid'
+          'NOT YET, KID'
         )}
       </button>
     </div>
@@ -78,7 +78,7 @@ function PurchaseButton({
 
 function lockLabel(catalogLocked: boolean): string {
   if (!catalogLocked) return ''
-  return 'Ask Fran'
+  return 'ASK FRAN'
 }
 
 const LOCKED_GATE_NOTE = 'Mr. Cook keeps the key on this one. Talk to him.'
