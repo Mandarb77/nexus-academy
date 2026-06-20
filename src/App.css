@@ -4174,10 +4174,12 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelf-sign {
   display: block;
-  width: 100%;
+  width: auto;
   max-width: 100%;
-  height: auto;
+  height: 120px;
+  margin: 0 auto;
   object-fit: contain;
+  mix-blend-mode: multiply;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
