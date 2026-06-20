@@ -2788,6 +2788,32 @@ a.btn-primary {
   font-size: 0.9rem;
 }
 
+.teacher-panel-preview-balance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin: 0 0 0.85rem;
+}
+
+.teacher-panel-preview-balance div {
+  min-width: 7rem;
+}
+
+.teacher-panel-preview-balance dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.teacher-panel-preview-balance dd {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
 .teacher-panel-award-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)) auto;

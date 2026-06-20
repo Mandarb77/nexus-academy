@@ -167,7 +167,7 @@ function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
 // =============================================================================
 
 export function TeacherPanelPage() {
-  const { signOut } = useAuth()
+  const { profile, refreshProfile, signOut } = useAuth()
 
   // ---------------------------------------------------------------------------
   // Pending queues — what needs teacher action right now
@@ -203,6 +203,9 @@ export function TeacherPanelPage() {
   const [awardWpAmount, setAwardWpAmount] = useState('')
   const [awardGoldAmount, setAwardGoldAmount] = useState('')
   const [awardingStudentId, setAwardingStudentId] = useState<string | null>(null)
+  const [previewAwardWpAmount, setPreviewAwardWpAmount] = useState('')
+  const [previewAwardGoldAmount, setPreviewAwardGoldAmount] = useState('')
+  const [previewAwarding, setPreviewAwarding] = useState(false)
   const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
     () => new Map(),
   )
@@ -1033,6 +1036,41 @@ export function TeacherPanelPage() {
     setAdminMessage(`Added ${parts.join(' and ')} to ${name}.`)
   }
 
+  const awardPreviewProfile = async () => {
+    if (!isSupabaseConfigured || !profile?.id || previewAwarding) return
+    const wpAmount = Math.max(0, Math.floor(Number(previewAwardWpAmount) || 0))
+    const goldAmount = Math.max(0, Math.floor(Number(previewAwardGoldAmount) || 0))
+    if (wpAmount === 0 && goldAmount === 0) {
+      setAdminMessage('Enter WP or gold to add to student preview.')
+      return
+    }
+
+    const nextWp = (profile.wp ?? 0) + wpAmount
+    const nextGold = (profile.gold ?? 0) + goldAmount
+    setPreviewAwarding(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ wp: nextWp, gold: nextGold })
+      .eq('id', profile.id)
+      .eq('role', 'teacher')
+    setPreviewAwarding(false)
+
+    if (error) {
+      setAdminMessage(`Could not update student preview balance: ${error.message}`)
+      return
+    }
+
+    setPreviewAwardWpAmount('')
+    setPreviewAwardGoldAmount('')
+    await refreshProfile()
+
+    const parts = [
+      wpAmount > 0 ? `${wpAmount} WP` : '',
+      goldAmount > 0 ? `${goldAmount} gold` : '',
+    ].filter(Boolean)
+    setAdminMessage(`Added ${parts.join(' and ')} to student preview.`)
+  }
+
   // ---------------------------------------------------------------------------
   // Admin — reverse an approved completion (RPC + optional WP/gold penalty %)
   // ---------------------------------------------------------------------------
@@ -1115,6 +1153,60 @@ export function TeacherPanelPage() {
         <p className="muted">Loading pending requests…</p>
       ) : loadError ? null : (
         <>
+          <section className="teacher-panel-section" aria-labelledby="teacher-panel-preview-awards-heading">
+            <div className="card teacher-panel-student-block teacher-panel-award-card">
+              <h2 id="teacher-panel-preview-awards-heading" className="teacher-panel-section-title">
+                Student preview balance
+              </h2>
+              <p className="muted teacher-panel-award-note">
+                Preview as student uses your teacher profile. Add WP or gold here to test Supply and progression in preview mode.
+              </p>
+              <dl className="teacher-panel-preview-balance">
+                <div>
+                  <dt>Preview WP</dt>
+                  <dd>{profile?.wp ?? 0}</dd>
+                </div>
+                <div>
+                  <dt>Preview gold</dt>
+                  <dd>{profile?.gold ?? 0}</dd>
+                </div>
+              </dl>
+              <form
+                className="teacher-panel-award-form"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void awardPreviewProfile()
+                }}
+              >
+                <label className="teacher-panel-award-field">
+                  <span>WP to add</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={previewAwardWpAmount}
+                    onChange={(e) => setPreviewAwardWpAmount(e.target.value)}
+                    disabled={previewAwarding}
+                  />
+                </label>
+                <label className="teacher-panel-award-field">
+                  <span>Gold to add</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={previewAwardGoldAmount}
+                    onChange={(e) => setPreviewAwardGoldAmount(e.target.value)}
+                    disabled={previewAwarding}
+                  />
+                </label>
+                <button type="submit" className="btn-secondary" disabled={previewAwarding}>
+                  {previewAwarding ? 'Adding…' : 'Add to preview'}
+                </button>
+              </form>
+            </div>
+          </section>
+
           {/* ========== Patent gates (no WP/gold until final skill approval) ========== */}
           <div className="teacher-panel-approvals-grid">
           <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-plans-heading">
