@@ -4079,7 +4079,14 @@ body:has(.bench-chrome) {
 }
 
 /* Supply (/shop) — guild-style tier tiles + item grid */
+.bench-chrome.shop-page .bench-page-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+}
+
 .bench-chrome.shop-page .shop-subtitle {
+  font-family: 'Lora', Georgia, serif;
+  font-weight: 400;
   max-width: 36rem;
 }
 
@@ -4111,7 +4118,7 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-gold-stat__value {
-  font-family: var(--font-ui);
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 1.35rem;
   font-weight: 600;
   color: var(--color-forge);
@@ -4170,7 +4177,7 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelf-title {
   margin: 0 0 0.2rem;
-  font-family: var(--font-ui);
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--color-ink-primary);
@@ -4180,7 +4187,7 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelf-desc {
   margin: 0 0 0.25rem;
-  font-family: var(--font-ui);
+  font-family: 'Lora', Georgia, serif;
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -4194,7 +4201,7 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf-hint {
-  font-family: var(--font-ui);
+  font-family: 'Lora', Georgia, serif;
   font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.1em;
@@ -4263,6 +4270,8 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelf-empty {
   margin: 0.5rem 0 0;
+  font-family: 'Lora', Georgia, serif;
+  font-weight: 400;
   font-size: 0.9rem;
 }
 
@@ -4313,23 +4322,33 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-item__title {
   margin: 0 0 0.25rem;
-  font-family: var(--font-ui);
+  font-family: 'Lora', Georgia, serif;
   font-size: 0.92rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-ink-primary);
   line-height: 1.3;
 }
 
 .bench-chrome.shop-page .shop-item__desc {
   margin: 0;
+  font-family: 'Lora', Georgia, serif;
+  font-weight: 400;
   font-size: 0.82rem;
   line-height: 1.4;
 }
 
 .bench-chrome.shop-page .shop-item__flavor {
   margin: 0.35rem 0 0;
-  font-size: 0.78rem;
+  font-family: 'Caveat', cursive;
+  font-size: 1rem;
+  font-weight: 500;
   line-height: 1.35;
+}
+
+.bench-chrome.shop-page .shop-item__flavor em {
+  font-family: 'Caveat', cursive;
+  font-style: normal;
+  font-weight: 500;
 }
 
 .bench-chrome.shop-page .shop-item__foot {
@@ -4341,14 +4360,15 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-item__price {
-  font-family: var(--font-ui);
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-ink-primary);
 }
 
 .bench-chrome.shop-page .shop-item__price-value {
-  font-family: var(--font-mono);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 600;
 }
 
 .bench-chrome.shop-page .shop-item__price--locked {
@@ -4360,10 +4380,14 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-item__note {
   margin: 0;
+  font-family: 'Lora', Georgia, serif;
+  font-weight: 400;
   font-size: 0.75rem;
 }
 
 .bench-chrome.shop-page .shop-item__buy {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 600;
   font-size: 0.68rem;
   padding: 0.4rem 0.65rem;
   min-height: auto;
