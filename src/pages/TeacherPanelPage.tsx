@@ -198,6 +198,9 @@ export function TeacherPanelPage() {
   const [actingChecklistKind, setActingChecklistKind] = useState<'approve' | 'return' | null>(null)
   const [studentsBusy, setStudentsBusy] = useState(false)
   const [archivingStudentId, setArchivingStudentId] = useState<string | null>(null)
+  const [awardWpAmount, setAwardWpAmount] = useState('')
+  const [awardGoldAmount, setAwardGoldAmount] = useState('')
+  const [awardingStudentId, setAwardingStudentId] = useState<string | null>(null)
   const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
     () => new Map(),
   )
@@ -933,6 +936,60 @@ export function TeacherPanelPage() {
     [],
   )
 
+  const awardSelectedStudent = async () => {
+    if (!isSupabaseConfigured || !selectedStudentId || awardingStudentId) return
+    const wpAmount = Math.max(0, Math.floor(Number(awardWpAmount) || 0))
+    const goldAmount = Math.max(0, Math.floor(Number(awardGoldAmount) || 0))
+    if (wpAmount === 0 && goldAmount === 0) {
+      setAdminMessage('Enter WP or gold to add.')
+      return
+    }
+
+    const current = studentProfile ?? selectedStudent
+    const currentWp = current?.wp ?? 0
+    const currentGold = current?.gold ?? 0
+    const nextWp = currentWp + wpAmount
+    const nextGold = currentGold + goldAmount
+
+    setAwardingStudentId(selectedStudentId)
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ wp: nextWp, gold: nextGold })
+      .eq('id', selectedStudentId)
+      .eq('role', 'student')
+      .select('id, display_name, wp, gold, rank')
+      .maybeSingle()
+    setAwardingStudentId(null)
+
+    if (error) {
+      setAdminMessage(`Could not award student: ${error.message}`)
+      return
+    }
+    if (!data) {
+      setAdminMessage('Could not award student: no student profile was updated.')
+      return
+    }
+
+    const updated: StudentSummary = {
+      id: data.id as string,
+      display_name: (data.display_name as string | null) ?? null,
+      wp: (data.wp as number) ?? 0,
+      gold: (data.gold as number) ?? 0,
+      rank: (data.rank as string | null) ?? null,
+    }
+    setStudentProfile(updated)
+    setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+    setAwardWpAmount('')
+    setAwardGoldAmount('')
+
+    const parts = [
+      wpAmount > 0 ? `${wpAmount} WP` : '',
+      goldAmount > 0 ? `${goldAmount} gold` : '',
+    ].filter(Boolean)
+    const name = updated.display_name?.trim() || `Student (${updated.id.slice(0, 8)}…)`
+    setAdminMessage(`Added ${parts.join(' and ')} to ${name}.`)
+  }
+
   // ---------------------------------------------------------------------------
   // Admin — reverse an approved completion (RPC + optional WP/gold penalty %)
   // ---------------------------------------------------------------------------
@@ -1335,6 +1392,50 @@ export function TeacherPanelPage() {
                       <dd>{studentProfile?.rank ?? selectedStudent?.rank ?? 'Initiate'}</dd>
                     </div>
                   </dl>
+                </div>
+
+                <div className="card teacher-panel-student-block teacher-panel-award-card">
+                  <h3 className="teacher-panel-subheading">Testing awards</h3>
+                  <p className="muted teacher-panel-award-note">
+                    Add WP or gold directly to this student for testing shop and progression flows.
+                  </p>
+                  <form
+                    className="teacher-panel-award-form"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      void awardSelectedStudent()
+                    }}
+                  >
+                    <label className="teacher-panel-award-field">
+                      <span>WP to add</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={awardWpAmount}
+                        onChange={(e) => setAwardWpAmount(e.target.value)}
+                        disabled={awardingStudentId === selectedStudentId}
+                      />
+                    </label>
+                    <label className="teacher-panel-award-field">
+                      <span>Gold to add</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={awardGoldAmount}
+                        onChange={(e) => setAwardGoldAmount(e.target.value)}
+                        disabled={awardingStudentId === selectedStudentId}
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      className="btn-secondary"
+                      disabled={awardingStudentId === selectedStudentId}
+                    >
+                      {awardingStudentId === selectedStudentId ? 'Adding…' : 'Add to student'}
+                    </button>
+                  </form>
                 </div>
 
                 <div className="card teacher-panel-student-block">
