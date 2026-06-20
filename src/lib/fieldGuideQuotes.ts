@@ -53,6 +53,14 @@ export const FIELD_GUIDE_QUOTE_SEED: FieldGuideQuote[] = [
     attribution: 'Mr. Cook',
   },
   {
+    text: "Half of what they call disorder is just a kid who hasn't been listened to. The other half is something I can't fix and that I have learned to sit with.",
+    attribution: 'Barry',
+  },
+  {
+    text: "The men I worked with were not smarter than me. They were louder. There is a difference, and the difference matters less than you'd think.",
+    attribution: 'Frances',
+  },
+  {
     text: 'I will remember.',
     attribution: 'Sofija Kakauskus, 1870',
   },
