@@ -74,7 +74,7 @@ export function GoldShopPage() {
   const [goldChanged, setGoldChanged] = useState(false)
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
   const [stockByItemId, setStockByItemId] = useState<Map<string, ShopStockStatus>>(new Map())
-  const [openTiers, setOpenTiers] = useState<Set<string>>(() => new Set())
+  const [expandedTierId, setExpandedTierId] = useState<string | null>(null)
   const toastTimer = useRef<number | null>(null)
   const tradedTimer = useRef<number | null>(null)
   const goldTimer = useRef<number | null>(null)
@@ -85,12 +85,7 @@ export function GoldShopPage() {
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
 
   const toggleTier = useCallback((tierId: string) => {
-    setOpenTiers((prev) => {
-      const next = new Set(prev)
-      if (next.has(tierId)) next.delete(tierId)
-      else next.add(tierId)
-      return next
-    })
+    setExpandedTierId((current) => (current === tierId ? null : tierId))
   }, [])
 
   useEffect(() => {
@@ -352,25 +347,29 @@ export function GoldShopPage() {
       ) : null}
 
       {!catalogLoading && tierGroups.length > 0 ? (
-        <div className="shop-shelves shop-shelves--tiles">
-          {tierGroups.map((group) => (
-            <ShopTierBoard
-              key={group.tier.id}
-              group={group}
-              open={openTiers.has(group.tier.id)}
-              onToggle={() => toggleTier(group.tier.id)}
-              gold={gold}
-              buyingKey={buyingKey}
-              dailyBlockedIds={dailyBlockedIds}
-              stockByItemId={stockByItemId}
-              isSupabaseConfigured={isSupabaseConfigured}
-              catalogLoading={catalogLoading}
-              tradedKey={tradedKey}
-              toast={toast}
-              onDismissToast={dismissToast}
-              onBuy={buy}
-            />
-          ))}
+        <div className={`shop-shelves shop-shelves--tiles${expandedTierId ? ' shop-shelves--has-expanded' : ''}`}>
+          {tierGroups.map((group) => {
+            const displayMode =
+              expandedTierId == null ? 'compact' : expandedTierId === group.tier.id ? 'full' : 'strip'
+            return (
+              <ShopTierBoard
+                key={group.tier.id}
+                group={group}
+                displayMode={displayMode}
+                onToggle={() => toggleTier(group.tier.id)}
+                gold={gold}
+                buyingKey={buyingKey}
+                dailyBlockedIds={dailyBlockedIds}
+                stockByItemId={stockByItemId}
+                isSupabaseConfigured={isSupabaseConfigured}
+                catalogLoading={catalogLoading}
+                tradedKey={tradedKey}
+                toast={toast}
+                onDismissToast={dismissToast}
+                onBuy={buy}
+              />
+            )
+          })}
         </div>
       ) : !catalogLoading && !catalogError ? (
         <p className="muted" role="status">

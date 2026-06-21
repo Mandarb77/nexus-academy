@@ -4201,16 +4201,28 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelves--tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  display: flex;
   gap: 0.9rem 1rem;
   align-items: start;
 }
 
 .bench-chrome.shop-page .shop-shelf {
+  flex: 1 1 0;
+  min-width: 0;
   border: 0;
   background: transparent;
   overflow: visible;
+  transition:
+    flex-grow 300ms ease,
+    flex-basis 300ms ease;
+}
+
+.bench-chrome.shop-page .shop-shelves--has-expanded .shop-shelf {
+  flex: 1 1 20%;
+}
+
+.bench-chrome.shop-page .shop-shelves--has-expanded .shop-shelf--expanded-column {
+  flex: 3 1 60%;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle {
@@ -4224,6 +4236,11 @@ body:has(.bench-chrome) {
   font: inherit;
   color: inherit;
   text-align: left;
+}
+
+.bench-chrome.shop-page .shop-shelf-toggle:hover .shop-shelf-sign {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle::after {
@@ -4251,6 +4268,9 @@ body:has(.bench-chrome) {
   object-fit: contain;
   mix-blend-mode: multiply;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition:
+    filter 180ms ease,
+    transform 180ms ease;
 }
 
 .bench-chrome.shop-page .shop-shelf-desc {
@@ -4286,6 +4306,11 @@ body:has(.bench-chrome) {
   gap: 0;
 }
 
+.bench-chrome.shop-page .shop-shelf--expanded-column .shop-items-grid,
+.bench-chrome.shop-page .shop-shelf--collapsed-column .shop-items-grid {
+  grid-template-columns: 1fr;
+}
+
 .bench-chrome.shop-page .shop-item {
   position: relative;
   display: flex;
@@ -4297,6 +4322,33 @@ body:has(.bench-chrome) {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  transition: background-color 180ms ease;
+}
+
+.bench-chrome.shop-page .shop-item:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.bench-chrome.shop-page .shop-item--strip {
+  gap: 0.5rem;
+  padding-inline: 0.45rem;
+}
+
+.bench-chrome.shop-page .shop-item--strip .shop-item__head {
+  gap: 0.35rem;
+}
+
+.bench-chrome.shop-page .shop-item--strip .shop-item__glyph-wrap {
+  display: none;
+}
+
+.bench-chrome.shop-page .shop-item--strip .shop-item__title {
+  font-size: 0.8rem;
+}
+
+.bench-chrome.shop-page .shop-item--strip .shop-item__foot {
+  align-items: flex-start;
+  flex-direction: column;
 }
 
 .bench-chrome.shop-page .shop-item + .shop-item::before {
@@ -4348,6 +4400,31 @@ body:has(.bench-chrome) {
   line-height: 1.4;
 }
 
+.bench-chrome.shop-page .shop-item__teaser {
+  margin: 0;
+  font-family: 'Lora', Georgia, serif;
+  font-weight: 400;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bench-chrome.shop-page .shop-item__details {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 260ms ease,
+    opacity 180ms ease;
+}
+
+.bench-chrome.shop-page .shop-item--expanded .shop-item__details {
+  max-height: 42rem;
+  opacity: 1;
+}
+
 .bench-chrome.shop-page .shop-item__desc-line {
   margin: 0 0 0.45rem;
 }
@@ -4362,6 +4439,20 @@ body:has(.bench-chrome) {
   font-style: italic;
   font-weight: 500;
   color: #5a4030;
+}
+
+.bench-chrome.shop-page .shop-item__collapse {
+  display: inline-flex;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #5a4030;
+  cursor: pointer;
+  font-family: 'Caveat', cursive;
+  font-size: 0.95rem;
+  font-style: italic;
+  font-weight: 500;
 }
 
 .bench-chrome.shop-page .shop-item__flavor {

@@ -416,6 +416,34 @@
   overflow-wrap: anywhere;
 }
 
+.makers-shop-card__teaser {
+  margin: 0 0 0.3rem;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  color: var(--ms-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.makers-shop-card__details {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 260ms ease,
+    opacity 180ms ease;
+}
+
+.makers-shop-card--expanded .makers-shop-card__details {
+  max-height: 42rem;
+  opacity: 1;
+}
+
+.makers-shop-card--strip .makers-shop-card__teaser {
+  display: none;
+}
+
 .makers-shop-card__desc .shop-item__desc-line {
   margin: 0 0 0.45rem;
 }

@@ -9,6 +9,7 @@ import { iconVariantForItemKey } from './shopDisplay'
 
 type GameShopCardProps = {
   layout?: 'legacy' | 'bench'
+  displayMode?: 'compact' | 'full' | 'strip'
   item: ShopCatalogItem
   shelfAccent: 'forge' | 'prism' | 'folded'
   catalogLocked: boolean
@@ -63,7 +64,10 @@ function PurchaseButton({
             : `makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`
         }
         disabled={!isSupabaseConfigured || catalogLocked || !canBuy || busy || traded || catalogLoading}
-        onClick={() => onBuy(item)}
+        onClick={(event) => {
+          event.stopPropagation()
+          onBuy(item)
+        }}
       >
         {traded ? (
           'TRADED'
@@ -90,8 +94,28 @@ function lockLabel(catalogLocked: boolean): string {
 
 const LOCKED_GATE_NOTE = "Mr. Cook's call on this one. Talk to him."
 
+const ITEM_TEASERS: Record<string, string> = {
+  story_wood: 'Each piece tagged. Read the tag. The wood was somewhere first.',
+  live_edge_wood_blank: 'Bark is a choice. Make it before you start cutting.',
+  leather_offcut: 'Real leather. Pieces are in the bin — bigger ones at the back.',
+  specialty_filament_voucher: "Specialty filament — pick from what's on the shelf.",
+  personal_project_pass:
+    "Standard materials, finishes, hardware all included. Premium materials separate. Gifts don't need this.",
+  fran_barry_supply_apparel: "Hoodie or apron. April order, May delivery. Once it's yours, it's yours.",
+}
+
 function lockedGateNote(item: ShopCatalogItem): string {
   return item.gate_requirement?.trim() || LOCKED_GATE_NOTE
+}
+
+function stripInlineMarkers(text: string): string {
+  return text.replace(/\*([^*]+)\*/g, '$1')
+}
+
+function itemTeaser(item: ShopCatalogItem): string {
+  const custom = ITEM_TEASERS[item.item_key]
+  if (custom) return custom
+  return stripInlineMarkers(item.description.split('\n').find((line) => line.trim())?.trim() ?? item.description)
 }
 
 function renderDescriptionParts(line: string) {
@@ -140,7 +164,10 @@ function ShopItemToast({
       type="button"
       className={`shop-toast shop-toast--${toast.kind}`}
       role={toast.kind === 'error' ? 'alert' : 'status'}
-      onClick={onDismissToast}
+      onClick={(event) => {
+        event.stopPropagation()
+        onDismissToast()
+      }}
       aria-label="Dismiss notification"
     >
       <p className="shop-toast__message">{toast.message}</p>
@@ -152,6 +179,7 @@ function ShopItemToast({
 
 function BenchShopCard(props: GameShopCardProps) {
   const {
+    displayMode = 'compact',
     item,
     shelfAccent,
     catalogLocked,
@@ -169,7 +197,10 @@ function BenchShopCard(props: GameShopCardProps) {
   } = props
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
-  const hasFlavor = !catalogLocked && Boolean(item.flavor_text?.trim())
+  const full = displayMode === 'full'
+  const strip = displayMode === 'strip'
+  const hasFlavor = full && !catalogLocked && Boolean(item.flavor_text?.trim())
+  const teaser = itemTeaser(item)
 
   const purchaseProps = {
     layout: 'bench' as const,
@@ -189,7 +220,9 @@ function BenchShopCard(props: GameShopCardProps) {
     <li
       className={`shop-item card shop-item--${shelfAccent}${
         catalogLocked ? ' shop-item--locked' : ''
-      }${canBuy ? ' shop-item--ready' : ''}`}
+      }${canBuy ? ' shop-item--ready' : ''}${full ? ' shop-item--expanded' : ''}${
+        strip ? ' shop-item--strip' : ''
+      }`}
     >
       <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
       <div className="shop-item__head">
@@ -198,13 +231,16 @@ function BenchShopCard(props: GameShopCardProps) {
         </div>
         <div className="shop-item__main">
           <h3 className="shop-item__title">{item.name}</h3>
-          <ShopItemDescription text={item.description} className="shop-item__desc muted" />
+          {!strip ? <p className="shop-item__teaser muted">{teaser}</p> : null}
           {hasFlavor ? (
             <p className="shop-item__flavor muted">
               <em>{item.flavor_text}</em>
             </p>
           ) : null}
         </div>
+      </div>
+      <div className="shop-item__details" aria-hidden={!full}>
+        <ShopItemDescription text={item.description} className="shop-item__desc muted" />
       </div>
       <div className="shop-item__foot">
         {catalogLocked && price == null ? (
@@ -217,7 +253,7 @@ function BenchShopCard(props: GameShopCardProps) {
         )}
         <PurchaseButton {...purchaseProps} />
       </div>
-      {catalogLocked ? (
+      {catalogLocked && !strip ? (
         <p className="shop-item__note shop-item__note--locked muted">{lockedGateNote(item)}</p>
       ) : null}
       {stockStatus?.limited && !catalogLocked ? (
@@ -234,6 +270,7 @@ function BenchShopCard(props: GameShopCardProps) {
 
 function LegacyShopCard(props: GameShopCardProps) {
   const {
+    displayMode = 'compact',
     item,
     shelfAccent,
     catalogLocked,
@@ -252,7 +289,10 @@ function LegacyShopCard(props: GameShopCardProps) {
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
   const purchaseBlocked = !catalogLocked && price != null && (!canAfford || dailyBlocked)
-  const hasFlavor = !catalogLocked && Boolean(item.flavor_text?.trim())
+  const full = displayMode === 'full'
+  const strip = displayMode === 'strip'
+  const hasFlavor = full && !catalogLocked && Boolean(item.flavor_text?.trim())
+  const teaser = itemTeaser(item)
 
   const cardMods = [
     'makers-shop-card',
@@ -260,6 +300,8 @@ function LegacyShopCard(props: GameShopCardProps) {
     catalogLocked ? 'makers-shop-card--mystery' : '',
     purchaseBlocked ? 'makers-shop-card--soft-lock' : '',
     canBuy ? 'makers-shop-card--ready' : '',
+    full ? 'makers-shop-card--expanded' : '',
+    strip ? 'makers-shop-card--strip' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -293,7 +335,10 @@ function LegacyShopCard(props: GameShopCardProps) {
         <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
         <div className="makers-shop-card__rail" aria-hidden />
         <h3 className={titleMods}>{item.name}</h3>
-        <ShopItemDescription text={item.description} className="makers-shop-card__desc" />
+        {!strip ? <p className="makers-shop-card__teaser">{teaser}</p> : null}
+        <div className="makers-shop-card__details" aria-hidden={!full}>
+          <ShopItemDescription text={item.description} className="makers-shop-card__desc" />
+        </div>
 
         <div className="makers-shop-card__summary">
           <div className="makers-shop-card__icon-row" aria-hidden="true">
@@ -316,7 +361,7 @@ function LegacyShopCard(props: GameShopCardProps) {
             )}
           </div>
 
-          {catalogLocked ? (
+          {catalogLocked && !strip ? (
             <p className="makers-shop-card__inline-note makers-shop-card__inline-note--locked">
               {lockedGateNote(item)}
             </p>
@@ -332,19 +377,21 @@ function LegacyShopCard(props: GameShopCardProps) {
         </div>
 
         {hasFlavor ? (
-          <ShopAccordion
-            title="Lore & trade"
-            icon={<span className="makers-shop-mini-dot" aria-hidden />}
-            className="makers-shop-card__accordion"
-            defaultOpen={false}
-          >
-            <div className="makers-shop-card__purchase-panel">
-              <p className="makers-shop-card__flavor">
-                <em>{item.flavor_text}</em>
-              </p>
-              <PurchaseButton {...purchaseProps} />
-            </div>
-          </ShopAccordion>
+          <div onClick={(event) => event.stopPropagation()}>
+            <ShopAccordion
+              title="Lore & trade"
+              icon={<span className="makers-shop-mini-dot" aria-hidden />}
+              className="makers-shop-card__accordion"
+              defaultOpen={false}
+            >
+              <div className="makers-shop-card__purchase-panel">
+                <p className="makers-shop-card__flavor">
+                  <em>{item.flavor_text}</em>
+                </p>
+                <PurchaseButton {...purchaseProps} />
+              </div>
+            </ShopAccordion>
+          </div>
         ) : (
           <PurchaseButton {...purchaseProps} />
         )}
