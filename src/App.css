@@ -4202,32 +4202,22 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelves--tiles {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.9rem 1rem;
   align-items: start;
 }
 
 .bench-chrome.shop-page .shop-shelf {
-  flex: 1 1 0;
-  min-width: 0;
+  display: contents;
   border: 0;
   background: transparent;
   overflow: visible;
-  transition:
-    flex-grow 300ms ease,
-    flex-basis 300ms ease;
-}
-
-.bench-chrome.shop-page .shop-shelves--has-expanded .shop-shelf {
-  flex: 1 1 20%;
-}
-
-.bench-chrome.shop-page .shop-shelves--has-expanded .shop-shelf--expanded-column {
-  flex: 3 1 60%;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle {
   display: block;
-  width: 100%;
+  flex: 1 1 calc((100% - 2rem) / 3);
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -4241,6 +4231,11 @@ body:has(.bench-chrome) {
 .bench-chrome.shop-page .shop-shelf-toggle:hover .shop-shelf-sign {
   transform: translateY(-2px);
   filter: brightness(1.04);
+}
+
+.bench-chrome.shop-page .shop-shelf-toggle:focus-visible {
+  outline: 2px solid var(--color-ink-primary);
+  outline-offset: 2px;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle::after {
@@ -4285,6 +4280,7 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-shelf-panel {
+  flex: 1 0 100%;
   margin-top: 32px;
   padding: 0;
   border-top: 0;
@@ -4306,11 +4302,6 @@ body:has(.bench-chrome) {
   gap: 0;
 }
 
-.bench-chrome.shop-page .shop-shelf--expanded-column .shop-items-grid,
-.bench-chrome.shop-page .shop-shelf--collapsed-column .shop-items-grid {
-  grid-template-columns: 1fr;
-}
-
 .bench-chrome.shop-page .shop-item {
   position: relative;
   display: flex;
@@ -4327,28 +4318,6 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-item:hover {
   background: rgba(255, 255, 255, 0.16);
-}
-
-.bench-chrome.shop-page .shop-item--strip {
-  gap: 0.5rem;
-  padding-inline: 0.45rem;
-}
-
-.bench-chrome.shop-page .shop-item--strip .shop-item__head {
-  gap: 0.35rem;
-}
-
-.bench-chrome.shop-page .shop-item--strip .shop-item__glyph-wrap {
-  display: none;
-}
-
-.bench-chrome.shop-page .shop-item--strip .shop-item__title {
-  font-size: 0.8rem;
-}
-
-.bench-chrome.shop-page .shop-item--strip .shop-item__foot {
-  align-items: flex-start;
-  flex-direction: column;
 }
 
 .bench-chrome.shop-page .shop-item + .shop-item::before {

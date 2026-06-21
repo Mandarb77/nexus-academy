@@ -231,7 +231,7 @@ function BenchShopCard(props: GameShopCardProps) {
         </div>
         <div className="shop-item__main">
           <h3 className="shop-item__title">{item.name}</h3>
-          {!strip ? <p className="shop-item__teaser muted">{teaser}</p> : null}
+          {!strip && !full ? <p className="shop-item__teaser muted">{teaser}</p> : null}
           {hasFlavor ? (
             <p className="shop-item__flavor muted">
               <em>{item.flavor_text}</em>
@@ -335,7 +335,7 @@ function LegacyShopCard(props: GameShopCardProps) {
         <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
         <div className="makers-shop-card__rail" aria-hidden />
         <h3 className={titleMods}>{item.name}</h3>
-        {!strip ? <p className="makers-shop-card__teaser">{teaser}</p> : null}
+        {!strip && !full ? <p className="makers-shop-card__teaser">{teaser}</p> : null}
         <div className="makers-shop-card__details" aria-hidden={!full}>
           <ShopItemDescription text={item.description} className="makers-shop-card__desc" />
         </div>

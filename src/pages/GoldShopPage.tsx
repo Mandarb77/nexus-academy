@@ -349,8 +349,7 @@ export function GoldShopPage() {
       {!catalogLoading && tierGroups.length > 0 ? (
         <div className={`shop-shelves shop-shelves--tiles${expandedTierId ? ' shop-shelves--has-expanded' : ''}`}>
           {tierGroups.map((group) => {
-            const displayMode =
-              expandedTierId == null ? 'compact' : expandedTierId === group.tier.id ? 'full' : 'strip'
+            const displayMode = expandedTierId === group.tier.id ? 'open' : 'closed'
             return (
               <ShopTierBoard
                 key={group.tier.id}

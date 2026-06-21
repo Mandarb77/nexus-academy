@@ -13,7 +13,7 @@ type TierGroup = { tier: ShopTierEmbed; items: ShopCatalogItem[] }
 
 type Props = {
   group: TierGroup
-  displayMode: 'compact' | 'full' | 'strip'
+  displayMode: 'open' | 'closed'
   onToggle: () => void
   gold: number
   buyingKey: string | null
@@ -56,13 +56,11 @@ export function ShopTierBoard({
   const slug = tierSlugId(tier.name)
   const signSrc = signImageForTier(tier.name)
   const desc = tierShortDescription(tier.name, tier.subtitle)
-  const expanded = displayMode === 'full'
+  const expanded = displayMode === 'open'
 
   return (
     <section
-      className={`shop-shelf shop-shelf--${accent} shop-shelf--${displayMode}${
-        expanded ? ' shop-shelf--expanded-column' : ''
-      }${displayMode === 'strip' ? ' shop-shelf--collapsed-column' : ''}`}
+      className={`shop-shelf shop-shelf--${accent} shop-shelf--${displayMode}`}
       aria-labelledby={`shop-shelf-${slug}`}
     >
       <button
@@ -82,53 +80,56 @@ export function ShopTierBoard({
         </div>
       </button>
 
-      <div
-        id={`shop-shelf-panel-${slug}`}
-        role="region"
-        aria-labelledby={`shop-shelf-trigger-${slug}`}
-        className="shop-shelf-panel"
-      >
-        {items.length === 0 ? (
-          <p className="muted shop-shelf-empty">No items in this shelf yet.</p>
-        ) : (
-          <ul className="shop-items-grid">
-            {items.map((item) => {
-              const dailyBlocked = dailyBlockedIds.has(item.id)
-              const catalogLocked = item.is_locked
-              const stock = stockByItemId.get(item.id)
-              const outOfStock = stock?.limited === true && (stock.remaining ?? 0) <= 0
-              const price = item.price_gold
-              const canAfford = price != null && gold >= price
-              const busy = buyingKey === item.item_key
-              const canBuy = !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
-              // Only the item that triggered the transaction should show the confirmation.
-              const itemToast = toast?.itemKey === item.item_key ? toast : null
+      {expanded ? (
+        <div
+          id={`shop-shelf-panel-${slug}`}
+          role="region"
+          aria-labelledby={`shop-shelf-trigger-${slug}`}
+          className="shop-shelf-panel"
+        >
+          {items.length === 0 ? (
+            <p className="muted shop-shelf-empty">No items in this shelf yet.</p>
+          ) : (
+            <ul className="shop-items-grid">
+              {items.map((item) => {
+                const dailyBlocked = dailyBlockedIds.has(item.id)
+                const catalogLocked = item.is_locked
+                const stock = stockByItemId.get(item.id)
+                const outOfStock = stock?.limited === true && (stock.remaining ?? 0) <= 0
+                const price = item.price_gold
+                const canAfford = price != null && gold >= price
+                const busy = buyingKey === item.item_key
+                const canBuy =
+                  !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
+                // Only the item that triggered the transaction should show the confirmation.
+                const itemToast = toast?.itemKey === item.item_key ? toast : null
 
-              return (
-                <GameShopCard
-                  key={item.id}
-                  layout="bench"
-                  displayMode={displayMode}
-                  item={item}
-                  shelfAccent={accent}
-                  catalogLocked={catalogLocked}
-                  dailyBlocked={dailyBlocked}
-                  stockStatus={stock}
-                  canAfford={canAfford}
-                  canBuy={canBuy}
-                  busy={busy}
-                  traded={tradedKey === item.item_key}
-                  toast={itemToast}
-                  onDismissToast={onDismissToast}
-                  isSupabaseConfigured={isSupabaseConfigured}
-                  catalogLoading={catalogLoading}
-                  onBuy={onBuy}
-                />
-              )
-            })}
-          </ul>
-        )}
-      </div>
+                return (
+                  <GameShopCard
+                    key={item.id}
+                    layout="bench"
+                    displayMode="full"
+                    item={item}
+                    shelfAccent={accent}
+                    catalogLocked={catalogLocked}
+                    dailyBlocked={dailyBlocked}
+                    stockStatus={stock}
+                    canAfford={canAfford}
+                    canBuy={canBuy}
+                    busy={busy}
+                    traded={tradedKey === item.item_key}
+                    toast={itemToast}
+                    onDismissToast={onDismissToast}
+                    isSupabaseConfigured={isSupabaseConfigured}
+                    catalogLoading={catalogLoading}
+                    onBuy={onBuy}
+                  />
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </section>
   )
 }
