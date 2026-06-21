@@ -30,6 +30,12 @@ type ShopToast = {
   detail?: string
 }
 
+type PurchaseMoment = {
+  itemKey: string
+  title: string
+  text: string
+}
+
 function tierFromRow(row: ShopCatalogItem): ShopTierEmbed | null {
   const t = row.shop_tiers
   if (!t) return null
@@ -69,24 +75,22 @@ export function GoldShopPage() {
   // Purchase feedback stays item-scoped so confirmation appears where the student clicked.
   const [tradedKey, setTradedKey] = useState<string | null>(null)
   const [toast, setToast] = useState<ShopToast | null>(null)
+  const [purchaseMoment, setPurchaseMoment] = useState<PurchaseMoment | null>(null)
   // Mirror profile gold locally so the balance can update before refreshProfile finishes.
   const [displayGold, setDisplayGold] = useState(profile?.gold ?? 0)
   const [goldChanged, setGoldChanged] = useState(false)
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
   const [stockByItemId, setStockByItemId] = useState<Map<string, ShopStockStatus>>(new Map())
-  const [expandedTierId, setExpandedTierId] = useState<string | null>(null)
   const toastTimer = useRef<number | null>(null)
   const tradedTimer = useRef<number | null>(null)
   const goldTimer = useRef<number | null>(null)
+  const momentTimer = useRef<number | null>(null)
+  const pendingMomentItem = useRef<ShopCatalogItem | null>(null)
 
   const gold = displayGold
 
   const sortedCatalog = useMemo(() => sortCatalogRows(catalog), [catalog])
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
-
-  const toggleTier = useCallback((tierId: string) => {
-    setExpandedTierId((current) => (current === tierId ? null : tierId))
-  }, [])
 
   useEffect(() => {
     setDisplayGold(profile?.gold ?? 0)
@@ -97,6 +101,7 @@ export function GoldShopPage() {
       if (toastTimer.current != null) window.clearTimeout(toastTimer.current)
       if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
       if (goldTimer.current != null) window.clearTimeout(goldTimer.current)
+      if (momentTimer.current != null) window.clearTimeout(momentTimer.current)
     }
   }, [])
 
@@ -124,6 +129,17 @@ export function GoldShopPage() {
       setGoldChanged(false)
       goldTimer.current = null
     }, 900)
+  }, [])
+
+  const completePurchaseMoment = useCallback(() => {
+    if (momentTimer.current != null) {
+      window.clearTimeout(momentTimer.current)
+      momentTimer.current = null
+    }
+    const item = pendingMomentItem.current
+    pendingMomentItem.current = null
+    setPurchaseMoment(null)
+    if (item) void completeBuy(item)
   }, [])
 
   function purchaseErrorMessage(errorCode?: string, item?: ShopCatalogItem): string {
@@ -254,13 +270,17 @@ export function GoldShopPage() {
     }
   }, [refreshDailyLimits, refreshStockStatus])
 
-  async function buy(item: ShopCatalogItem) {
+  async function completeBuy(item: ShopCatalogItem) {
     if (!isSupabaseConfigured) {
       showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
       return
     }
     if (item.is_locked) {
-      showToast({ kind: 'error', itemKey: item.item_key, message: 'Mr. Cook needs to approve this first.' })
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: item.gate_requirement?.trim() || 'Mr. Cook needs to approve this first.',
+      })
       return
     }
     if (item.price_gold == null) {
@@ -309,6 +329,20 @@ export function GoldShopPage() {
     void refreshStockStatus(catalog)
   }
 
+  function buy(item: ShopCatalogItem) {
+    const momentText = item.flavor_text?.trim()
+    if (!momentText) {
+      void completeBuy(item)
+      return
+    }
+    if (momentTimer.current != null) window.clearTimeout(momentTimer.current)
+    pendingMomentItem.current = item
+    setPurchaseMoment({ itemKey: item.item_key, title: item.name, text: momentText })
+    momentTimer.current = window.setTimeout(() => {
+      completePurchaseMoment()
+    }, 5000)
+  }
+
   return (
     <div className="app-shell bench-chrome bench-chrome--shop shop-page">
       <header className="shop-top">
@@ -347,28 +381,25 @@ export function GoldShopPage() {
       ) : null}
 
       {!catalogLoading && tierGroups.length > 0 ? (
-        <div className={`shop-shelves shop-shelves--tiles${expandedTierId ? ' shop-shelves--has-expanded' : ''}`}>
-          {tierGroups.map((group) => {
-            const displayMode = expandedTierId === group.tier.id ? 'open' : 'closed'
-            return (
-              <ShopTierBoard
-                key={group.tier.id}
-                group={group}
-                displayMode={displayMode}
-                onToggle={() => toggleTier(group.tier.id)}
-                gold={gold}
-                buyingKey={buyingKey}
-                dailyBlockedIds={dailyBlockedIds}
-                stockByItemId={stockByItemId}
-                isSupabaseConfigured={isSupabaseConfigured}
-                catalogLoading={catalogLoading}
-                tradedKey={tradedKey}
-                toast={toast}
-                onDismissToast={dismissToast}
-                onBuy={buy}
-              />
-            )
-          })}
+        <div className="shop-shelves shop-shelves--tiles">
+          {tierGroups.map((group) => (
+            <ShopTierBoard
+              key={group.tier.id}
+              group={group}
+              gold={gold}
+              buyingKey={buyingKey}
+              dailyBlockedIds={dailyBlockedIds}
+              stockByItemId={stockByItemId}
+              isSupabaseConfigured={isSupabaseConfigured}
+              catalogLoading={catalogLoading}
+              tradedKey={tradedKey}
+              toast={toast}
+              purchaseMoment={purchaseMoment}
+              onDismissToast={dismissToast}
+              onDismissPurchaseMoment={completePurchaseMoment}
+              onBuy={buy}
+            />
+          ))}
         </div>
       ) : !catalogLoading && !catalogError ? (
         <p className="muted" role="status">

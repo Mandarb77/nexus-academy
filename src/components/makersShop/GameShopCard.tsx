@@ -20,7 +20,9 @@ type GameShopCardProps = {
   busy: boolean
   traded: boolean
   toast?: { kind: 'success' | 'error'; message: string; detail?: string } | null
+  purchaseMoment?: { itemKey: string; title: string; text: string } | null
   onDismissToast: () => void
+  onDismissPurchaseMoment: () => void
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   onBuy: (item: ShopCatalogItem) => void
@@ -63,7 +65,9 @@ function PurchaseButton({
             ? `btn-secondary shop-item__buy${canBuy ? ' shop-item__buy--ready' : ''}`
             : `makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`
         }
-        disabled={!isSupabaseConfigured || catalogLocked || !canBuy || busy || traded || catalogLoading}
+        disabled={
+          !isSupabaseConfigured || (!catalogLocked && !canBuy) || busy || traded || catalogLoading
+        }
         onClick={(event) => {
           event.stopPropagation()
           onBuy(item)
@@ -177,6 +181,32 @@ function ShopItemToast({
   )
 }
 
+function PurchaseMomentCard({
+  moment,
+  onDismiss,
+}: {
+  moment?: { itemKey: string; title: string; text: string } | null
+  onDismiss: () => void
+}) {
+  if (!moment) return null
+  return (
+    <button
+      type="button"
+      className="shop-purchase-moment"
+      onClick={(event) => {
+        event.stopPropagation()
+        onDismiss()
+      }}
+      aria-label="Dismiss purchase moment"
+    >
+      <p className="shop-purchase-moment__eyebrow">Fran and Barry</p>
+      <h4 className="shop-purchase-moment__title">{moment.title}</h4>
+      <ShopItemDescription text={moment.text} className="shop-purchase-moment__body" />
+      <span className="shop-purchase-moment__dismiss">Click to continue</span>
+    </button>
+  )
+}
+
 function BenchShopCard(props: GameShopCardProps) {
   const {
     displayMode = 'compact',
@@ -190,7 +220,9 @@ function BenchShopCard(props: GameShopCardProps) {
     busy,
     traded,
     toast,
+    purchaseMoment,
     onDismissToast,
+    onDismissPurchaseMoment,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -225,6 +257,7 @@ function BenchShopCard(props: GameShopCardProps) {
       }`}
     >
       <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
+      <PurchaseMomentCard moment={purchaseMoment} onDismiss={onDismissPurchaseMoment} />
       <div className="shop-item__head">
         <div className="shop-item__glyph-wrap" aria-hidden>
           <ShopItemGlyph variant={variant} className="shop-item-glyph" />
@@ -281,7 +314,9 @@ function LegacyShopCard(props: GameShopCardProps) {
     busy,
     traded,
     toast,
+    purchaseMoment,
     onDismissToast,
+    onDismissPurchaseMoment,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -333,6 +368,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     <li className={cardMods}>
       <div className="makers-shop-card__frame">
         <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
+        <PurchaseMomentCard moment={purchaseMoment} onDismiss={onDismissPurchaseMoment} />
         <div className="makers-shop-card__rail" aria-hidden />
         <h3 className={titleMods}>{item.name}</h3>
         {!strip && !full ? <p className="makers-shop-card__teaser">{teaser}</p> : null}

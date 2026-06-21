@@ -13,8 +13,6 @@ type TierGroup = { tier: ShopTierEmbed; items: ShopCatalogItem[] }
 
 type Props = {
   group: TierGroup
-  displayMode: 'open' | 'closed'
-  onToggle: () => void
   gold: number
   buyingKey: string | null
   dailyBlockedIds: Set<string>
@@ -23,7 +21,9 @@ type Props = {
   catalogLoading: boolean
   tradedKey: string | null
   toast: { kind: 'success' | 'error'; itemKey: string; message: string; detail?: string } | null
+  purchaseMoment: { itemKey: string; title: string; text: string } | null
   onDismissToast: () => void
+  onDismissPurchaseMoment: () => void
   onBuy: (item: ShopCatalogItem) => void
 }
 
@@ -37,8 +37,6 @@ function signImageForTier(tierName: string): string {
 
 export function ShopTierBoard({
   group,
-  displayMode,
-  onToggle,
   gold,
   buyingKey,
   dailyBlockedIds,
@@ -47,7 +45,9 @@ export function ShopTierBoard({
   catalogLoading,
   tradedKey,
   toast,
+  purchaseMoment,
   onDismissToast,
+  onDismissPurchaseMoment,
   onBuy,
 }: Props) {
   const { tier, items } = group
@@ -56,21 +56,13 @@ export function ShopTierBoard({
   const slug = tierSlugId(tier.name)
   const signSrc = signImageForTier(tier.name)
   const desc = tierShortDescription(tier.name, tier.subtitle)
-  const expanded = displayMode === 'open'
 
   return (
     <section
-      className={`shop-shelf shop-shelf--${accent} shop-shelf--${displayMode}`}
+      className={`shop-shelf shop-shelf--${accent}`}
       aria-labelledby={`shop-shelf-${slug}`}
     >
-      <button
-        type="button"
-        className="shop-shelf-toggle"
-        aria-expanded={expanded}
-        aria-controls={`shop-shelf-panel-${slug}`}
-        id={`shop-shelf-trigger-${slug}`}
-        onClick={onToggle}
-      >
+      <div className="shop-shelf-toggle" id={`shop-shelf-trigger-${slug}`}>
         <div className="shop-shelf-toggle-inner">
           <h2 id={`shop-shelf-${slug}`} className="visually-hidden">
             {shelfTitle}
@@ -78,58 +70,57 @@ export function ShopTierBoard({
           <img className="shop-shelf-sign" src={signSrc} alt={`${shelfTitle} shelf`} />
           <p className="shop-shelf-desc">{desc}</p>
         </div>
-      </button>
+      </div>
 
-      {expanded ? (
-        <div
-          id={`shop-shelf-panel-${slug}`}
-          role="region"
-          aria-labelledby={`shop-shelf-trigger-${slug}`}
-          className="shop-shelf-panel"
-        >
-          {items.length === 0 ? (
-            <p className="muted shop-shelf-empty">No items in this shelf yet.</p>
-          ) : (
-            <ul className="shop-items-grid">
-              {items.map((item) => {
-                const dailyBlocked = dailyBlockedIds.has(item.id)
-                const catalogLocked = item.is_locked
-                const stock = stockByItemId.get(item.id)
-                const outOfStock = stock?.limited === true && (stock.remaining ?? 0) <= 0
-                const price = item.price_gold
-                const canAfford = price != null && gold >= price
-                const busy = buyingKey === item.item_key
-                const canBuy =
-                  !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
-                // Only the item that triggered the transaction should show the confirmation.
-                const itemToast = toast?.itemKey === item.item_key ? toast : null
+      <div
+        id={`shop-shelf-panel-${slug}`}
+        role="region"
+        aria-labelledby={`shop-shelf-trigger-${slug}`}
+        className="shop-shelf-panel"
+      >
+        {items.length === 0 ? (
+          <p className="muted shop-shelf-empty">No items in this shelf yet.</p>
+        ) : (
+          <ul className="shop-items-grid">
+            {items.map((item) => {
+              const dailyBlocked = dailyBlockedIds.has(item.id)
+              const catalogLocked = item.is_locked
+              const stock = stockByItemId.get(item.id)
+              const outOfStock = stock?.limited === true && (stock.remaining ?? 0) <= 0
+              const price = item.price_gold
+              const canAfford = price != null && gold >= price
+              const busy = buyingKey === item.item_key
+              const canBuy = !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
+              // Only the item that triggered the transaction should show the confirmation.
+              const itemToast = toast?.itemKey === item.item_key ? toast : null
+              const itemMoment = purchaseMoment?.itemKey === item.item_key ? purchaseMoment : null
 
-                return (
-                  <GameShopCard
-                    key={item.id}
-                    layout="bench"
-                    displayMode="full"
-                    item={item}
-                    shelfAccent={accent}
-                    catalogLocked={catalogLocked}
-                    dailyBlocked={dailyBlocked}
-                    stockStatus={stock}
-                    canAfford={canAfford}
-                    canBuy={canBuy}
-                    busy={busy}
-                    traded={tradedKey === item.item_key}
-                    toast={itemToast}
-                    onDismissToast={onDismissToast}
-                    isSupabaseConfigured={isSupabaseConfigured}
-                    catalogLoading={catalogLoading}
-                    onBuy={onBuy}
-                  />
-                )
-              })}
-            </ul>
-          )}
-        </div>
-      ) : null}
+              return (
+                <GameShopCard
+                  key={item.id}
+                  layout="bench"
+                  item={item}
+                  shelfAccent={accent}
+                  catalogLocked={catalogLocked}
+                  dailyBlocked={dailyBlocked}
+                  stockStatus={stock}
+                  canAfford={canAfford}
+                  canBuy={canBuy}
+                  busy={busy}
+                  traded={tradedKey === item.item_key}
+                  toast={itemToast}
+                  purchaseMoment={itemMoment}
+                  onDismissToast={onDismissToast}
+                  onDismissPurchaseMoment={onDismissPurchaseMoment}
+                  isSupabaseConfigured={isSupabaseConfigured}
+                  catalogLoading={catalogLoading}
+                  onBuy={onBuy}
+                />
+              )
+            })}
+          </ul>
+        )}
+      </div>
     </section>
   )
 }
