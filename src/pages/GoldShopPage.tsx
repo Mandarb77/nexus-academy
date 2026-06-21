@@ -81,6 +81,8 @@ export function GoldShopPage() {
   const [goldChanged, setGoldChanged] = useState(false)
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
   const [stockByItemId, setStockByItemId] = useState<Map<string, ShopStockStatus>>(new Map())
+  const [activeTierId, setActiveTierId] = useState<string | null>(null)
+  const shelvesRef = useRef<HTMLDivElement | null>(null)
   const toastTimer = useRef<number | null>(null)
   const tradedTimer = useRef<number | null>(null)
   const goldTimer = useRef<number | null>(null)
@@ -91,6 +93,10 @@ export function GoldShopPage() {
 
   const sortedCatalog = useMemo(() => sortCatalogRows(catalog), [catalog])
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
+
+  const toggleTier = useCallback((tierId: string) => {
+    setActiveTierId((current) => (current === tierId ? null : tierId))
+  }, [])
 
   useEffect(() => {
     setDisplayGold(profile?.gold ?? 0)
@@ -104,6 +110,17 @@ export function GoldShopPage() {
       if (momentTimer.current != null) window.clearTimeout(momentTimer.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!activeTierId) return
+    function closeWhenOutside(event: PointerEvent) {
+      const root = shelvesRef.current
+      if (!root || root.contains(event.target as Node)) return
+      setActiveTierId(null)
+    }
+    document.addEventListener('pointerdown', closeWhenOutside)
+    return () => document.removeEventListener('pointerdown', closeWhenOutside)
+  }, [activeTierId])
 
   const showToast = useCallback((next: Omit<ShopToast, 'id'>, duration = 5000) => {
     if (toastTimer.current != null) window.clearTimeout(toastTimer.current)
@@ -381,25 +398,32 @@ export function GoldShopPage() {
       ) : null}
 
       {!catalogLoading && tierGroups.length > 0 ? (
-        <div className="shop-shelves shop-shelves--tiles">
-          {tierGroups.map((group) => (
-            <ShopTierBoard
-              key={group.tier.id}
-              group={group}
-              gold={gold}
-              buyingKey={buyingKey}
-              dailyBlockedIds={dailyBlockedIds}
-              stockByItemId={stockByItemId}
-              isSupabaseConfigured={isSupabaseConfigured}
-              catalogLoading={catalogLoading}
-              tradedKey={tradedKey}
-              toast={toast}
-              purchaseMoment={purchaseMoment}
-              onDismissToast={dismissToast}
-              onDismissPurchaseMoment={completePurchaseMoment}
-              onBuy={buy}
-            />
-          ))}
+        <div
+          ref={shelvesRef}
+          className={`shop-shelves shop-shelves--tiles${activeTierId ? ' shop-shelves--has-expanded' : ''}`}
+        >
+          {tierGroups
+            .filter((group) => activeTierId == null || group.tier.id === activeTierId)
+            .map((group) => (
+              <ShopTierBoard
+                key={group.tier.id}
+                group={group}
+                open={activeTierId === group.tier.id}
+                onToggle={() => toggleTier(group.tier.id)}
+                gold={gold}
+                buyingKey={buyingKey}
+                dailyBlockedIds={dailyBlockedIds}
+                stockByItemId={stockByItemId}
+                isSupabaseConfigured={isSupabaseConfigured}
+                catalogLoading={catalogLoading}
+                tradedKey={tradedKey}
+                toast={toast}
+                purchaseMoment={purchaseMoment}
+                onDismissToast={dismissToast}
+                onDismissPurchaseMoment={completePurchaseMoment}
+                onBuy={buy}
+              />
+            ))}
         </div>
       ) : !catalogLoading && !catalogError ? (
         <p className="muted" role="status">

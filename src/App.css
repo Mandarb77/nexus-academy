@@ -4262,6 +4262,10 @@ body:has(.bench-chrome) {
   align-items: start;
 }
 
+.bench-chrome.shop-page .shop-shelves--has-expanded {
+  display: block;
+}
+
 .bench-chrome.shop-page .shop-shelf {
   border: 0;
   background: transparent;
@@ -4275,10 +4279,25 @@ body:has(.bench-chrome) {
   padding: 0;
   border: 0;
   background: none;
-  cursor: default;
+  cursor: pointer;
   font: inherit;
   color: inherit;
   text-align: left;
+}
+
+.bench-chrome.shop-page .shop-shelves--has-expanded .shop-shelf-toggle {
+  max-width: min(34rem, 100%);
+  margin: 0 auto;
+}
+
+.bench-chrome.shop-page .shop-shelf-toggle:hover .shop-shelf-sign {
+  transform: scale(1.015);
+  filter: brightness(1.04);
+}
+
+.bench-chrome.shop-page .shop-shelf-toggle:focus-visible {
+  outline: 2px solid var(--color-ink-primary);
+  outline-offset: 2px;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle::after {
@@ -4306,6 +4325,9 @@ body:has(.bench-chrome) {
   object-fit: contain;
   mix-blend-mode: multiply;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition:
+    filter 180ms ease,
+    transform 180ms ease;
 }
 
 .bench-chrome.shop-page .shop-shelf-desc {
@@ -4323,6 +4345,7 @@ body:has(.bench-chrome) {
   margin-top: 32px;
   padding: 0;
   border-top: 0;
+  animation: shopShelfReveal 300ms ease;
 }
 
 .bench-chrome.shop-page .shop-shelf-empty {
@@ -4339,6 +4362,21 @@ body:has(.bench-chrome) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   gap: 0;
+}
+
+.bench-chrome.shop-page .shop-shelves--has-expanded .shop-items-grid {
+  grid-template-columns: 1fr;
+}
+
+@keyframes shopShelfReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .bench-chrome.shop-page .shop-item {
