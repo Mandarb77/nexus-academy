@@ -4348,6 +4348,22 @@ body:has(.bench-chrome) {
   line-height: 1.4;
 }
 
+.bench-chrome.shop-page .shop-item__desc-line {
+  margin: 0 0 0.45rem;
+}
+
+.bench-chrome.shop-page .shop-item__desc-line:last-child {
+  margin-bottom: 0;
+}
+
+.bench-chrome.shop-page .shop-item__handwritten {
+  font-family: 'Caveat', cursive;
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 500;
+  color: #5a4030;
+}
+
 .bench-chrome.shop-page .shop-item__flavor {
   margin: 0.35rem 0 0;
   font-family: 'Caveat', cursive;

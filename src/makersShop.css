@@ -416,6 +416,21 @@
   overflow-wrap: anywhere;
 }
 
+.makers-shop-card__desc .shop-item__desc-line {
+  margin: 0 0 0.45rem;
+}
+
+.makers-shop-card__desc .shop-item__desc-line:last-child {
+  margin-bottom: 0;
+}
+
+.makers-shop-card__desc .shop-item__handwritten {
+  font-family: 'Caveat', cursive;
+  font-size: 1.08rem;
+  font-style: italic;
+  font-weight: 500;
+}
+
 .makers-shop-card__title--ready {
   color: #fef3c7;
 }

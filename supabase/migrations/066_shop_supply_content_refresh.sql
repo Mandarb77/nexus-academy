@@ -51,8 +51,8 @@ values
     'Curly maple session',
     'A board of curly maple, yours for one project. Fran keeps it somewhere. Barry won''t say where. Ask Mr. Cook.',
     (select id from public.shop_tiers where name = 'Craft'),
-    35, true, 'Mr. Cook keeps the key on this one. Talk to him.', true, 10, null,
-    null, null, 'Mr. Cook keeps the key on this one. Talk to him.'
+    35, true, 'Mr. Cook''s call on this one. Talk to him.', true, 10, null,
+    null, null, 'Mr. Cook''s call on this one. Talk to him.'
   ),
   (
     'evening_lab_session',
@@ -67,8 +67,8 @@ values
     'Filament selection',
     'Any combination of filament colors for one print run. Glow in the dark, carbon fiber, silk, rainbow — whatever serves the project.',
     (select id from public.shop_tiers where name = 'Craft'),
-    25, true, 'Mr. Cook keeps the key on this one. Talk to him.', true, 30, null,
-    null, null, 'Mr. Cook keeps the key on this one. Talk to him.'
+    25, true, 'Mr. Cook''s call on this one. Talk to him.', true, 30, null,
+    null, null, 'Mr. Cook''s call on this one. Talk to him.'
   ),
   (
     'twenty_dollar_run',

@@ -312,7 +312,7 @@ export function TeacherShopPage() {
             <input
               type="text"
               value={gateRequirement}
-              placeholder="Mr. Cook keeps the key on this one. Talk to him."
+              placeholder="Mr. Cook's call on this one. Talk to him."
               onChange={(e) => setGateRequirement(e.target.value)}
             />
           </label>

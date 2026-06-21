@@ -88,7 +88,39 @@ function lockLabel(catalogLocked: boolean): string {
   return 'ASK FRAN'
 }
 
-const LOCKED_GATE_NOTE = 'Mr. Cook keeps the key on this one. Talk to him.'
+const LOCKED_GATE_NOTE = "Mr. Cook's call on this one. Talk to him."
+
+function lockedGateNote(item: ShopCatalogItem): string {
+  return item.gate_requirement?.trim() || LOCKED_GATE_NOTE
+}
+
+function renderDescriptionParts(line: string) {
+  return line.split(/(\*[^*]+\*)/g).map((part, index) => {
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return (
+        <span key={index} className="shop-item__handwritten">
+          {part.slice(1, -1)}
+        </span>
+      )
+    }
+    return part
+  })
+}
+
+function ShopItemDescription({ text, className }: { text: string; className: string }) {
+  const lines = text.split('\n')
+  return (
+    <div className={className}>
+      {lines.map((line, index) =>
+        line.trim() ? (
+          <p key={index} className="shop-item__desc-line">
+            {renderDescriptionParts(line)}
+          </p>
+        ) : null,
+      )}
+    </div>
+  )
+}
 
 /*
  * Render purchase feedback inside the purchased card instead of as a global toast.
@@ -166,7 +198,7 @@ function BenchShopCard(props: GameShopCardProps) {
         </div>
         <div className="shop-item__main">
           <h3 className="shop-item__title">{item.name}</h3>
-          <p className="shop-item__desc muted">{item.description}</p>
+          <ShopItemDescription text={item.description} className="shop-item__desc muted" />
           {hasFlavor ? (
             <p className="shop-item__flavor muted">
               <em>{item.flavor_text}</em>
@@ -175,7 +207,7 @@ function BenchShopCard(props: GameShopCardProps) {
         </div>
       </div>
       <div className="shop-item__foot">
-        {catalogLocked ? (
+        {catalogLocked && price == null ? (
           <span className="shop-item__price shop-item__price--locked">{lockLabel(true)}</span>
         ) : (
           <span className="shop-item__price">
@@ -186,7 +218,7 @@ function BenchShopCard(props: GameShopCardProps) {
         <PurchaseButton {...purchaseProps} />
       </div>
       {catalogLocked ? (
-        <p className="shop-item__note shop-item__note--locked muted">{LOCKED_GATE_NOTE}</p>
+        <p className="shop-item__note shop-item__note--locked muted">{lockedGateNote(item)}</p>
       ) : null}
       {stockStatus?.limited && !catalogLocked ? (
         <p className="shop-item__note muted">
@@ -261,7 +293,7 @@ function LegacyShopCard(props: GameShopCardProps) {
         <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
         <div className="makers-shop-card__rail" aria-hidden />
         <h3 className={titleMods}>{item.name}</h3>
-        <p className="makers-shop-card__desc">{item.description}</p>
+        <ShopItemDescription text={item.description} className="makers-shop-card__desc" />
 
         <div className="makers-shop-card__summary">
           <div className="makers-shop-card__icon-row" aria-hidden="true">
@@ -271,7 +303,7 @@ function LegacyShopCard(props: GameShopCardProps) {
           </div>
 
           <div className="makers-shop-card__price-row" aria-live="polite">
-            {catalogLocked ? (
+            {catalogLocked && price == null ? (
               <span className="makers-shop-card__price makers-shop-card__price--locked">
                 {lockLabel(true)}
               </span>
@@ -286,7 +318,7 @@ function LegacyShopCard(props: GameShopCardProps) {
 
           {catalogLocked ? (
             <p className="makers-shop-card__inline-note makers-shop-card__inline-note--locked">
-              {LOCKED_GATE_NOTE}
+              {lockedGateNote(item)}
             </p>
           ) : null}
           {stockStatus?.limited && !catalogLocked ? (

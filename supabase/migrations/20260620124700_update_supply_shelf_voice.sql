@@ -10,5 +10,5 @@ end
 where lower(name) in ('convenience', 'craft', 'legacy');
 
 update public.shop_items
-set gate_requirement = 'Mr. Cook keeps the key on this one. Talk to him.'
+set gate_requirement = 'Mr. Cook''s call on this one. Talk to him.'
 where is_locked = true;
