@@ -14,12 +14,15 @@ import { useAuth } from '../contexts/AuthContext'
 import { markKitHasNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { isSameEasternCalendarDay } from '../lib/schoolDayEastern'
+import { LOCKED_SHOP_REQUEST_MOMENT, purchaseMomentForItem } from '../lib/shopPurchaseMoments'
 import type { ShopCatalogItem, ShopStockStatus, ShopTierEmbed } from '../types/shopCatalog'
 
 type RpcResult = {
   ok?: boolean
   error?: string
   new_gold?: number
+  item_name?: string
+  calculated_gold_cost?: number
 }
 
 type ShopToast = {
@@ -31,9 +34,57 @@ type ShopToast = {
 }
 
 type PurchaseMoment = {
-  itemKey: string
   title: string
   text: string
+  dismissing: boolean
+}
+
+function renderMomentLine(line: string) {
+  return line.split(/(\*[^*]+\*)/g).map((part, index) => {
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return (
+        <span key={index} className="shop-purchase-moment__handwritten">
+          {part.slice(1, -1)}
+        </span>
+      )
+    }
+    return part
+  })
+}
+
+function ShopPurchaseMomentOverlay({
+  moment,
+  onDismiss,
+}: {
+  moment: PurchaseMoment | null
+  onDismiss: () => void
+}) {
+  if (!moment) return null
+  return (
+    <button
+      type="button"
+      className={`shop-purchase-moment-layer${moment.dismissing ? ' shop-purchase-moment-layer--dismissing' : ''}`}
+      onClick={onDismiss}
+      aria-label="Dismiss shopkeeper note and continue purchase"
+    >
+      <span className="shop-purchase-moment" role="status" aria-live="polite">
+        <span className="shop-purchase-moment__eyebrow">Fran and Barry</span>
+        <span className="shop-purchase-moment__title">{moment.title}</span>
+        <span className="shop-purchase-moment__body">
+          {moment.text
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line, index) => (
+              <span key={index} className="shop-purchase-moment__line">
+                {renderMomentLine(line)}
+              </span>
+            ))}
+        </span>
+        <span className="shop-purchase-moment__dismiss">Click anywhere to continue</span>
+      </span>
+    </button>
+  )
 }
 
 function tierFromRow(row: ShopCatalogItem): ShopTierEmbed | null {
@@ -82,12 +133,14 @@ export function GoldShopPage() {
   const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
   const [stockByItemId, setStockByItemId] = useState<Map<string, ShopStockStatus>>(new Map())
   const [activeTierId, setActiveTierId] = useState<string | null>(null)
+  const [specialtyFilamentTypes, setSpecialtyFilamentTypes] = useState<string[]>([])
   const shelvesRef = useRef<HTMLDivElement | null>(null)
   const toastTimer = useRef<number | null>(null)
   const tradedTimer = useRef<number | null>(null)
   const goldTimer = useRef<number | null>(null)
   const momentTimer = useRef<number | null>(null)
-  const pendingMomentItem = useRef<ShopCatalogItem | null>(null)
+  const momentFadeTimer = useRef<number | null>(null)
+  const pendingMomentAction = useRef<(() => void) | null>(null)
 
   const gold = displayGold
 
@@ -108,6 +161,7 @@ export function GoldShopPage() {
       if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
       if (goldTimer.current != null) window.clearTimeout(goldTimer.current)
       if (momentTimer.current != null) window.clearTimeout(momentTimer.current)
+      if (momentFadeTimer.current != null) window.clearTimeout(momentFadeTimer.current)
     }
   }, [])
 
@@ -153,11 +207,29 @@ export function GoldShopPage() {
       window.clearTimeout(momentTimer.current)
       momentTimer.current = null
     }
-    const item = pendingMomentItem.current
-    pendingMomentItem.current = null
-    setPurchaseMoment(null)
-    if (item) void completeBuy(item)
+    if (momentFadeTimer.current != null) window.clearTimeout(momentFadeTimer.current)
+    setPurchaseMoment((current) => (current ? { ...current, dismissing: true } : current))
+    momentFadeTimer.current = window.setTimeout(() => {
+      const action = pendingMomentAction.current
+      pendingMomentAction.current = null
+      setPurchaseMoment(null)
+      momentFadeTimer.current = null
+      action?.()
+    }, 200)
   }, [])
+
+  const showPurchaseMomentThen = useCallback(
+    (title: string, text: string, action: () => void) => {
+      if (momentTimer.current != null) window.clearTimeout(momentTimer.current)
+      if (momentFadeTimer.current != null) window.clearTimeout(momentFadeTimer.current)
+      pendingMomentAction.current = action
+      setPurchaseMoment({ title, text, dismissing: false })
+      momentTimer.current = window.setTimeout(() => {
+        completePurchaseMoment()
+      }, 4000)
+    },
+    [completePurchaseMoment],
+  )
 
   function purchaseErrorMessage(errorCode?: string, item?: ShopCatalogItem): string {
     if (errorCode === 'insufficient_gold') return 'Not enough gold.'
@@ -237,6 +309,7 @@ export function GoldShopPage() {
       setCatalogLoading(false)
       setCatalogError(null)
       setCatalog([])
+      setSpecialtyFilamentTypes([])
       /* eslint-enable react-hooks/set-state-in-effect */
       return
     }
@@ -255,6 +328,7 @@ export function GoldShopPage() {
           price_gold,
           is_active,
           flavor_text,
+          purchase_moment_text,
           is_locked,
           display_order,
           max_purchases_per_chicago_school_day,
@@ -281,11 +355,61 @@ export function GoldShopPage() {
       setCatalogLoading(false)
       void refreshDailyLimits(rows)
       void refreshStockStatus(rows)
+      const { data: filamentConfig, error: filamentConfigError } = await supabase
+        .from('shop_config')
+        .select('config_value')
+        .eq('config_key', 'specialty_filament_types')
+        .maybeSingle()
+      if (!cancelled && !filamentConfigError && Array.isArray(filamentConfig?.config_value)) {
+        setSpecialtyFilamentTypes(
+          filamentConfig.config_value.filter((value): value is string => typeof value === 'string' && value.trim() !== ''),
+        )
+      }
     })()
     return () => {
       cancelled = true
     }
   }, [refreshDailyLimits, refreshStockStatus])
+
+  async function requestItemApproval(
+    item: ShopCatalogItem,
+    requestedGrams: number | null,
+    calculatedGoldCost: number,
+    notes: string,
+  ) {
+    if (!isSupabaseConfigured) {
+      showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
+      return
+    }
+    if (gold < calculatedGoldCost) {
+      showToast({ kind: 'error', itemKey: item.item_key, message: 'Not enough gold.' })
+      return
+    }
+    setToast(null)
+    setBuyingKey(item.item_key)
+    const { data, error } = await supabase.rpc('request_shop_item', {
+      p_item_key: item.item_key,
+      p_requested_grams: requestedGrams,
+      p_calculated_gold_cost: calculatedGoldCost,
+      p_notes: notes,
+    })
+    setBuyingKey(null)
+    if (error) {
+      showToast({ kind: 'error', itemKey: item.item_key, message: error.message })
+      return
+    }
+    const result = data as RpcResult
+    if (!result?.ok) {
+      showToast({ kind: 'error', itemKey: item.item_key, message: purchaseErrorMessage(result?.error, item) })
+      return
+    }
+    showToast({
+      kind: 'success',
+      itemKey: item.item_key,
+      message: `${result.item_name ?? item.name} request sent to Fran`,
+      detail: `${result.calculated_gold_cost ?? calculatedGoldCost} gold if approved`,
+    })
+  }
 
   async function completeBuy(item: ShopCatalogItem) {
     if (!isSupabaseConfigured) {
@@ -293,11 +417,20 @@ export function GoldShopPage() {
       return
     }
     if (item.is_locked) {
-      showToast({
-        kind: 'error',
-        itemKey: item.item_key,
-        message: item.gate_requirement?.trim() || 'Mr. Cook needs to approve this first.',
-      })
+      if (item.price_gold == null) {
+        showToast({
+          kind: 'error',
+          itemKey: item.item_key,
+          message: item.gate_requirement?.trim() || 'Mr. Cook needs to approve this first.',
+        })
+        return
+      }
+      await requestItemApproval(
+        item,
+        null,
+        item.price_gold,
+        item.gate_requirement?.trim() || 'Teacher-gated shop request.',
+      )
       return
     }
     if (item.price_gold == null) {
@@ -347,21 +480,30 @@ export function GoldShopPage() {
   }
 
   function buy(item: ShopCatalogItem) {
-    const momentText = item.flavor_text?.trim()
-    if (!momentText) {
+    const momentText = item.is_locked ? LOCKED_SHOP_REQUEST_MOMENT : purchaseMomentForItem(item)
+    showPurchaseMomentThen(item.name, momentText, () => {
       void completeBuy(item)
+    })
+  }
+
+  async function requestFilament(item: ShopCatalogItem, grams: number, calculatedGoldCost: number) {
+    if (!user?.id || !isSupabaseConfigured) {
+      showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
       return
     }
-    if (momentTimer.current != null) window.clearTimeout(momentTimer.current)
-    pendingMomentItem.current = item
-    setPurchaseMoment({ itemKey: item.item_key, title: item.name, text: momentText })
-    momentTimer.current = window.setTimeout(() => {
-      completePurchaseMoment()
-    }, 5000)
+    showPurchaseMomentThen(item.name, purchaseMomentForItem(item), () => {
+      void requestItemApproval(
+        item,
+        grams,
+        calculatedGoldCost,
+        `Specialty filament request from Bambu Studio: ${grams}g. Formula: 10 gold base + 1 gold per 25g rounded up.`,
+      )
+    })
   }
 
   return (
     <div className="app-shell bench-chrome bench-chrome--shop shop-page">
+      <ShopPurchaseMomentOverlay moment={purchaseMoment} onDismiss={completePurchaseMoment} />
       <header className="shop-top">
         <MainNav />
         <div className="shop-top-row bench-page-title-row">
@@ -418,10 +560,10 @@ export function GoldShopPage() {
                 catalogLoading={catalogLoading}
                 tradedKey={tradedKey}
                 toast={toast}
-                purchaseMoment={purchaseMoment}
+                specialtyFilamentTypes={specialtyFilamentTypes}
                 onDismissToast={dismissToast}
-                onDismissPurchaseMoment={completePurchaseMoment}
                 onBuy={buy}
+                onRequestFilament={requestFilament}
               />
             ))}
         </div>

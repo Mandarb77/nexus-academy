@@ -23,10 +23,10 @@ type Props = {
   catalogLoading: boolean
   tradedKey: string | null
   toast: { kind: 'success' | 'error'; itemKey: string; message: string; detail?: string } | null
-  purchaseMoment: { itemKey: string; title: string; text: string } | null
+  specialtyFilamentTypes: string[]
   onDismissToast: () => void
-  onDismissPurchaseMoment: () => void
   onBuy: (item: ShopCatalogItem) => void
+  onRequestFilament: (item: ShopCatalogItem, grams: number, calculatedGoldCost: number) => void
 }
 
 function signImageForTier(tierName: string): string {
@@ -35,6 +35,37 @@ function signImageForTier(tierName: string): string {
   if (n === 'convenience') return conveniencesSign
   if (n === 'craft') return craftSign
   return legacySign
+}
+
+function CraftPricingGuide() {
+  return (
+    <section className="shop-craft-price-guide" aria-label="Wood pricing guide">
+      <p className="shop-craft-price-guide__rule">
+        Measure the longest side. Under 6&quot; = small. 6-18&quot; = medium. Over 18&quot; = large.
+      </p>
+      <div className="shop-craft-price-guide__grid">
+        <div>
+          <h3>Standard Lumber</h3>
+          <p>Poplar, pine, soft maple</p>
+          <p>Small 5 gold · Medium 10 gold · Large 20 gold</p>
+        </div>
+        <div>
+          <h3>Top Shelf Lumber</h3>
+          <p>Walnut, cherry, hard maple, ash</p>
+          <p>Small 15 gold · Medium 30 gold · Large 60 gold · Ask Fran</p>
+        </div>
+        <div>
+          <h3>Inlay Stock</h3>
+          <p>Exotic accent pieces: purpleheart, padauk, and the like</p>
+          <p>Small 5 gold · Medium 12 gold · Large not offered · Ask Fran</p>
+        </div>
+        <div>
+          <h3>Piece-priced bins</h3>
+          <p>Story Wood: 20-50 gold with origin tag · Live-edge: 30-75 gold · Leather: 30 gold</p>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 export function ShopTierBoard({
@@ -49,10 +80,10 @@ export function ShopTierBoard({
   catalogLoading,
   tradedKey,
   toast,
-  purchaseMoment,
+  specialtyFilamentTypes,
   onDismissToast,
-  onDismissPurchaseMoment,
   onBuy,
+  onRequestFilament,
 }: Props) {
   const { tier, items } = group
   const shelfTitle = displayShelfTitle(tier.name)
@@ -60,6 +91,7 @@ export function ShopTierBoard({
   const slug = tierSlugId(tier.name)
   const signSrc = signImageForTier(tier.name)
   const desc = tierShortDescription(tier.name, tier.subtitle)
+  const isCraft = tier.name.trim().toLowerCase() === 'craft'
 
   return (
     <section
@@ -90,6 +122,7 @@ export function ShopTierBoard({
           aria-labelledby={`shop-shelf-trigger-${slug}`}
           className="shop-shelf-panel"
         >
+          {isCraft ? <CraftPricingGuide /> : null}
           {items.length === 0 ? (
             <p className="muted shop-shelf-empty">No items in this shelf yet.</p>
           ) : (
@@ -106,7 +139,6 @@ export function ShopTierBoard({
                   !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
                 // Only the item that triggered the transaction should show the confirmation.
                 const itemToast = toast?.itemKey === item.item_key ? toast : null
-                const itemMoment = purchaseMoment?.itemKey === item.item_key ? purchaseMoment : null
 
                 return (
                   <GameShopCard
@@ -122,12 +154,13 @@ export function ShopTierBoard({
                     busy={busy}
                     traded={tradedKey === item.item_key}
                     toast={itemToast}
-                    purchaseMoment={itemMoment}
+                    specialtyFilamentTypes={specialtyFilamentTypes}
                     onDismissToast={onDismissToast}
-                    onDismissPurchaseMoment={onDismissPurchaseMoment}
                     isSupabaseConfigured={isSupabaseConfigured}
                     catalogLoading={catalogLoading}
                     onBuy={onBuy}
+                    gold={gold}
+                    onRequestFilament={onRequestFilament}
                   />
                 )
               })}

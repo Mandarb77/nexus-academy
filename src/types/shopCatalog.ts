@@ -20,6 +20,7 @@ export type ShopCatalogItem = {
   price_gold: number | null
   is_active: boolean
   flavor_text: string | null
+  purchase_moment_text: string | null
   is_locked: boolean
   display_order: number
   max_purchases_per_chicago_school_day: number | null

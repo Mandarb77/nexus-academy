@@ -4102,7 +4102,14 @@ body:has(.bench-chrome) {
 .bench-chrome.shop-page .shop-subtitle {
   font-family: 'Lora', Georgia, serif;
   font-weight: 400;
-  max-width: 36rem;
+  max-width: 48rem;
+  line-height: 1.25;
+}
+
+@media (min-width: 760px) {
+  .bench-chrome.shop-page .shop-subtitle {
+    white-space: nowrap;
+  }
 }
 
 .bench-chrome.shop-page .shop-header-actions {
@@ -4200,23 +4207,38 @@ body:has(.bench-chrome) {
   color: var(--color-ink-tertiary);
 }
 
+.bench-chrome.shop-page .shop-purchase-moment-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  animation: shopPurchaseMomentLayerIn 0.2s ease-out both;
+}
+
+.bench-chrome.shop-page .shop-purchase-moment-layer--dismissing {
+  animation: shopPurchaseMomentLayerOut 0.2s ease-in both;
+}
+
 .bench-chrome.shop-page .shop-purchase-moment {
-  position: absolute;
-  z-index: 5;
-  top: 0.5rem;
-  left: 0.5rem;
-  right: 0.5rem;
   display: block;
+  width: min(31rem, calc(100vw - 2rem));
   max-height: min(24rem, 70vh);
   overflow: auto;
-  padding: 0.95rem 1rem;
-  border: 2px solid var(--color-rule-strong);
-  border-radius: 4px;
-  background: rgba(244, 236, 216, 0.97);
-  color: #3d2b22;
-  box-shadow: 0 14px 32px rgba(58, 40, 32, 0.28);
+  box-sizing: border-box;
+  padding: 1.05rem 1.15rem;
+  border: 2px solid rgba(97, 72, 52, 0.45);
+  border-radius: 8px;
+  background: #f1e8d2;
+  color: #3a2820;
+  box-shadow: 0 18px 42px rgba(58, 40, 32, 0.34);
   cursor: pointer;
   text-align: left;
+  transform-origin: center;
 }
 
 .bench-chrome.shop-page .shop-purchase-moment__eyebrow,
@@ -4226,33 +4248,66 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-purchase-moment__eyebrow {
+  display: block;
   font-family: 'Caveat', cursive;
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   font-style: italic;
   font-weight: 500;
   color: #5a4030;
 }
 
 .bench-chrome.shop-page .shop-purchase-moment__title {
+  display: block;
   margin-top: 0.15rem;
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1rem;
+  font-size: 1.08rem;
   font-weight: 600;
 }
 
 .bench-chrome.shop-page .shop-purchase-moment__body {
+  display: grid;
+  gap: 0.38rem;
   margin-top: 0.65rem;
   font-family: 'Lora', Georgia, serif;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.bench-chrome.shop-page .shop-purchase-moment__line {
+  display: block;
+}
+
+.bench-chrome.shop-page .shop-purchase-moment__handwritten {
+  font-family: 'Caveat', cursive;
+  font-size: 1.18em;
+  font-style: italic;
+  line-height: 1.2;
 }
 
 .bench-chrome.shop-page .shop-purchase-moment__dismiss {
   display: inline-block;
-  margin-top: 0.4rem;
+  margin-top: 0.75rem;
   font-family: 'Lora', Georgia, serif;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   color: var(--color-ink-tertiary);
+}
+
+@keyframes shopPurchaseMomentLayerIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shopPurchaseMomentLayerOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .bench-chrome.shop-page .shop-shelves--tiles {
@@ -4353,6 +4408,109 @@ body:has(.bench-chrome) {
   font-family: 'Lora', Georgia, serif;
   font-weight: 400;
   font-size: 0.9rem;
+}
+
+.bench-chrome.shop-page .shop-craft-price-guide {
+  margin: 0 0 0.8rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #d4cdb8;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #5a4030;
+}
+
+.bench-chrome.shop-page .shop-craft-price-guide__rule {
+  margin: 0 0 0.75rem;
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.bench-chrome.shop-page .shop-craft-price-guide__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.7rem 1rem;
+}
+
+.bench-chrome.shop-page .shop-craft-price-guide h3,
+.bench-chrome.shop-page .shop-craft-price-guide p {
+  margin: 0;
+}
+
+.bench-chrome.shop-page .shop-craft-price-guide h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.bench-chrome.shop-page .shop-craft-price-guide p {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.bench-chrome.shop-page .shop-filament-calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #d4cdb8;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__note,
+.bench-chrome.shop-page .shop-filament-calculator__formula,
+.bench-chrome.shop-page .shop-filament-calculator__warning {
+  margin: 0;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__types {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__types ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1rem;
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__field {
+  display: grid;
+  gap: 0.25rem;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.78rem;
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__field input {
+  max-width: 9rem;
+  border: 1px solid #d4cdb8;
+  border-radius: 3px;
+  padding: 0.35rem 0.45rem;
+  font: inherit;
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__cost {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-ink-primary);
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__warning {
+  color: #9f4f36;
+}
+
+.bench-chrome.shop-page .shop-filament-calculator__button {
+  align-self: flex-start;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 600;
 }
 
 .bench-chrome.shop-page .shop-items-grid {

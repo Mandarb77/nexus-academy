@@ -38,6 +38,7 @@ const BLANK = {
   stockPerSemester: '' as string,
   gateRequirement: '',
   flavorText: '',
+  purchaseMomentText: '',
   isLocked: false,
   isActive: true,
   displayOrder: 100,
@@ -61,6 +62,7 @@ export function TeacherShopPage() {
   const [stockPerSemester, setStockPerSemester] = useState(BLANK.stockPerSemester)
   const [gateRequirement, setGateRequirement] = useState(BLANK.gateRequirement)
   const [flavorText, setFlavorText] = useState(BLANK.flavorText)
+  const [purchaseMomentText, setPurchaseMomentText] = useState(BLANK.purchaseMomentText)
   const [isLocked, setIsLocked] = useState(BLANK.isLocked)
   const [isActive, setIsActive] = useState(BLANK.isActive)
   const [displayOrder, setDisplayOrder] = useState(BLANK.displayOrder)
@@ -70,6 +72,10 @@ export function TeacherShopPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [filamentTypesText, setFilamentTypesText] = useState('')
+  const [savingFilamentTypes, setSavingFilamentTypes] = useState(false)
+  const [filamentTypesMessage, setFilamentTypesMessage] = useState<string | null>(null)
+  const [filamentTypesError, setFilamentTypesError] = useState<string | null>(null)
 
   const loadAll = useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -77,14 +83,20 @@ export function TeacherShopPage() {
       return
     }
     setLoading(true)
-    const [tierRes, itemRes] = await Promise.all([
+    const [tierRes, itemRes, filamentConfigRes] = await Promise.all([
       supabase.from('shop_tiers').select('id, name, subtitle, sort_order').order('sort_order'),
       supabase.from('shop_items').select(`
           id, item_key, name, description, tier_id, price_gold, is_active, flavor_text,
+          purchase_moment_text,
           is_locked, display_order, max_purchases_per_chicago_school_day,
           convenience_band, stock_per_semester, gate_requirement,
           shop_tiers ( id, name, subtitle, sort_order )
         `).order('display_order'),
+      supabase
+        .from('shop_config')
+        .select('config_value')
+        .eq('config_key', 'specialty_filament_types')
+        .maybeSingle(),
     ])
     setLoading(false)
     if (tierRes.error) {
@@ -98,6 +110,13 @@ export function TeacherShopPage() {
     setLoadError(null)
     setTiers((tierRes.data ?? []) as TierRow[])
     setItems((itemRes.data ?? []) as ItemRow[])
+    if (!filamentConfigRes.error && Array.isArray(filamentConfigRes.data?.config_value)) {
+      setFilamentTypesText(
+        filamentConfigRes.data.config_value
+          .filter((value): value is string => typeof value === 'string')
+          .join('\n'),
+      )
+    }
   }, [])
 
   useEffect(() => {
@@ -115,6 +134,7 @@ export function TeacherShopPage() {
     setStockPerSemester('')
     setGateRequirement('')
     setFlavorText('')
+    setPurchaseMomentText('')
     setIsLocked(false)
     setIsActive(true)
     setDisplayOrder(100)
@@ -144,6 +164,7 @@ export function TeacherShopPage() {
     setStockPerSemester(row.stock_per_semester != null ? String(row.stock_per_semester) : '')
     setGateRequirement(row.gate_requirement ?? '')
     setFlavorText(row.flavor_text ?? '')
+    setPurchaseMomentText(row.purchase_moment_text ?? '')
     setIsLocked(row.is_locked)
     setIsActive(row.is_active)
     setDisplayOrder(row.display_order)
@@ -187,6 +208,7 @@ export function TeacherShopPage() {
       price_gold: isLocked && priceGold <= 0 ? null : priceGold,
       is_active: isActive,
       flavor_text: flavorText.trim() || null,
+      purchase_moment_text: purchaseMomentText.trim() || null,
       is_locked: isLocked,
       display_order: displayOrder,
       max_purchases_per_chicago_school_day: maxPerDay.trim() ? Number(maxPerDay) : null,
@@ -228,6 +250,33 @@ export function TeacherShopPage() {
     await loadAll()
   }
 
+  const saveFilamentTypes = async () => {
+    setFilamentTypesMessage(null)
+    setFilamentTypesError(null)
+    const types = filamentTypesText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+    if (types.length === 0) {
+      setFilamentTypesError('Add at least one specialty filament type.')
+      return
+    }
+    setSavingFilamentTypes(true)
+    const { error } = await supabase.from('shop_config').upsert(
+      {
+        config_key: 'specialty_filament_types',
+        config_value: types,
+      },
+      { onConflict: 'config_key' },
+    )
+    setSavingFilamentTypes(false)
+    if (error) {
+      setFilamentTypesError(error.message)
+      return
+    }
+    setFilamentTypesMessage('Specialty filament list updated.')
+  }
+
   return (
     <div className="app-shell bench-chrome teacher-panel-page">
       <header className="teacher-panel-header">
@@ -245,6 +294,31 @@ export function TeacherShopPage() {
           </button>
         </div>
       </header>
+
+      <section className="teacher-panel-section" style={{ maxWidth: '720px' }}>
+        <h2 className="teacher-panel-section-title">Specialty filament types</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          One type per line. Students see this list in the Supply calculator.
+        </p>
+        <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
+          <span className="patent-label">Qualifying specialty filaments</span>
+          <textarea
+            rows={7}
+            value={filamentTypesText}
+            onChange={(e) => setFilamentTypesText(e.target.value)}
+          />
+        </label>
+        {filamentTypesError ? <p className="error" role="alert">{filamentTypesError}</p> : null}
+        {filamentTypesMessage ? <p style={{ color: '#16a34a', fontWeight: 600 }} role="status">{filamentTypesMessage}</p> : null}
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={savingFilamentTypes || loading}
+          onClick={() => void saveFilamentTypes()}
+        >
+          {savingFilamentTypes ? 'Saving…' : 'Save filament list'}
+        </button>
+      </section>
 
       <section className="teacher-panel-section" style={{ maxWidth: '720px' }}>
         <h2 className="teacher-panel-section-title">{editingId ? `Editing: ${name || 'Item'}` : 'New item'}</h2>
@@ -307,20 +381,45 @@ export function TeacherShopPage() {
         </div>
 
         {tierName === 'Craft' ? (
-          <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
-            <span className="patent-label">Gate requirement (display when locked)</span>
-            <input
-              type="text"
-              value={gateRequirement}
-              placeholder="Mr. Cook's call on this one. Talk to him."
-              onChange={(e) => setGateRequirement(e.target.value)}
-            />
-          </label>
+          <>
+            <p className="muted" style={{ margin: '0 0 0.75rem', fontSize: '0.85rem' }}>
+              For individual Story Wood or Live-edge pieces, create one Craft item per piece. Use the
+              description for origin/size notes, set the exact gold price, and keep it locked if Mr. Cook
+              needs to approve it.
+            </p>
+            <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
+              <span className="patent-label">Gate requirement (display when locked)</span>
+              <input
+                type="text"
+                value={gateRequirement}
+                placeholder="Mr. Cook's call on this one. Talk to him."
+                onChange={(e) => setGateRequirement(e.target.value)}
+              />
+            </label>
+          </>
         ) : null}
 
         <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
-          <span className="patent-label">Flavor text (optional)</span>
-          <input type="text" value={flavorText} onChange={(e) => setFlavorText(e.target.value)} />
+          <span className="patent-label">Fran and Barry purchase overlay (optional)</span>
+          <textarea
+            rows={5}
+            value={purchaseMomentText}
+            placeholder={'Fran writes it in the ledger.\n(Barry, from the back: "Good.")\n\nUse *asterisks* for Caveat handwriting.'}
+            onChange={(e) => setPurchaseMomentText(e.target.value)}
+          />
+          <span className="muted" style={{ fontSize: '0.82rem' }}>
+            Shows in the floating Supply overlay before the purchase or request completes.
+          </span>
+        </label>
+
+        <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
+          <span className="patent-label">Legacy flavor text (optional)</span>
+          <textarea
+            rows={4}
+            value={flavorText}
+            placeholder="Older catalog note field. Specialty filament types now live in the editor above."
+            onChange={(e) => setFlavorText(e.target.value)}
+          />
         </label>
 
         <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>

@@ -2,6 +2,7 @@
  * Single catalog card in Supply — trading-post (legacy) or bench tile (compact grid).
  */
 
+import { useState } from 'react'
 import type { ShopCatalogItem, ShopStockStatus } from '../../types/shopCatalog'
 import { ShopAccordion } from './ShopAccordion'
 import { ShopItemGlyph } from './ShopItemGlyph'
@@ -20,12 +21,13 @@ type GameShopCardProps = {
   busy: boolean
   traded: boolean
   toast?: { kind: 'success' | 'error'; message: string; detail?: string } | null
-  purchaseMoment?: { itemKey: string; title: string; text: string } | null
+  specialtyFilamentTypes?: string[]
   onDismissToast: () => void
-  onDismissPurchaseMoment: () => void
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   onBuy: (item: ShopCatalogItem) => void
+  gold?: number
+  onRequestFilament?: (item: ShopCatalogItem, grams: number, calculatedGoldCost: number) => void
 }
 
 function PurchaseButton({
@@ -98,16 +100,6 @@ function lockLabel(catalogLocked: boolean): string {
 
 const LOCKED_GATE_NOTE = "Mr. Cook's call on this one. Talk to him."
 
-const ITEM_TEASERS: Record<string, string> = {
-  story_wood: 'Each piece tagged. Read the tag. The wood was somewhere first.',
-  live_edge_wood_blank: 'Bark is a choice. Make it before you start cutting.',
-  leather_offcut: 'Real leather. Pieces are in the bin — bigger ones at the back.',
-  specialty_filament_voucher: "Specialty filament — pick from what's on the shelf.",
-  personal_project_pass:
-    "Standard materials, finishes, hardware all included. Premium materials separate. Gifts don't need this.",
-  fran_barry_supply_apparel: "Hoodie or apron. April order, May delivery. Once it's yours, it's yours.",
-}
-
 function lockedGateNote(item: ShopCatalogItem): string {
   return item.gate_requirement?.trim() || LOCKED_GATE_NOTE
 }
@@ -117,8 +109,6 @@ function stripInlineMarkers(text: string): string {
 }
 
 function itemTeaser(item: ShopCatalogItem): string {
-  const custom = ITEM_TEASERS[item.item_key]
-  if (custom) return custom
   return stripInlineMarkers(item.description.split('\n').find((line) => line.trim())?.trim() ?? item.description)
 }
 
@@ -181,29 +171,86 @@ function ShopItemToast({
   )
 }
 
-function PurchaseMomentCard({
-  moment,
-  onDismiss,
+function specialtyFilamentOptions(item: ShopCatalogItem): string[] {
+  return (item.flavor_text ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function SpecialtyFilamentCalculator({
+  item,
+  gold,
+  busy,
+  catalogLoading,
+  specialtyFilamentTypes = [],
+  onRequestFilament,
 }: {
-  moment?: { itemKey: string; title: string; text: string } | null
-  onDismiss: () => void
+  item: ShopCatalogItem
+  gold: number
+  busy: boolean
+  catalogLoading: boolean
+  specialtyFilamentTypes?: string[]
+  onRequestFilament?: (item: ShopCatalogItem, grams: number, calculatedGoldCost: number) => void
 }) {
-  if (!moment) return null
+  const [gramsInput, setGramsInput] = useState('')
+  const grams = Number.parseInt(gramsInput, 10)
+  const validGrams = Number.isFinite(grams) && grams > 0 ? grams : 0
+  const calculatedCost = validGrams > 0 ? 10 + Math.ceil(validGrams / 25) : 0
+  const canRequest = validGrams > 0 && gold >= calculatedCost && !busy && !catalogLoading
+  const options = specialtyFilamentTypes.length > 0 ? specialtyFilamentTypes : specialtyFilamentOptions(item)
+
   return (
-    <button
-      type="button"
-      className="shop-purchase-moment"
-      onClick={(event) => {
-        event.stopPropagation()
-        onDismiss()
-      }}
-      aria-label="Dismiss purchase moment"
-    >
-      <p className="shop-purchase-moment__eyebrow">Fran and Barry</p>
-      <h4 className="shop-purchase-moment__title">{moment.title}</h4>
-      <ShopItemDescription text={moment.text} className="shop-purchase-moment__body" />
-      <span className="shop-purchase-moment__dismiss">Click to continue</span>
-    </button>
+    <div className="shop-filament-calculator">
+      <p className="shop-filament-calculator__note">
+        Standard filament is free for quest and gift work. Pull it from the shelf. For personal projects,
+        use your Personal Project Pass.
+      </p>
+      <p className="shop-filament-calculator__note">
+        Open your file in Bambu Studio, slice it, and check the filament panel on the right. Find the grams
+        used for each specialty color and add them together.
+      </p>
+      {options.length > 0 ? (
+        <div className="shop-filament-calculator__types">
+          <strong>Specialty filament includes:</strong>
+          <ul>
+            {options.map((option) => (
+              <li key={option}>{option}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <label className="shop-filament-calculator__field">
+        <span>Specialty grams used</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          step={1}
+          value={gramsInput}
+          onChange={(event) => setGramsInput(event.target.value.replace(/[^\d]/g, ''))}
+          placeholder="e.g. 100"
+        />
+      </label>
+      <p className="shop-filament-calculator__formula">10 gold base + 1 gold per 25g (rounded up)</p>
+      <p className="shop-filament-calculator__cost">
+        {validGrams > 0 ? `${calculatedCost} gold` : 'Enter grams to calculate cost'}
+      </p>
+      {validGrams > 0 && gold < calculatedCost ? (
+        <p className="shop-filament-calculator__warning">Not enough gold for this request.</p>
+      ) : null}
+      <button
+        type="button"
+        className="btn-secondary shop-filament-calculator__button"
+        disabled={!canRequest}
+        onClick={(event) => {
+          event.stopPropagation()
+          if (canRequest) onRequestFilament?.(item, validGrams, calculatedCost)
+        }}
+      >
+        {busy ? 'Requesting…' : 'Request this purchase'}
+      </button>
+    </div>
   )
 }
 
@@ -220,12 +267,13 @@ function BenchShopCard(props: GameShopCardProps) {
     busy,
     traded,
     toast,
-    purchaseMoment,
+    specialtyFilamentTypes,
     onDismissToast,
-    onDismissPurchaseMoment,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
+    gold = 0,
+    onRequestFilament,
   } = props
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
@@ -233,6 +281,7 @@ function BenchShopCard(props: GameShopCardProps) {
   const strip = displayMode === 'strip'
   const hasFlavor = full && !catalogLocked && Boolean(item.flavor_text?.trim())
   const teaser = itemTeaser(item)
+  const isSpecialtyFilament = item.item_key === 'specialty_filament_voucher'
 
   const purchaseProps = {
     layout: 'bench' as const,
@@ -257,7 +306,6 @@ function BenchShopCard(props: GameShopCardProps) {
       }`}
     >
       <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
-      <PurchaseMomentCard moment={purchaseMoment} onDismiss={onDismissPurchaseMoment} />
       <div className="shop-item__head">
         <div className="shop-item__glyph-wrap" aria-hidden>
           <ShopItemGlyph variant={variant} className="shop-item-glyph" />
@@ -276,7 +324,9 @@ function BenchShopCard(props: GameShopCardProps) {
         <ShopItemDescription text={item.description} className="shop-item__desc muted" />
       </div>
       <div className="shop-item__foot">
-        {catalogLocked && price == null ? (
+        {isSpecialtyFilament ? (
+          <span className="shop-item__price shop-item__price--locked">Calculated</span>
+        ) : catalogLocked && price == null ? (
           <span className="shop-item__price shop-item__price--locked">{lockLabel(true)}</span>
         ) : (
           <span className="shop-item__price">
@@ -284,8 +334,18 @@ function BenchShopCard(props: GameShopCardProps) {
             <span className="gold-currency-text">gold</span>
           </span>
         )}
-        <PurchaseButton {...purchaseProps} />
+        {!isSpecialtyFilament ? <PurchaseButton {...purchaseProps} /> : null}
       </div>
+      {isSpecialtyFilament ? (
+        <SpecialtyFilamentCalculator
+          item={item}
+          gold={gold}
+          busy={busy}
+          catalogLoading={catalogLoading}
+          specialtyFilamentTypes={specialtyFilamentTypes}
+          onRequestFilament={onRequestFilament}
+        />
+      ) : null}
       {catalogLocked && !strip ? (
         <p className="shop-item__note shop-item__note--locked muted">{lockedGateNote(item)}</p>
       ) : null}
@@ -314,9 +374,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     busy,
     traded,
     toast,
-    purchaseMoment,
     onDismissToast,
-    onDismissPurchaseMoment,
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
@@ -368,7 +426,6 @@ function LegacyShopCard(props: GameShopCardProps) {
     <li className={cardMods}>
       <div className="makers-shop-card__frame">
         <ShopItemToast toast={toast} onDismissToast={onDismissToast} />
-        <PurchaseMomentCard moment={purchaseMoment} onDismiss={onDismissPurchaseMoment} />
         <div className="makers-shop-card__rail" aria-hidden />
         <h3 className={titleMods}>{item.name}</h3>
         {!strip && !full ? <p className="makers-shop-card__teaser">{teaser}</p> : null}

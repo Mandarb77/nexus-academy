@@ -65,6 +65,17 @@ type PendingRedemptionRow = {
   display_name: string | null
 }
 
+type PendingShopPurchaseRequestRow = {
+  id: string
+  student_id: string
+  item_name: string
+  requested_grams: number | null
+  calculated_gold_cost: number
+  notes: string | null
+  created_at: string
+  display_name: string | null
+}
+
 type PendingChecklistRow = {
   id: string
   student_id: string
@@ -124,6 +135,7 @@ type StudentRedemptionRow = {
 type Acting =
   | { scope: 'skill'; id: string; action: 'approve' | 'return' }
   | { scope: 'redemption'; id: string; action: 'approve' | 'return' }
+  | { scope: 'shopRequest'; id: string; action: 'approve' | 'return' }
   | null
 
 // -----------------------------------------------------------------------------
@@ -173,6 +185,7 @@ export function TeacherPanelPage() {
   // ---------------------------------------------------------------------------
   const [skillRows, setSkillRows] = useState<PendingSkillRow[]>([])
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
+  const [shopRequestRows, setShopRequestRows] = useState<PendingShopPurchaseRequestRow[]>([])
   const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
   const [checklistRows, setChecklistRows] = useState<PendingChecklistRow[]>([])
 
@@ -217,6 +230,7 @@ export function TeacherPanelPage() {
     if (!isSupabaseConfigured) {
       setSkillRows([])
       setRedemptionRows([])
+      setShopRequestRows([])
       setLoadError(null)
       setLoading(false)
       return
@@ -224,7 +238,7 @@ export function TeacherPanelPage() {
     setLoading(true)
     setLoadError(null)
 
-    const [compRes, redRes, planRes, checklistRes] = await Promise.all([
+    const [compRes, redRes, shopReqRes, planRes, checklistRes] = await Promise.all([
       supabase
         .from('skill_completions')
         .select('id, student_id, tile_id, patent_id, created_at, status')
@@ -233,6 +247,11 @@ export function TeacherPanelPage() {
       supabase
         .from('redemption_requests')
         .select('id, student_id, inventory_id, item_name, created_at, status')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('shop_purchase_requests')
+        .select('id, student_id, item_name, requested_grams, calculated_gold_cost, notes, created_at, status')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
       supabase
@@ -267,6 +286,13 @@ export function TeacherPanelPage() {
       setLoading(false)
       return
     }
+    if (shopReqRes.error) {
+      console.error('teacher panel shop purchase requests:', shopReqRes.error.message)
+      setShopRequestRows([])
+      setLoadError(shopReqRes.error.message)
+      setLoading(false)
+      return
+    }
     if (planRes.error) {
       console.error('teacher panel plan approvals:', planRes.error.message)
       setSkillRows([])
@@ -286,6 +312,7 @@ export function TeacherPanelPage() {
 
     const completions = compRes.data ?? []
     const redemptions = redRes.data ?? []
+    const shopRequests = shopReqRes.data ?? []
     const plans = planRes.data ?? []
     const checklists = checklistRes.data ?? []
 
@@ -293,6 +320,7 @@ export function TeacherPanelPage() {
       ...new Set([
         ...completions.map((r) => r.student_id as string),
         ...redemptions.map((r) => r.student_id as string),
+        ...shopRequests.map((r) => r.student_id as string),
         ...plans.map((r) => r.student_id as string),
         ...checklists.map((r) => r.student_id as string),
       ]),
@@ -429,6 +457,19 @@ export function TeacherPanelPage() {
       })),
     )
 
+    setShopRequestRows(
+      shopRequests.map((r) => ({
+        id: r.id as string,
+        student_id: r.student_id as string,
+        item_name: r.item_name as string,
+        requested_grams: (r.requested_grams as number | null) ?? null,
+        calculated_gold_cost: (r.calculated_gold_cost as number) ?? 0,
+        notes: (r.notes as string | null) ?? null,
+        created_at: r.created_at as string,
+        display_name: nameById.get(r.student_id as string) ?? null,
+      })),
+    )
+
     setPlanRows(
       plans.map((r) => ({
         id: r.id as string,
@@ -496,6 +537,15 @@ export function TeacherPanelPage() {
           detail: ((r.item_name as string) ?? 'Shop item').trim() || 'Shop item',
         }
       }),
+      ...shopRequests.map((r) => {
+        const sid = r.student_id as string
+        return {
+          alertId: `shop-request:${r.id as string}`,
+          kind: 'redemption' as const,
+          studentName: nameById.get(sid) ?? null,
+          detail: ((r.item_name as string) ?? 'Shop request').trim() || 'Shop request',
+        }
+      }),
     ]
     applyTeacherPendingSnapshot(pendingAlerts)
 
@@ -545,6 +595,16 @@ export function TeacherPanelPage() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'redemption_requests' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'shop_purchase_requests' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'shop_purchase_requests' },
         () => { void loadPending() },
       )
       .subscribe()
@@ -612,6 +672,38 @@ export function TeacherPanelPage() {
     clearActing()
     if (error) {
       console.error('approve redemption:', error.message)
+      return
+    }
+    void loadPending()
+  }
+
+  const approveShopRequest = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActing({ scope: 'shopRequest', id, action: 'approve' })
+    const { error } = await supabase
+      .from('shop_purchase_requests')
+      .update({ status: 'approved' })
+      .eq('id', id)
+    clearActing()
+    if (error) {
+      console.error('approve shop request:', error.message)
+      setAdminMessage(`Could not approve shop request: ${error.message}`)
+      return
+    }
+    void loadPending()
+  }
+
+  const returnShopRequest = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActing({ scope: 'shopRequest', id, action: 'return' })
+    const { error } = await supabase
+      .from('shop_purchase_requests')
+      .update({ status: 'rejected' })
+      .eq('id', id)
+    clearActing()
+    if (error) {
+      console.error('reject shop request:', error.message)
+      setAdminMessage(`Could not reject shop request: ${error.message}`)
       return
     }
     void loadPending()
@@ -761,13 +853,15 @@ export function TeacherPanelPage() {
   // ---------------------------------------------------------------------------
   // Row busy helpers — disable approve/return while matching RPC in flight
   // ---------------------------------------------------------------------------
-  const isActing = (scope: 'skill' | 'redemption', id: string, action: 'approve' | 'return') =>
+  const isActing = (scope: 'skill' | 'redemption' | 'shopRequest', id: string, action: 'approve' | 'return') =>
     acting?.scope === scope && acting.id === id && acting.action === action
 
   const busySkill = (id: string) =>
     acting?.scope === 'skill' && acting.id === id ? acting : null
   const busyRedemption = (id: string) =>
     acting?.scope === 'redemption' && acting.id === id ? acting : null
+  const busyShopRequest = (id: string) =>
+    acting?.scope === 'shopRequest' && acting.id === id ? acting : null
 
   // ---------------------------------------------------------------------------
   // Student list — all learners (`profiles.role = student`)
@@ -1487,6 +1581,61 @@ export function TeacherPanelPage() {
                           onClick={() => void returnRedemption(row.id)}
                         >
                           {isActing('redemption', row.id, 'return') ? 'Returning…' : 'Return'}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+          <section
+            className="teacher-panel-approval-box"
+            aria-labelledby="teacher-panel-shop-requests-heading"
+          >
+            <h2 id="teacher-panel-shop-requests-heading" className="teacher-panel-section-title">
+              Shop purchase requests
+            </h2>
+            {shopRequestRows.length === 0 ? (
+              <p className="muted teacher-panel-section-empty">No pending shop requests.</p>
+            ) : (
+              <ul className="teacher-panel-list">
+                {shopRequestRows.map((row) => {
+                  const studentName =
+                    row.display_name?.trim() ||
+                    `Student (${row.student_id.slice(0, 8)}…)`
+                  const b = busyShopRequest(row.id)
+                  const busy = Boolean(b)
+
+                  return (
+                    <li key={row.id} className="card teacher-panel-item">
+                      <div className="teacher-panel-item-main">
+                        <p className="teacher-panel-student">{studentName}</p>
+                        <p className="teacher-panel-skill">
+                          <strong>{row.item_name}</strong>
+                        </p>
+                        <p className="muted teacher-panel-guild">
+                          {row.requested_grams != null ? `${row.requested_grams}g · ` : ''}
+                          {row.calculated_gold_cost} gold on approval
+                        </p>
+                        {row.notes ? <p className="muted teacher-panel-guild">{row.notes}</p> : null}
+                      </div>
+                      <div className="teacher-panel-actions">
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={busy}
+                          onClick={() => void approveShopRequest(row.id)}
+                        >
+                          {isActing('shopRequest', row.id, 'approve') ? 'Approving…' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={busy}
+                          onClick={() => void returnShopRequest(row.id)}
+                        >
+                          {isActing('shopRequest', row.id, 'return') ? 'Rejecting…' : 'Reject'}
                         </button>
                       </div>
                     </li>
