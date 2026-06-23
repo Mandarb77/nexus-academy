@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import franBarrySupplyLogo from '../assets/fran-barry-supply-logo.png'
 import { MainNav } from '../components/MainNav'
 import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
@@ -46,6 +47,8 @@ type PurchaseConfirmation = {
   calculatedGoldCost: number
 }
 
+const SHOP_WELCOME_SEEN_KEY = 'nexus:shop-welcome-seen'
+
 function renderMomentLine(line: string) {
   return line.split(/(\*[^*]+\*)/g).map((part, index) => {
     if (part.startsWith('*') && part.endsWith('*')) {
@@ -75,6 +78,12 @@ function ShopPurchaseMomentOverlay({
       aria-label="Dismiss shopkeeper note and continue purchase"
     >
       <span className="shop-purchase-moment" role="status" aria-live="polite">
+        <img
+          src={franBarrySupplyLogo}
+          alt=""
+          className="shop-mark shop-mark--overlay"
+          aria-hidden="true"
+        />
         <span className="shop-purchase-moment__eyebrow">Fran and Barry</span>
         <span className="shop-purchase-moment__title">{moment.title}</span>
         <span className="shop-purchase-moment__body">
@@ -112,6 +121,12 @@ function ShopPurchaseConfirmDialog({
         aria-modal="true"
         aria-labelledby="shop-purchase-confirm-title"
       >
+        <img
+          src={franBarrySupplyLogo}
+          alt=""
+          className="shop-mark shop-mark--confirm"
+          aria-hidden="true"
+        />
         <p id="shop-purchase-confirm-title" className="shop-purchase-confirm__title">
           Buy {confirmation.item.name} for {confirmation.calculatedGoldCost} gold?
         </p>
@@ -123,6 +138,35 @@ function ShopPurchaseConfirmDialog({
             Confirm
           </button>
         </div>
+      </section>
+    </div>
+  )
+}
+
+function ShopWelcomeOverlay({ open, onDismiss }: { open: boolean; onDismiss: () => void }) {
+  if (!open) return null
+  return (
+    <div className="shop-welcome-layer" role="presentation">
+      <section
+        className="shop-welcome"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shop-welcome-title"
+      >
+        <img
+          src={franBarrySupplyLogo}
+          alt=""
+          className="shop-mark shop-mark--welcome"
+          aria-hidden="true"
+        />
+        <p className="shop-welcome__eyebrow">Fran and Barry&apos;s Supply Co.</p>
+        <h2 id="shop-welcome-title" className="shop-welcome__title">Welcome in, maker.</h2>
+        <p className="shop-welcome__body">
+          Gold trades happen here. Fran keeps the ledger. Barry keeps the shelves honest.
+        </p>
+        <button type="button" className="btn-primary shop-welcome__button" onClick={onDismiss}>
+          Enter Supply
+        </button>
       </section>
     </div>
   )
@@ -194,6 +238,7 @@ export function GoldShopPage() {
   const [toast, setToast] = useState<ShopToast | null>(null)
   const [purchaseMoment, setPurchaseMoment] = useState<PurchaseMoment | null>(null)
   const [purchaseConfirmation, setPurchaseConfirmation] = useState<PurchaseConfirmation | null>(null)
+  const [showWelcome, setShowWelcome] = useState(false)
   // Mirror profile gold locally so the balance can update before refreshProfile finishes.
   const [displayGold, setDisplayGold] = useState(profile?.gold ?? 0)
   const [goldChanged, setGoldChanged] = useState(false)
@@ -220,6 +265,14 @@ export function GoldShopPage() {
   useEffect(() => {
     setDisplayGold(profile?.gold ?? 0)
   }, [profile?.gold])
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(SHOP_WELCOME_SEEN_KEY) !== '1') setShowWelcome(true)
+    } catch {
+      setShowWelcome(false)
+    }
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -257,6 +310,15 @@ export function GoldShopPage() {
       toastTimer.current = null
     }
     setToast(null)
+  }, [])
+
+  const dismissWelcome = useCallback(() => {
+    try {
+      window.localStorage.setItem(SHOP_WELCOME_SEEN_KEY, '1')
+    } catch {
+      /* private browsing can reject storage; closing the overlay still matters. */
+    }
+    setShowWelcome(false)
   }, [])
 
   const pulseGold = useCallback(() => {
@@ -567,6 +629,7 @@ export function GoldShopPage() {
 
   return (
     <div className="app-shell bench-chrome bench-chrome--shop shop-page">
+      <ShopWelcomeOverlay open={showWelcome} onDismiss={dismissWelcome} />
       <ShopPurchaseConfirmDialog
         confirmation={purchaseConfirmation}
         onCancel={() => setPurchaseConfirmation(null)}
@@ -585,11 +648,19 @@ export function GoldShopPage() {
       <header className="shop-top">
         <MainNav />
         <div className="shop-top-row bench-page-title-row">
-          <div>
-            <h1 className="bench-page-title">Fran and Barry&apos;s Supply Co.</h1>
-            <p className="muted shop-subtitle">
-              Fran&apos;s at the counter. Barry&apos;s in the back. Open a shelf and see what they&apos;ve got.
-            </p>
+          <div className="shop-brand-lockup">
+            <img
+              src={franBarrySupplyLogo}
+              alt=""
+              className="shop-mark shop-mark--header"
+              aria-hidden="true"
+            />
+            <div>
+              <h1 className="bench-page-title">Fran and Barry&apos;s Supply Co.</h1>
+              <p className="muted shop-subtitle">
+                Fran&apos;s at the counter. Barry&apos;s in the back. Open a shelf and see what they&apos;ve got.
+              </p>
+            </div>
           </div>
           <div className="shop-header-actions">
             <div className={`shop-gold-stat${goldChanged ? ' shop-gold-stat--changed' : ''}`} aria-live="polite">

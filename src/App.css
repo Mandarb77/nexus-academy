@@ -2979,12 +2979,28 @@ a.btn-primary {
   color: #3a2820;
 }
 
+.inventory-item-voice__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
 .inventory-item-voice__eyebrow {
-  margin: 0 0 0.35rem;
+  margin: 0;
   font-family: 'Caveat', cursive;
   font-size: 1.15rem;
   font-style: italic;
   color: #5a4030;
+}
+
+.inventory-item-voice__mark {
+  display: block;
+  width: 1.8rem;
+  height: 1.8rem;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .inventory-item-voice__body {
@@ -4129,6 +4145,23 @@ body:has(.bench-chrome) {
 }
 
 /* Supply (/shop) — guild-style tier tiles + item grid */
+.bench-chrome.shop-page .shop-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.bench-chrome.shop-page .shop-mark {
+  display: block;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.bench-chrome.shop-page .shop-mark--header {
+  width: clamp(3.6rem, 8vw, 4.8rem);
+  height: clamp(3.6rem, 8vw, 4.8rem);
+}
+
 .bench-chrome.shop-page .bench-page-title {
   font-family: 'Playfair Display', Georgia, serif;
   font-size: clamp(1.65rem, 4.2vw, 2.25rem);
@@ -4153,6 +4186,64 @@ body:has(.bench-chrome) {
   flex-direction: column;
   align-items: flex-end;
   gap: 0.65rem;
+}
+
+.bench-chrome.shop-page .shop-welcome-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(58, 40, 32, 0.16);
+}
+
+.bench-chrome.shop-page .shop-welcome {
+  position: relative;
+  width: min(30rem, calc(100vw - 2rem));
+  box-sizing: border-box;
+  padding: 1.35rem 1.35rem 1.2rem;
+  border: 2px solid rgba(97, 72, 52, 0.45);
+  border-radius: 8px;
+  background: #f1e8d2;
+  color: #3a2820;
+  box-shadow: 0 18px 44px rgba(58, 40, 32, 0.3);
+}
+
+.bench-chrome.shop-page .shop-mark--welcome {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.bench-chrome.shop-page .shop-welcome__eyebrow,
+.bench-chrome.shop-page .shop-welcome__title,
+.bench-chrome.shop-page .shop-welcome__body {
+  margin: 0;
+}
+
+.bench-chrome.shop-page .shop-welcome__eyebrow {
+  font-family: 'Caveat', cursive;
+  font-size: 1.2rem;
+  color: #5a4030;
+}
+
+.bench-chrome.shop-page .shop-welcome__title {
+  margin-top: 0.15rem;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.bench-chrome.shop-page .shop-welcome__body {
+  margin-top: 0.55rem;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.bench-chrome.shop-page .shop-welcome__button {
+  margin-top: 1rem;
 }
 
 .bench-chrome.shop-page .shop-gold-stat {
@@ -4254,14 +4345,24 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-purchase-confirm {
+  position: relative;
   width: min(28rem, calc(100vw - 2rem));
   box-sizing: border-box;
-  padding: 1.1rem 1.2rem;
+  padding: 1.1rem 3.65rem 1.1rem 1.2rem;
   border: 2px solid rgba(97, 72, 52, 0.45);
   border-radius: 8px;
   background: #f1e8d2;
   color: #3a2820;
   box-shadow: 0 16px 36px rgba(58, 40, 32, 0.28);
+}
+
+.bench-chrome.shop-page .shop-mark--confirm,
+.bench-chrome.shop-page .shop-mark--overlay {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.8rem;
+  width: 2.35rem;
+  height: 2.35rem;
 }
 
 .bench-chrome.shop-page .shop-purchase-confirm__title {
@@ -4305,12 +4406,13 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-purchase-moment {
+  position: relative;
   display: block;
   width: min(31rem, calc(100vw - 2rem));
   max-height: min(24rem, 70vh);
   overflow: auto;
   box-sizing: border-box;
-  padding: 1.05rem 1.15rem;
+  padding: 1.05rem 3.7rem 1.05rem 1.15rem;
   border: 2px solid rgba(97, 72, 52, 0.45);
   border-radius: 8px;
   background: #f1e8d2;

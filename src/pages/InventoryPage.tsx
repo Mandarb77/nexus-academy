@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import franBarrySupplyLogo from '../assets/fran-barry-supply-logo.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { clearKitNewItem } from '../lib/kitNotification'
@@ -32,7 +33,15 @@ function InventoryVoiceScene({ row }: { row: InventoryRow }) {
   const text = purchaseMomentForKitItem(row)
   return (
     <div className="inventory-item-voice" aria-label="Fran and Barry note">
-      <p className="inventory-item-voice__eyebrow">Fran and Barry</p>
+      <div className="inventory-item-voice__head">
+        <p className="inventory-item-voice__eyebrow">Fran and Barry</p>
+        <img
+          src={franBarrySupplyLogo}
+          alt=""
+          className="inventory-item-voice__mark"
+          aria-hidden="true"
+        />
+      </div>
       <div className="inventory-item-voice__body">
         {text
           .split('\n')
