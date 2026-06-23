@@ -26,6 +26,13 @@ export type ShopCatalogItem = {
   max_purchases_per_chicago_school_day: number | null
   convenience_band: ConvenienceBand | null
   stock_per_semester: number | null
+  per_kid_semester_cap: number | null
+  per_kid_daily_rate_limit: number | null
+  per_kid_rate_limit_days: number | null
+  per_kid_lifetime_cap: number | null
+  workshop_total_stock: number | null
+  time_window_start: string | null
+  time_window_end: string | null
   gate_requirement: string | null
   shop_tiers: ShopTierEmbed | ShopTierEmbed[] | null
 }
@@ -35,4 +42,22 @@ export type ShopStockStatus = {
   limit?: number
   sold?: number
   remaining?: number
+}
+
+export type ShopLimitStatus = {
+  item_id: string
+  allowed: boolean
+  error_code?: string | null
+  disabled_message?: string | null
+  messages: string[]
+  semester_count?: number | null
+  semester_cap?: number | null
+  today_count?: number | null
+  daily_limit?: number | null
+  lifetime_count?: number | null
+  lifetime_cap?: number | null
+  workshop_stock_limit?: number | null
+  workshop_stock_remaining?: number | null
+  time_window_start?: string | null
+  time_window_end?: string | null
 }

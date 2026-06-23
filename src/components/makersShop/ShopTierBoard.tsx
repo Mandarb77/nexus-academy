@@ -2,7 +2,7 @@
  * One tier shelf in Supply — guild-style tile + expandable item grid (Convenience / Craft / Legacy).
  */
 
-import type { ShopCatalogItem, ShopStockStatus, ShopTierEmbed } from '../../types/shopCatalog'
+import type { ShopCatalogItem, ShopLimitStatus, ShopTierEmbed } from '../../types/shopCatalog'
 import conveniencesSign from '../../assets/conveniences-sign.png'
 import craftSign from '../../assets/craft-sign.png'
 import legacySign from '../../assets/legacy-sign.png'
@@ -17,8 +17,7 @@ type Props = {
   onToggle: () => void
   gold: number
   buyingKey: string | null
-  dailyBlockedIds: Set<string>
-  stockByItemId: Map<string, ShopStockStatus>
+  limitStatusByItemId: Map<string, ShopLimitStatus>
   isSupabaseConfigured: boolean
   catalogLoading: boolean
   tradedKey: string | null
@@ -74,8 +73,7 @@ export function ShopTierBoard({
   onToggle,
   gold,
   buyingKey,
-  dailyBlockedIds,
-  stockByItemId,
+  limitStatusByItemId,
   isSupabaseConfigured,
   catalogLoading,
   tradedKey,
@@ -128,15 +126,14 @@ export function ShopTierBoard({
           ) : (
             <ul className="shop-items-grid">
               {items.map((item) => {
-                const dailyBlocked = dailyBlockedIds.has(item.id)
                 const catalogLocked = item.is_locked
-                const stock = stockByItemId.get(item.id)
-                const outOfStock = stock?.limited === true && (stock.remaining ?? 0) <= 0
+                const limitStatus = limitStatusByItemId.get(item.id)
+                const limitBlocked = limitStatus?.allowed === false
                 const price = item.price_gold
                 const canAfford = price != null && gold >= price
                 const busy = buyingKey === item.item_key
                 const canBuy =
-                  !catalogLocked && price != null && canAfford && !dailyBlocked && !outOfStock
+                  !catalogLocked && price != null && canAfford && !limitBlocked
                 // Only the item that triggered the transaction should show the confirmation.
                 const itemToast = toast?.itemKey === item.item_key ? toast : null
 
@@ -147,8 +144,7 @@ export function ShopTierBoard({
                     item={item}
                     shelfAccent={accent}
                     catalogLocked={catalogLocked}
-                    dailyBlocked={dailyBlocked}
-                    stockStatus={stock}
+                    limitStatus={limitStatus}
                     canAfford={canAfford}
                     canBuy={canBuy}
                     busy={busy}

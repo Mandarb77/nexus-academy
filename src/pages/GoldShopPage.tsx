@@ -13,13 +13,13 @@ import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
 import { markKitHasNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { isSameEasternCalendarDay } from '../lib/schoolDayEastern'
 import { LOCKED_SHOP_REQUEST_MOMENT, purchaseMomentForItem } from '../lib/shopPurchaseMoments'
-import type { ShopCatalogItem, ShopStockStatus, ShopTierEmbed } from '../types/shopCatalog'
+import type { ShopCatalogItem, ShopLimitStatus, ShopTierEmbed } from '../types/shopCatalog'
 
 type RpcResult = {
   ok?: boolean
   error?: string
+  message?: string
   new_gold?: number
   item_name?: string
   calculated_gold_cost?: number
@@ -158,6 +158,31 @@ function groupByTier(sorted: ShopCatalogItem[]): { tier: ShopTierEmbed; items: S
   return out
 }
 
+function normalizeLimitStatus(raw: Record<string, unknown>): ShopLimitStatus | null {
+  const itemId = raw.item_id
+  if (typeof itemId !== 'string') return null
+  const messages = Array.isArray(raw.messages)
+    ? raw.messages.filter((message): message is string => typeof message === 'string' && message.trim() !== '')
+    : []
+  return {
+    item_id: itemId,
+    allowed: raw.allowed !== false,
+    error_code: (raw.error_code as string | null | undefined) ?? null,
+    disabled_message: (raw.disabled_message as string | null | undefined) ?? null,
+    messages,
+    semester_count: (raw.semester_count as number | null | undefined) ?? null,
+    semester_cap: (raw.semester_cap as number | null | undefined) ?? null,
+    today_count: (raw.today_count as number | null | undefined) ?? null,
+    daily_limit: (raw.daily_limit as number | null | undefined) ?? null,
+    lifetime_count: (raw.lifetime_count as number | null | undefined) ?? null,
+    lifetime_cap: (raw.lifetime_cap as number | null | undefined) ?? null,
+    workshop_stock_limit: (raw.workshop_stock_limit as number | null | undefined) ?? null,
+    workshop_stock_remaining: (raw.workshop_stock_remaining as number | null | undefined) ?? null,
+    time_window_start: (raw.time_window_start as string | null | undefined) ?? null,
+    time_window_end: (raw.time_window_end as string | null | undefined) ?? null,
+  }
+}
+
 export function GoldShopPage() {
   const { profile, user, signOut, refreshProfile } = useAuth()
   const [catalog, setCatalog] = useState<ShopCatalogItem[]>([])
@@ -172,8 +197,7 @@ export function GoldShopPage() {
   // Mirror profile gold locally so the balance can update before refreshProfile finishes.
   const [displayGold, setDisplayGold] = useState(profile?.gold ?? 0)
   const [goldChanged, setGoldChanged] = useState(false)
-  const [dailyBlockedIds, setDailyBlockedIds] = useState<Set<string>>(new Set())
-  const [stockByItemId, setStockByItemId] = useState<Map<string, ShopStockStatus>>(new Map())
+  const [limitStatusByItemId, setLimitStatusByItemId] = useState<Map<string, ShopLimitStatus>>(new Map())
   const [activeTierId, setActiveTierId] = useState<string | null>(null)
   const [specialtyFilamentTypes, setSpecialtyFilamentTypes] = useState<string[]>([])
   const shelvesRef = useRef<HTMLDivElement | null>(null)
@@ -279,6 +303,12 @@ export function GoldShopPage() {
     if (errorCode === 'daily_purchase_limit' || errorCode === 'phone_time_limit') {
       return 'You already purchased this today.'
     }
+    if (errorCode === 'semester_cap_reached') return "You've hit your limit. Back next semester."
+    if (errorCode === 'rate_limit_active') return 'That trade is cooling down.'
+    if (errorCode === 'lifetime_cap_reached') return "You've already got yours."
+    if (errorCode === 'workshop_stock_exhausted') return 'Sold Out — Fran will let you know when more come in'
+    if (errorCode === 'time_window_closed') return 'Window closed. Try again next semester.'
+    if (errorCode === 'time_window_not_open') return 'This trade is not available yet.'
     if (errorCode === 'item_locked') {
       return item?.gate_requirement?.trim() || 'Mr. Cook needs to approve this first.'
     }
@@ -287,63 +317,24 @@ export function GoldShopPage() {
     return 'Purchase could not be completed.'
   }
 
-  const refreshStockStatus = useCallback(async (rows: ShopCatalogItem[]) => {
-    if (!isSupabaseConfigured) {
-      setStockByItemId(new Map())
+  const refreshLimitStatuses = useCallback(async () => {
+    if (!user?.id || !isSupabaseConfigured) {
+      setLimitStatusByItemId(new Map())
       return
     }
-    const limited = rows.filter((r) => r.stock_per_semester != null && r.stock_per_semester > 0)
-    const next = new Map<string, ShopStockStatus>()
-    await Promise.all(
-      limited.map(async (r) => {
-        const { data, error } = await supabase.rpc('shop_stock_status', { p_shop_item_id: r.id })
-        if (!error && data && typeof data === 'object') {
-          next.set(r.id, data as ShopStockStatus)
-        }
-      }),
-    )
-    setStockByItemId(next)
-  }, [])
-
-  const refreshDailyLimits = useCallback(
-    async (rows: ShopCatalogItem[]) => {
-      if (!user?.id || !isSupabaseConfigured) {
-        setDailyBlockedIds(new Set())
-        return
-      }
-      const limited = rows.filter(
-        (r) =>
-          (r.max_purchases_per_chicago_school_day ?? 0) >= 1 &&
-          r.price_gold != null &&
-          !r.is_locked,
-      )
-      if (limited.length === 0) {
-        setDailyBlockedIds(new Set())
-        return
-      }
-      const ids = limited.map((r) => r.id)
-      const { data, error } = await supabase
-        .from('gold_purchases')
-        .select('shop_item_id, created_at')
-        .eq('student_id', user.id)
-        .in('shop_item_id', ids)
-      if (error || !data?.length) {
-        setDailyBlockedIds(new Set())
-        return
-      }
-      const now = new Date()
-      const blocked = new Set<string>()
-      for (const row of data) {
-        const sid = row.shop_item_id as string | null
-        if (!sid || !row.created_at) continue
-        if (isSameEasternCalendarDay(new Date(row.created_at), now)) {
-          blocked.add(sid)
-        }
-      }
-      setDailyBlockedIds(blocked)
-    },
-    [user],
-  )
+    const { data, error } = await supabase.rpc('shop_limit_statuses')
+    if (error || !Array.isArray(data)) {
+      setLimitStatusByItemId(new Map())
+      return
+    }
+    const next = new Map<string, ShopLimitStatus>()
+    for (const raw of data) {
+      if (!raw || typeof raw !== 'object') continue
+      const status = normalizeLimitStatus(raw as Record<string, unknown>)
+      if (status) next.set(status.item_id, status)
+    }
+    setLimitStatusByItemId(next)
+  }, [user?.id])
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -376,6 +367,13 @@ export function GoldShopPage() {
           max_purchases_per_chicago_school_day,
           convenience_band,
           stock_per_semester,
+          per_kid_semester_cap,
+          per_kid_daily_rate_limit,
+          per_kid_rate_limit_days,
+          per_kid_lifetime_cap,
+          workshop_total_stock,
+          time_window_start,
+          time_window_end,
           gate_requirement,
           shop_tiers (
             id,
@@ -395,8 +393,7 @@ export function GoldShopPage() {
       const rows = (data ?? []) as ShopCatalogItem[]
       setCatalog(rows)
       setCatalogLoading(false)
-      void refreshDailyLimits(rows)
-      void refreshStockStatus(rows)
+      void refreshLimitStatuses()
       const { data: filamentConfig, error: filamentConfigError } = await supabase
         .from('shop_config')
         .select('config_value')
@@ -411,7 +408,7 @@ export function GoldShopPage() {
     return () => {
       cancelled = true
     }
-  }, [refreshDailyLimits, refreshStockStatus])
+  }, [refreshLimitStatuses])
 
   async function requestItemApproval(
     item: ShopCatalogItem,
@@ -442,7 +439,8 @@ export function GoldShopPage() {
     }
     const result = data as RpcResult
     if (!result?.ok) {
-      showToast({ kind: 'error', itemKey: item.item_key, message: purchaseErrorMessage(result?.error, item) })
+      showToast({ kind: 'error', itemKey: item.item_key, message: result?.message || purchaseErrorMessage(result?.error, item) })
+      void refreshLimitStatuses()
       return
     }
     showToast({
@@ -491,10 +489,8 @@ export function GoldShopPage() {
     }
     const result = data as RpcResult
     if (!result?.ok) {
-      if (result?.error === 'daily_purchase_limit' || result?.error === 'phone_time_limit') {
-        setDailyBlockedIds((prev) => new Set(prev).add(item.id))
-      }
-      showToast({ kind: 'error', itemKey: item.item_key, message: purchaseErrorMessage(result?.error, item) })
+      showToast({ kind: 'error', itemKey: item.item_key, message: result?.message || purchaseErrorMessage(result?.error, item) })
+      void refreshLimitStatuses()
       return
     }
     if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
@@ -515,13 +511,19 @@ export function GoldShopPage() {
       detail: `${item.price_gold} gold spent · ${newGold} gold left`,
     })
     await refreshProfile()
-    if ((item.max_purchases_per_chicago_school_day ?? 0) >= 1) {
-      setDailyBlockedIds((prev) => new Set(prev).add(item.id))
-    }
-    void refreshStockStatus(catalog)
+    void refreshLimitStatuses()
   }
 
   function buy(item: ShopCatalogItem) {
+    const status = limitStatusByItemId.get(item.id)
+    if (status && !status.allowed) {
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: status.disabled_message || purchaseErrorMessage(status.error_code ?? undefined, item),
+      })
+      return
+    }
     const calculatedGoldCost = item.price_gold ?? 0
     setPurchaseConfirmation({
       item,
@@ -630,8 +632,7 @@ export function GoldShopPage() {
                 onToggle={() => toggleTier(group.tier.id)}
                 gold={gold}
                 buyingKey={buyingKey}
-                dailyBlockedIds={dailyBlockedIds}
-                stockByItemId={stockByItemId}
+                limitStatusByItemId={limitStatusByItemId}
                 isSupabaseConfigured={isSupabaseConfigured}
                 catalogLoading={catalogLoading}
                 tradedKey={tradedKey}

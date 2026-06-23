@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react'
-import type { ShopCatalogItem, ShopStockStatus } from '../../types/shopCatalog'
+import type { ShopCatalogItem, ShopLimitStatus } from '../../types/shopCatalog'
 import { ShopAccordion } from './ShopAccordion'
 import { ShopItemGlyph } from './ShopItemGlyph'
 import { iconVariantForItemKey } from './shopDisplay'
@@ -14,8 +14,7 @@ type GameShopCardProps = {
   item: ShopCatalogItem
   shelfAccent: 'forge' | 'prism' | 'folded'
   catalogLocked: boolean
-  dailyBlocked: boolean
-  stockStatus?: ShopStockStatus | null
+  limitStatus?: ShopLimitStatus | null
   canAfford: boolean
   canBuy: boolean
   busy: boolean
@@ -34,7 +33,7 @@ function PurchaseButton({
   layout,
   item,
   catalogLocked,
-  dailyBlocked,
+  limitStatus,
   canAfford,
   canBuy,
   busy,
@@ -47,7 +46,7 @@ function PurchaseButton({
   | 'layout'
   | 'item'
   | 'catalogLocked'
-  | 'dailyBlocked'
+  | 'limitStatus'
   | 'canAfford'
   | 'canBuy'
   | 'busy'
@@ -57,6 +56,7 @@ function PurchaseButton({
   | 'onBuy'
 >) {
   const bench = layout === 'bench'
+  const limitBlocked = limitStatus?.allowed === false
 
   return (
     <div className={bench ? 'shop-item__actions' : 'makers-shop-card__actions'}>
@@ -68,7 +68,7 @@ function PurchaseButton({
             : `makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`
         }
         disabled={
-          !isSupabaseConfigured || (!catalogLocked && !canBuy) || busy || traded || catalogLoading
+          !isSupabaseConfigured || limitBlocked || (!catalogLocked && !canBuy) || busy || traded || catalogLoading
         }
         onClick={(event) => {
           event.stopPropagation()
@@ -81,8 +81,8 @@ function PurchaseButton({
           'Trading…'
         ) : catalogLocked ? (
           'ASK FRAN'
-        ) : dailyBlocked ? (
-          'Back tomorrow'
+        ) : limitBlocked ? (
+          'Unavailable'
         ) : canAfford ? (
           'Trade'
         ) : (
@@ -168,6 +168,31 @@ function ShopItemToast({
       {toast.detail ? <p className="shop-toast__detail">{toast.detail}</p> : null}
       <span className="shop-toast__dismiss">Click to dismiss</span>
     </button>
+  )
+}
+
+function LimitMessages({
+  className,
+  limitStatus,
+  catalogLocked,
+}: {
+  className: string
+  limitStatus?: ShopLimitStatus | null
+  catalogLocked: boolean
+}) {
+  if (catalogLocked && limitStatus?.allowed !== false) return null
+  const lines = limitStatus?.allowed === false
+    ? [limitStatus.disabled_message || 'This trade is unavailable right now.']
+    : limitStatus?.messages ?? []
+  if (!lines.length) return null
+  return (
+    <>
+      {lines.map((line) => (
+        <p key={line} className={className}>
+          {line}
+        </p>
+      ))}
+    </>
   )
 }
 
@@ -260,8 +285,7 @@ function BenchShopCard(props: GameShopCardProps) {
     item,
     shelfAccent,
     catalogLocked,
-    dailyBlocked,
-    stockStatus,
+    limitStatus,
     canAfford,
     canBuy,
     busy,
@@ -287,7 +311,7 @@ function BenchShopCard(props: GameShopCardProps) {
     layout: 'bench' as const,
     item,
     catalogLocked,
-    dailyBlocked,
+    limitStatus,
     canAfford,
     canBuy,
     busy,
@@ -349,14 +373,7 @@ function BenchShopCard(props: GameShopCardProps) {
       {catalogLocked && !strip ? (
         <p className="shop-item__note shop-item__note--locked muted">{lockedGateNote(item)}</p>
       ) : null}
-      {stockStatus?.limited && !catalogLocked ? (
-        <p className="shop-item__note muted">
-          {stockStatus.remaining ?? 0} of {stockStatus.limit ?? 0} left this semester
-        </p>
-      ) : null}
-      {dailyBlocked && !catalogLocked ? (
-        <p className="shop-item__note muted">Already purchased today.</p>
-      ) : null}
+      <LimitMessages className="shop-item__note shop-item__note--limit muted" limitStatus={limitStatus} catalogLocked={catalogLocked} />
     </li>
   )
 }
@@ -367,8 +384,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     item,
     shelfAccent,
     catalogLocked,
-    dailyBlocked,
-    stockStatus,
+    limitStatus,
     canAfford,
     canBuy,
     busy,
@@ -381,7 +397,8 @@ function LegacyShopCard(props: GameShopCardProps) {
   } = props
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
-  const purchaseBlocked = !catalogLocked && price != null && (!canAfford || dailyBlocked)
+  const limitBlocked = limitStatus?.allowed === false
+  const purchaseBlocked = !catalogLocked && price != null && (!canAfford || limitBlocked)
   const full = displayMode === 'full'
   const strip = displayMode === 'strip'
   const hasFlavor = full && !catalogLocked && Boolean(item.flavor_text?.trim())
@@ -412,7 +429,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     layout: 'legacy' as const,
     item,
     catalogLocked,
-    dailyBlocked,
+    limitStatus,
     canAfford,
     canBuy,
     busy,
@@ -459,14 +476,7 @@ function LegacyShopCard(props: GameShopCardProps) {
               {lockedGateNote(item)}
             </p>
           ) : null}
-          {stockStatus?.limited && !catalogLocked ? (
-            <p className="makers-shop-card__inline-note">
-              {stockStatus.remaining ?? 0} of {stockStatus.limit ?? 0} left this semester
-            </p>
-          ) : null}
-          {dailyBlocked && !catalogLocked ? (
-            <p className="makers-shop-card__inline-note">Already purchased today.</p>
-          ) : null}
+          <LimitMessages className="makers-shop-card__inline-note makers-shop-card__inline-note--limit" limitStatus={limitStatus} catalogLocked={catalogLocked} />
         </div>
 
         {hasFlavor ? (

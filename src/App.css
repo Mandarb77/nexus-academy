@@ -4790,6 +4790,11 @@ body:has(.bench-chrome) {
   font-size: 0.75rem;
 }
 
+.bench-chrome.shop-page .shop-item__note--limit,
+.bench-chrome.shop-page .makers-shop-card__inline-note--limit {
+  color: #7a5b3e;
+}
+
 .bench-chrome.shop-page .shop-item__note--locked {
   font-family: 'Caveat', cursive;
   font-size: 1rem;

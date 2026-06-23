@@ -28,6 +28,19 @@ function tierFromRow(row: ItemRow): TierRow | null {
   return Array.isArray(t) ? t[0] ?? null : t
 }
 
+function limitSummary(row: ItemRow): string {
+  const parts: string[] = []
+  if (row.per_kid_semester_cap != null) parts.push(`${row.per_kid_semester_cap}/kid/sem`)
+  if (row.per_kid_daily_rate_limit != null) parts.push(`${row.per_kid_daily_rate_limit}/kid/day`)
+  if (row.per_kid_rate_limit_days != null) parts.push(`every ${row.per_kid_rate_limit_days} days`)
+  if (row.per_kid_lifetime_cap != null) parts.push(`${row.per_kid_lifetime_cap}/kid/life`)
+  if (row.workshop_total_stock != null) parts.push(`workshop stock ${row.workshop_total_stock}`)
+  if (row.time_window_start || row.time_window_end) {
+    parts.push(`${row.time_window_start || '...'} through ${row.time_window_end || '...'}`)
+  }
+  return parts.join(' · ')
+}
+
 const BLANK = {
   name: '',
   description: '',
@@ -43,6 +56,13 @@ const BLANK = {
   isActive: true,
   displayOrder: 100,
   maxPerDay: '' as string,
+  perKidSemesterCap: '' as string,
+  perKidDailyRateLimit: '' as string,
+  perKidRateLimitDays: '' as string,
+  perKidLifetimeCap: '' as string,
+  workshopTotalStock: '' as string,
+  timeWindowStart: '',
+  timeWindowEnd: '',
 }
 
 export function TeacherShopPage() {
@@ -67,6 +87,13 @@ export function TeacherShopPage() {
   const [isActive, setIsActive] = useState(BLANK.isActive)
   const [displayOrder, setDisplayOrder] = useState(BLANK.displayOrder)
   const [maxPerDay, setMaxPerDay] = useState(BLANK.maxPerDay)
+  const [perKidSemesterCap, setPerKidSemesterCap] = useState(BLANK.perKidSemesterCap)
+  const [perKidDailyRateLimit, setPerKidDailyRateLimit] = useState(BLANK.perKidDailyRateLimit)
+  const [perKidRateLimitDays, setPerKidRateLimitDays] = useState(BLANK.perKidRateLimitDays)
+  const [perKidLifetimeCap, setPerKidLifetimeCap] = useState(BLANK.perKidLifetimeCap)
+  const [workshopTotalStock, setWorkshopTotalStock] = useState(BLANK.workshopTotalStock)
+  const [timeWindowStart, setTimeWindowStart] = useState(BLANK.timeWindowStart)
+  const [timeWindowEnd, setTimeWindowEnd] = useState(BLANK.timeWindowEnd)
 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -89,7 +116,10 @@ export function TeacherShopPage() {
           id, item_key, name, description, tier_id, price_gold, is_active, flavor_text,
           purchase_moment_text,
           is_locked, display_order, max_purchases_per_chicago_school_day,
-          convenience_band, stock_per_semester, gate_requirement,
+          convenience_band, stock_per_semester,
+          per_kid_semester_cap, per_kid_daily_rate_limit, per_kid_rate_limit_days,
+          per_kid_lifetime_cap, workshop_total_stock, time_window_start, time_window_end,
+          gate_requirement,
           shop_tiers ( id, name, subtitle, sort_order )
         `).order('display_order'),
       supabase
@@ -139,6 +169,13 @@ export function TeacherShopPage() {
     setIsActive(true)
     setDisplayOrder(100)
     setMaxPerDay('')
+    setPerKidSemesterCap('')
+    setPerKidDailyRateLimit('')
+    setPerKidRateLimitDays('')
+    setPerKidLifetimeCap('')
+    setWorkshopTotalStock('')
+    setTimeWindowStart('')
+    setTimeWindowEnd('')
     setSaveError(null)
     setSaveSuccess(null)
   }
@@ -173,6 +210,13 @@ export function TeacherShopPage() {
         ? String(row.max_purchases_per_chicago_school_day)
         : '',
     )
+    setPerKidSemesterCap(row.per_kid_semester_cap != null ? String(row.per_kid_semester_cap) : '')
+    setPerKidDailyRateLimit(row.per_kid_daily_rate_limit != null ? String(row.per_kid_daily_rate_limit) : '')
+    setPerKidRateLimitDays(row.per_kid_rate_limit_days != null ? String(row.per_kid_rate_limit_days) : '')
+    setPerKidLifetimeCap(row.per_kid_lifetime_cap != null ? String(row.per_kid_lifetime_cap) : '')
+    setWorkshopTotalStock(row.workshop_total_stock != null ? String(row.workshop_total_stock) : '')
+    setTimeWindowStart(row.time_window_start ?? '')
+    setTimeWindowEnd(row.time_window_end ?? '')
     setSaveError(null)
     setSaveSuccess(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -214,6 +258,13 @@ export function TeacherShopPage() {
       max_purchases_per_chicago_school_day: maxPerDay.trim() ? Number(maxPerDay) : null,
       convenience_band: tierName === 'Convenience' ? band : null,
       stock_per_semester: stockPerSemester.trim() ? Number(stockPerSemester) : null,
+      per_kid_semester_cap: perKidSemesterCap.trim() ? Number(perKidSemesterCap) : null,
+      per_kid_daily_rate_limit: perKidDailyRateLimit.trim() ? Number(perKidDailyRateLimit) : null,
+      per_kid_rate_limit_days: perKidRateLimitDays.trim() ? Number(perKidRateLimitDays) : null,
+      per_kid_lifetime_cap: perKidLifetimeCap.trim() ? Number(perKidLifetimeCap) : null,
+      workshop_total_stock: workshopTotalStock.trim() ? Number(workshopTotalStock) : null,
+      time_window_start: timeWindowStart.trim() || null,
+      time_window_end: timeWindowEnd.trim() || null,
       gate_requirement: gateRequirement.trim() || null,
     }
 
@@ -380,6 +431,48 @@ export function TeacherShopPage() {
           </label>
         </div>
 
+        <section className="teacher-panel-section" style={{ margin: '0 0 1rem', padding: '1rem' }}>
+          <h3 className="teacher-panel-section-title" style={{ fontSize: '1rem' }}>Limits and availability</h3>
+          <p className="muted" style={{ marginTop: 0, fontSize: '0.85rem' }}>
+            Blank means no limit. Workshop stock is shared by all students; per-kid fields count each student separately.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Per-kid semester cap</span>
+              <input type="number" min={0} placeholder="∞" value={perKidSemesterCap} onChange={(e) => setPerKidSemesterCap(e.target.value)} />
+            </label>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Per-kid daily limit</span>
+              <input type="number" min={1} placeholder="∞" value={perKidDailyRateLimit} onChange={(e) => setPerKidDailyRateLimit(e.target.value)} />
+            </label>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Cooldown days</span>
+              <input type="number" min={1} placeholder="None" value={perKidRateLimitDays} onChange={(e) => setPerKidRateLimitDays(e.target.value)} />
+            </label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Per-kid lifetime cap</span>
+              <input type="number" min={1} placeholder="∞" value={perKidLifetimeCap} onChange={(e) => setPerKidLifetimeCap(e.target.value)} />
+            </label>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Workshop total stock</span>
+              <input type="number" min={0} placeholder="∞" value={workshopTotalStock} onChange={(e) => setWorkshopTotalStock(e.target.value)} />
+            </label>
+            <div />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Available starting</span>
+              <input type="date" value={timeWindowStart} onChange={(e) => setTimeWindowStart(e.target.value)} />
+            </label>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Available through</span>
+              <input type="date" value={timeWindowEnd} onChange={(e) => setTimeWindowEnd(e.target.value)} />
+            </label>
+          </div>
+        </section>
+
         {tierName === 'Craft' ? (
           <>
             <p className="muted" style={{ margin: '0 0 0.75rem', fontSize: '0.85rem' }}>
@@ -482,6 +575,7 @@ export function TeacherShopPage() {
                       {t?.name ?? '?'} · {row.item_key} · {row.price_gold ?? '—'} gold
                       {row.is_locked ? ' · Locked' : ''}
                       {row.stock_per_semester != null ? ` · Stock ${row.stock_per_semester}/sem` : ''}
+                      {limitSummary(row) ? ` · ${limitSummary(row)}` : ''}
                     </p>
                   </div>
                   <div className="teacher-panel-actions">
