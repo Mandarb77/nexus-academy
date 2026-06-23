@@ -39,6 +39,13 @@ type PurchaseMoment = {
   dismissing: boolean
 }
 
+type PurchaseConfirmation = {
+  item: ShopCatalogItem
+  kind: 'buy' | 'request'
+  grams?: number
+  calculatedGoldCost: number
+}
+
 function renderMomentLine(line: string) {
   return line.split(/(\*[^*]+\*)/g).map((part, index) => {
     if (part.startsWith('*') && part.endsWith('*')) {
@@ -87,6 +94,40 @@ function ShopPurchaseMomentOverlay({
   )
 }
 
+function ShopPurchaseConfirmDialog({
+  confirmation,
+  onCancel,
+  onConfirm,
+}: {
+  confirmation: PurchaseConfirmation | null
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  if (!confirmation) return null
+  return (
+    <div className="shop-purchase-confirm-layer" role="presentation">
+      <section
+        className="shop-purchase-confirm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shop-purchase-confirm-title"
+      >
+        <p id="shop-purchase-confirm-title" className="shop-purchase-confirm__title">
+          Buy {confirmation.item.name} for {confirmation.calculatedGoldCost} gold?
+        </p>
+        <div className="shop-purchase-confirm__actions">
+          <button type="button" className="btn-secondary shop-purchase-confirm__cancel" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary shop-purchase-confirm__confirm" onClick={onConfirm}>
+            Confirm
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 function tierFromRow(row: ShopCatalogItem): ShopTierEmbed | null {
   const t = row.shop_tiers
   if (!t) return null
@@ -127,6 +168,7 @@ export function GoldShopPage() {
   const [tradedKey, setTradedKey] = useState<string | null>(null)
   const [toast, setToast] = useState<ShopToast | null>(null)
   const [purchaseMoment, setPurchaseMoment] = useState<PurchaseMoment | null>(null)
+  const [purchaseConfirmation, setPurchaseConfirmation] = useState<PurchaseConfirmation | null>(null)
   // Mirror profile gold locally so the balance can update before refreshProfile finishes.
   const [displayGold, setDisplayGold] = useState(profile?.gold ?? 0)
   const [goldChanged, setGoldChanged] = useState(false)
@@ -480,17 +522,37 @@ export function GoldShopPage() {
   }
 
   function buy(item: ShopCatalogItem) {
-    const momentText = item.is_locked ? LOCKED_SHOP_REQUEST_MOMENT : purchaseMomentForItem(item)
+    const calculatedGoldCost = item.price_gold ?? 0
+    setPurchaseConfirmation({
+      item,
+      kind: item.is_locked ? 'request' : 'buy',
+      calculatedGoldCost,
+    })
+  }
+
+  function confirmPurchase(confirmation: PurchaseConfirmation) {
+    const { item } = confirmation
+    const momentText = confirmation.kind === 'request' ? LOCKED_SHOP_REQUEST_MOMENT : purchaseMomentForItem(item)
     showPurchaseMomentThen(item.name, momentText, () => {
       void completeBuy(item)
     })
   }
 
-  async function requestFilament(item: ShopCatalogItem, grams: number, calculatedGoldCost: number) {
+  function requestFilament(item: ShopCatalogItem, grams: number, calculatedGoldCost: number) {
     if (!user?.id || !isSupabaseConfigured) {
       showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
       return
     }
+    setPurchaseConfirmation({
+      item,
+      kind: 'request',
+      grams,
+      calculatedGoldCost,
+    })
+  }
+
+  function confirmFilamentRequest(confirmation: PurchaseConfirmation) {
+    const { item, grams = 0, calculatedGoldCost } = confirmation
     showPurchaseMomentThen(item.name, purchaseMomentForItem(item), () => {
       void requestItemApproval(
         item,
@@ -503,6 +565,20 @@ export function GoldShopPage() {
 
   return (
     <div className="app-shell bench-chrome bench-chrome--shop shop-page">
+      <ShopPurchaseConfirmDialog
+        confirmation={purchaseConfirmation}
+        onCancel={() => setPurchaseConfirmation(null)}
+        onConfirm={() => {
+          const confirmation = purchaseConfirmation
+          if (!confirmation) return
+          setPurchaseConfirmation(null)
+          if (confirmation.kind === 'request' && confirmation.grams != null) {
+            confirmFilamentRequest(confirmation)
+          } else {
+            confirmPurchase(confirmation)
+          }
+        }}
+      />
       <ShopPurchaseMomentOverlay moment={purchaseMoment} onDismiss={completePurchaseMoment} />
       <header className="shop-top">
         <MainNav />

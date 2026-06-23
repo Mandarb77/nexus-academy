@@ -2970,6 +2970,42 @@ a.btn-primary {
   font-size: 0.85rem;
 }
 
+.inventory-item-voice {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(97, 72, 52, 0.28);
+  border-radius: 6px;
+  background: #f1e8d2;
+  color: #3a2820;
+}
+
+.inventory-item-voice__eyebrow {
+  margin: 0 0 0.35rem;
+  font-family: 'Caveat', cursive;
+  font-size: 1.15rem;
+  font-style: italic;
+  color: #5a4030;
+}
+
+.inventory-item-voice__body {
+  display: grid;
+  gap: 0.32rem;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.inventory-item-voice__line {
+  margin: 0;
+}
+
+.inventory-item-voice__handwritten {
+  font-family: 'Caveat', cursive;
+  font-size: 1.18em;
+  font-style: italic;
+  line-height: 1.2;
+}
+
 .inventory-item-action {
   flex-shrink: 0;
   align-self: center;
@@ -4205,6 +4241,50 @@ body:has(.bench-chrome) {
   font-family: 'Lora', Georgia, serif;
   font-size: 0.68rem;
   color: var(--color-ink-tertiary);
+}
+
+.bench-chrome.shop-page .shop-purchase-confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(58, 40, 32, 0.08);
+}
+
+.bench-chrome.shop-page .shop-purchase-confirm {
+  width: min(28rem, calc(100vw - 2rem));
+  box-sizing: border-box;
+  padding: 1.1rem 1.2rem;
+  border: 2px solid rgba(97, 72, 52, 0.45);
+  border-radius: 8px;
+  background: #f1e8d2;
+  color: #3a2820;
+  box-shadow: 0 16px 36px rgba(58, 40, 32, 0.28);
+}
+
+.bench-chrome.shop-page .shop-purchase-confirm__title {
+  margin: 0;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.bench-chrome.shop-page .shop-purchase-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.bench-chrome.shop-page .shop-purchase-confirm__confirm {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 600;
+}
+
+.bench-chrome.shop-page .shop-purchase-confirm__cancel {
+  opacity: 0.82;
 }
 
 .bench-chrome.shop-page .shop-purchase-moment-layer {

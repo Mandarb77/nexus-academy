@@ -218,6 +218,7 @@ export function TeacherPanelPage() {
   const [previewAwardWpAmount, setPreviewAwardWpAmount] = useState('')
   const [previewAwardGoldAmount, setPreviewAwardGoldAmount] = useState('')
   const [previewAwarding, setPreviewAwarding] = useState(false)
+  const [previewClearing, setPreviewClearing] = useState(false)
   const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
     () => new Map(),
   )
@@ -1177,6 +1178,62 @@ export function TeacherPanelPage() {
     setAdminMessage(`Added ${parts.join(' and ')} to student preview.`)
   }
 
+  const clearPreviewProfile = async () => {
+    /*
+     * Preview purchases and quest tests are saved against the teacher profile because
+     * preview mode uses the teacher's active session. This clears only that preview
+     * data, not any roster student's real progress.
+     */
+    if (!isSupabaseConfigured || !profile?.id || previewClearing) return
+    const ok = window.confirm(
+      'Clear all preview-as-student data for your teacher profile? This resets preview WP/gold and removes preview Kit, purchases, requests, patents, and completions. Real student roster data is not touched.',
+    )
+    if (!ok) return
+
+    setPreviewClearing(true)
+    setAdminMessage(null)
+    const previewId = profile.id
+
+    const deletes: Array<[string, () => Promise<{ error: any }>]> = [
+      ['redemption_requests', async () => await supabase.from('redemption_requests').delete().eq('student_id', previewId)],
+      ['inventory', async () => await supabase.from('inventory').delete().eq('student_id', previewId)],
+      ['gold_purchases', async () => await supabase.from('gold_purchases').delete().eq('student_id', previewId)],
+      [
+        'shop_purchase_requests',
+        async () => await supabase.from('shop_purchase_requests').delete().eq('student_id', previewId),
+      ],
+      ['skill_completions', async () => await supabase.from('skill_completions').delete().eq('student_id', previewId)],
+      ['patents', async () => await supabase.from('patents').delete().eq('student_id', previewId)],
+    ]
+
+    for (const [label, run] of deletes) {
+      const { error } = await run()
+      if (error) {
+        setPreviewClearing(false)
+        setAdminMessage(`Could not clear preview ${label}: ${error.message ?? String(error)}`)
+        return
+      }
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ wp: 0, gold: 0 })
+      .eq('id', previewId)
+      .eq('role', 'teacher')
+
+    setPreviewClearing(false)
+    if (error) {
+      setAdminMessage(`Preview rows cleared, but balance reset failed: ${error.message}`)
+      return
+    }
+
+    setPreviewAwardWpAmount('')
+    setPreviewAwardGoldAmount('')
+    await refreshProfile()
+    void loadPending()
+    setAdminMessage('Student preview data cleared. Preview WP and gold are back to 0.')
+  }
+
   // ---------------------------------------------------------------------------
   // Admin — reverse an approved completion (RPC + optional WP/gold penalty %)
   // ---------------------------------------------------------------------------
@@ -1292,7 +1349,7 @@ export function TeacherPanelPage() {
                     step={1}
                     value={previewAwardWpAmount}
                     onChange={(e) => setPreviewAwardWpAmount(e.target.value)}
-                    disabled={previewAwarding}
+                    disabled={previewAwarding || previewClearing}
                   />
                 </label>
                 <label className="teacher-panel-award-field">
@@ -1303,11 +1360,20 @@ export function TeacherPanelPage() {
                     step={1}
                     value={previewAwardGoldAmount}
                     onChange={(e) => setPreviewAwardGoldAmount(e.target.value)}
-                    disabled={previewAwarding}
+                    disabled={previewAwarding || previewClearing}
                   />
                 </label>
-                <button type="submit" className="btn-secondary" disabled={previewAwarding}>
+                <button type="submit" className="btn-secondary" disabled={previewAwarding || previewClearing}>
                   {previewAwarding ? 'Adding…' : 'Add to preview'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ color: '#b91c1c' }}
+                  disabled={previewAwarding || previewClearing || !isSupabaseConfigured}
+                  onClick={() => void clearPreviewProfile()}
+                >
+                  {previewClearing ? 'Clearing…' : 'Clear preview data'}
                 </button>
               </form>
             </div>

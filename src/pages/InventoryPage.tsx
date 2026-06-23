@@ -11,8 +11,42 @@ import { useCallback, useEffect, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { clearKitNewItem } from '../lib/kitNotification'
+import { purchaseMomentForKitItem } from '../lib/shopPurchaseMoments'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InventoryRow } from '../types/inventory'
+
+function renderKitVoiceLine(line: string) {
+  return line.split(/(\*[^*]+\*)/g).map((part, index) => {
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return (
+        <span key={index} className="inventory-item-voice__handwritten">
+          {part.slice(1, -1)}
+        </span>
+      )
+    }
+    return part
+  })
+}
+
+function InventoryVoiceScene({ row }: { row: InventoryRow }) {
+  const text = purchaseMomentForKitItem(row)
+  return (
+    <div className="inventory-item-voice" aria-label="Fran and Barry note">
+      <p className="inventory-item-voice__eyebrow">Fran and Barry</p>
+      <div className="inventory-item-voice__body">
+        {text
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line, index) => (
+            <p key={index} className="inventory-item-voice__line">
+              {renderKitVoiceLine(line)}
+            </p>
+          ))}
+      </div>
+    </div>
+  )
+}
 
 export function InventoryPage() {
   const { user, signOut } = useAuth()
@@ -41,7 +75,21 @@ export function InventoryPage() {
     const [invRes, redRes] = await Promise.all([
       supabase
         .from('inventory')
-        .select('id, student_id, item_name, item_description, gold_cost, status, created_at')
+        .select(`
+          id,
+          student_id,
+          shop_item_id,
+          item_name,
+          item_description,
+          gold_cost,
+          status,
+          created_at,
+          shop_items (
+            item_key,
+            name,
+            purchase_moment_text
+          )
+        `)
         .eq('student_id', studentId)
         .order('created_at', { ascending: false }),
       /* Pending redemption hides “Mark as used” until staff approves physical perks that need verification. */
@@ -164,6 +212,7 @@ export function InventoryPage() {
                     Paid <span className="gold-currency-text">{row.gold_cost}</span>{' '}
                     <span className="gold-currency-text">gold</span>
                   </p>
+                  <InventoryVoiceScene row={row} />
                 </div>
                 <div className="inventory-item-action">
                   {isUsed ? (

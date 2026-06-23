@@ -10,11 +10,21 @@ export type InventoryStatus = 'unused' | 'used'
 export type InventoryRow = {
   id: string
   student_id: string
+  shop_item_id: string | null
   item_name: string
   item_description: string
   gold_cost: number
   status: InventoryStatus
   created_at: string
+  shop_items?: {
+    item_key: string
+    name: string
+    purchase_moment_text: string | null
+  } | {
+    item_key: string
+    name: string
+    purchase_moment_text: string | null
+  }[] | null
 }
 
 export type RedemptionStatus = 'pending' | 'approved' | 'returned'

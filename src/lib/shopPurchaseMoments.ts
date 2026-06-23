@@ -143,3 +143,23 @@ export function purchaseMomentForItem(item: ShopCatalogItem): string {
     FALLBACK_PURCHASE_MOMENT
   )
 }
+
+type KitShopItemRef = {
+  item_key?: string | null
+  name?: string | null
+  purchase_moment_text?: string | null
+}
+
+export function purchaseMomentForKitItem(row: {
+  item_name: string
+  shop_items?: KitShopItemRef | KitShopItemRef[] | null
+}): string {
+  const shopItem = Array.isArray(row.shop_items) ? row.shop_items[0] : row.shop_items
+  return (
+    shopItem?.purchase_moment_text?.trim() ||
+    (shopItem?.item_key ? MOMENTS_BY_KEY[shopItem.item_key] : undefined) ||
+    (shopItem?.name ? MOMENTS_BY_NAME[normalizeShopName(shopItem.name)] : undefined) ||
+    MOMENTS_BY_NAME[normalizeShopName(row.item_name)] ||
+    FALLBACK_PURCHASE_MOMENT
+  )
+}
