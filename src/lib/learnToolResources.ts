@@ -11,7 +11,7 @@ export const LEARN_TOOL_GUILDS: LearnToolGuild[] = [
 export const LEARN_TOOL_GUILD_HEADINGS: Record<LearnToolGuild, string> = {
   Forge: 'FORGE · Tinkercad',
   Void: 'VOID · Carbide Create',
-  Prism: 'PRISM · Glowforge',
+  Prism: 'PRISM ORDER · Thunder Bolt Laser',
   Silicon: 'SILICON · MakeCode + micro:bit',
   Folded: 'FOLDED PATH · Pop-up mechanics',
 }
