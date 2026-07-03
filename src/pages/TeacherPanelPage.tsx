@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
+import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAlertToggle'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
@@ -1293,9 +1294,12 @@ export function TeacherPanelPage() {
           <div>
             <h1 className="teacher-panel-title bench-page-title">Teacher panel</h1>
           </div>
-          <button type="button" className="btn-secondary" onClick={() => signOut()}>
-            Sign out
-          </button>
+          <div className="teacher-panel-top-actions">
+            <TeacherSubmissionAlertToggle />
+            <button type="button" className="btn-secondary" onClick={() => signOut()}>
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 

@@ -6164,6 +6164,89 @@ body:has(.bench-chrome) {
   color: var(--color-ink-primary);
 }
 
+.teacher-panel-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.teacher-alert-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.teacher-alert-toggle input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-forge);
+  cursor: pointer;
+}
+
+.teacher-alert-toggle__label {
+  letter-spacing: 0.04em;
+}
+
+.student-review-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1240;
+  width: min(94vw, 30rem);
+  padding: 1.1rem 1.25rem;
+  border-radius: 2px;
+  background: var(--color-panel);
+  border: 2px solid #4a7c59;
+  color: var(--color-ink-primary);
+  font-family: var(--font-ui);
+  text-align: left;
+  box-shadow: none;
+  animation: teacher-alert-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.student-review-banner__title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
+}
+
+.student-review-banner__message {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary);
+}
+
+.student-review-banner__dismiss {
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-panel);
+  background: #4a7c59;
+  border: 1px solid #4a7c59;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.student-review-banner__dismiss:hover {
+  background: #3d6849;
+  border-color: #3d6849;
+}
+
 /* ============================================================
  * Dispatch — Where You Are (flip cards)
  * ============================================================ */

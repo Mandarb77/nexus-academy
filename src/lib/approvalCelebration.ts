@@ -15,6 +15,7 @@
  */
 
 import { playApprovalChime } from './alertSound'
+import { areStudentApprovalAlertsEnabled } from './notificationPreferences'
 
 export const APPROVAL_CELEBRATION_EVENT = 'nexus-pending-approval-celebration'
 
@@ -45,6 +46,7 @@ function dispatchCelebrationEvent() {
 export function queueApprovalCelebration(c: PendingApprovalCelebration) {
   if (typeof window === 'undefined') return
   if (!c.completionId) return
+  if (!areStudentApprovalAlertsEnabled()) return
   /* Persist so a mid-toast navigation or reload can still recover the celebration payload. */
   localStorage.setItem(PENDING_KEY, JSON.stringify(c))
   liveNotifier?.(c)

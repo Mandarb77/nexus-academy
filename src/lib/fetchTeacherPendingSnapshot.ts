@@ -8,13 +8,17 @@ import type { TeacherSubmissionAlert } from './teacherSubmissionAlert'
 export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAlert[]> {
   if (!isSupabaseConfigured) return []
 
-  const [compRes, redRes, planRes, checklistRes] = await Promise.all([
+  const [compRes, redRes, shopReqRes, planRes, checklistRes] = await Promise.all([
     supabase
       .from('skill_completions')
       .select('id, student_id, tile_id, status')
       .eq('status', 'pending'),
     supabase
       .from('redemption_requests')
+      .select('id, student_id, item_name, status')
+      .eq('status', 'pending'),
+    supabase
+      .from('shop_purchase_requests')
       .select('id, student_id, item_name, status')
       .eq('status', 'pending'),
     supabase
@@ -31,12 +35,13 @@ export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAl
       .eq('checklist_approved', false),
   ])
 
-  if (compRes.error || redRes.error || planRes.error || checklistRes.error) {
+  if (compRes.error || redRes.error || shopReqRes.error || planRes.error || checklistRes.error) {
     return []
   }
 
   const completions = compRes.data ?? []
   const redemptions = redRes.data ?? []
+  const shopRequests = shopReqRes.data ?? []
   const plans = planRes.data ?? []
   const checklists = checklistRes.data ?? []
 
@@ -44,6 +49,7 @@ export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAl
     ...new Set([
       ...completions.map((r) => r.student_id as string),
       ...redemptions.map((r) => r.student_id as string),
+      ...shopRequests.map((r) => r.student_id as string),
       ...plans.map((r) => r.student_id as string),
       ...checklists.map((r) => r.student_id as string),
     ]),
@@ -123,6 +129,16 @@ export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAl
       kind: 'redemption',
       studentName: nameById.get(sid) ?? null,
       detail: ((r.item_name as string) ?? 'Shop item').trim() || 'Shop item',
+    })
+  }
+
+  for (const r of shopRequests) {
+    const sid = r.student_id as string
+    items.push({
+      alertId: `shop-request:${r.id as string}`,
+      kind: 'redemption',
+      studentName: nameById.get(sid) ?? null,
+      detail: ((r.item_name as string) ?? 'Shop request').trim() || 'Shop request',
     })
   }
 
