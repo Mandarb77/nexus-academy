@@ -16,6 +16,70 @@ export const LEARN_TOOL_GUILD_HEADINGS: Record<LearnToolGuild, string> = {
   Folded: 'FOLDED PATH · Pop-up mechanics',
 }
 
+/** Field Guide display blocks (one guild may have multiple subsections). */
+export type LearnToolDisplayBlock = {
+  guild: LearnToolGuild
+  heading: string
+  note?: string
+  /** When set, only resources whose URL contains one of these hosts. */
+  urlHosts?: string[]
+}
+
+export const LEARN_TOOL_DISPLAY_BLOCKS: LearnToolDisplayBlock[] = [
+  { guild: 'Forge', heading: 'FORGE · Tinkercad' },
+  { guild: 'Void', heading: 'VOID · Carbide Create' },
+  { guild: 'Prism', heading: 'PRISM ORDER · Thunder Bolt Laser' },
+  { guild: 'Silicon', heading: 'SILICON · MakeCode + micro:bit' },
+  { guild: 'Folded', heading: 'FOLDED PATH · Pop-up mechanics' },
+  {
+    guild: 'Folded',
+    heading: 'FOLDED PATH · Cricut',
+    note: "Don't buy anything inside Cricut Design Space — the built-in library costs money. Design outside it and import your SVG instead.",
+    urlHosts: ['cuttle.xyz', 'thenounproject.com'],
+  },
+]
+
+export type LearnToolBlockResources = {
+  block: LearnToolDisplayBlock
+  resources: LearnToolResourceRow[]
+}
+
+/** Assign approved resources to display blocks; host-specific blocks claim first. */
+export function groupResourcesByDisplayBlock(
+  rows: LearnToolResourceRow[],
+): LearnToolBlockResources[] {
+  const used = new Set<string>()
+  const byIndex = new Map<number, LearnToolResourceRow[]>()
+
+  LEARN_TOOL_DISPLAY_BLOCKS.forEach((block, index) => {
+    if (!block.urlHosts?.length) return
+    const resources = rows
+      .filter(
+        (r) =>
+          r.guild === block.guild &&
+          !used.has(r.id) &&
+          block.urlHosts!.some((host) => r.url.toLowerCase().includes(host.toLowerCase())),
+      )
+      .sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title))
+    for (const r of resources) used.add(r.id)
+    byIndex.set(index, resources)
+  })
+
+  LEARN_TOOL_DISPLAY_BLOCKS.forEach((block, index) => {
+    if (block.urlHosts?.length) return
+    const resources = rows
+      .filter((r) => r.guild === block.guild && !used.has(r.id))
+      .sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title))
+    for (const r of resources) used.add(r.id)
+    byIndex.set(index, resources)
+  })
+
+  return LEARN_TOOL_DISPLAY_BLOCKS.map((block, index) => ({
+    block,
+    resources: byIndex.get(index) ?? [],
+  })).filter((entry) => entry.resources.length > 0)
+}
+
 export const LEARN_DESCRIPTION_MAX_CHARS = 280
 
 export function countSentences(text: string): number {

@@ -3891,6 +3891,14 @@ body:has(.bench-chrome) {
 .learn-tools-guild__heading--silicon { color: var(--color-silicon); }
 .learn-tools-guild__heading--folded { color: var(--color-folded); }
 
+.learn-tools-guild__note {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary);
+}
+
 .learn-tools-list {
   list-style: none;
   margin: 0;

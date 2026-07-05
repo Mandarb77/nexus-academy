@@ -34,7 +34,7 @@ export const POP_UP_CARD_STEP2_RESOURCE_LINKS: { label: string; url: string }[] 
     url: 'https://cuttercrafter.com/category/popup-cards',
   },
   {
-    label: 'The Analytical Mommy Glowforge card',
+    label: 'The Analytical Mommy laser-cut card',
     url: 'https://theanalyticalmommy.com/diy-mothers-day-pop-up-card-free-for-cricut-glowforge',
   },
 ]
@@ -43,7 +43,7 @@ export const POP_UP_CARD_STEP2_RESOURCE_LINKS: { label: string; url: string }[] 
 export const POP_UP_CARD_STEPS: readonly string[] = [
   'Step 1 — Interview your recipient or observe them. You do not have to tell them you are making them something. Watch and listen. Write down at least two specific things about them before opening any software — what they love, what makes them laugh, what most people do not notice about them. These go in your patent packet.',
   'Step 2 — Choose your approach. Use the resource links below (UniPopCards, 3axis.co, CutterCrafter, The Analytical Mommy). Pick references that fit your design — or plan a fully original design with no template.',
-  'Step 3 — Set up your file in the Glowforge app. Go to app.glowforge.com and create a new design. Set material to 80lb Cardstock. Import your SVG. Set score lines to Score with speed maxed out. Set cut lines to Cut. Confirm both are correct before running anything.',
+  'Step 3 — Set up your file in LightBurn. Open LightBurn and create a new design. Set material to 80lb Cardstock. Import your SVG. Set score lines to Score with speed maxed out. Set cut lines to Cut. Confirm both are correct before running anything.',
   'Step 4 — Do a test cut on scrap cardstock. Run a small section of the design on scrap material first. Check that score lines fold cleanly and cut lines go all the way through. Do not skip this step.',
   'Step 5 — Cut your card. Load your chosen colored cardstock. Run the full cut. If using multiple colors register carefully between cuts and do not move the cardstock.',
   'Step 6 — Assemble the card. Fold all score lines before gluing anything. Dry fit the whole card first. Glue layer by layer from back to front. Let each layer dry before adding the next.',

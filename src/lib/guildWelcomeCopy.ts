@@ -25,7 +25,7 @@ export const GUILD_WELCOME_BY_SLUG: Partial<Record<GuildWelcomeSlug, GuildWelcom
   prism: {
     orderName: 'Prism Order',
     sentences: [
-      'In this guild you will work with the Glowforge laser cutter and Cuttle to cut, score, and engrave with precision on wood, acrylic, and cardstock.',
+      'In this guild you will work with the Thunder Bolt laser and LightBurn to cut, score, and engrave with precision on wood, acrylic, and cardstock.',
       'Your tools are accuracy, design thinking, and an eye for what light does to a material.',
     ],
   },
