@@ -73,7 +73,7 @@ export function LoginPage() {
     <div className="app-shell bench-chrome auth-panel">
       <header className="brand">
         <h1>Nexus Academy at Kents Hill</h1>
-        <p className="tagline">Maker class — use your school Google account</p>
+        <p className="tagline">Technology and Engineering Class — use your school Google account</p>
       </header>
 
       <div className="card login-actions">
