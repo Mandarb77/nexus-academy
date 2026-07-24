@@ -3719,24 +3719,28 @@ body:has(.bench-chrome) {
   align-self: flex-start;
 }
 
-/* Guilds — how to read this page (shape key) */
+/* Guilds — how to read this page (shape key + progress reminder) */
 .guild-page-read-key {
-  margin: 0 0 1.25rem;
+  margin: 0 0 1.35rem;
+  padding: 0.75rem 1rem 0.85rem;
+  border: 1px solid var(--color-rule-light, #cfc6b8);
+  border-radius: 2px;
+  background: var(--color-panel, #f7f0e4);
 }
 
 .guild-page-read-key__title {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.45rem;
   font-family: var(--font-ui);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: center;
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-primary, #1e1a12);
 }
 
 .guild-page-read-key__legend {
-  --guild-page-read-key-accent: var(--color-ink-secondary);
+  --guild-page-read-key-accent: var(--color-ink-primary, #1e1a12);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3745,9 +3749,10 @@ body:has(.bench-chrome) {
   margin: 0;
   padding: 0;
   font-family: var(--font-ui);
-  font-size: 0.82rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   line-height: 1.35;
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-primary, #1e1a12);
 }
 
 .guild-page-read-key__item {
@@ -3758,21 +3763,31 @@ body:has(.bench-chrome) {
 }
 
 .guild-page-read-key__sep {
-  color: var(--color-ink-tertiary);
-  opacity: 0.65;
+  color: var(--color-ink-secondary, #5c5346);
+  opacity: 0.8;
   user-select: none;
 }
 
 .guild-page-read-key__shape {
   display: inline-block;
   flex-shrink: 0;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   line-height: 1;
   color: var(--guild-page-read-key-accent);
 }
 
 .guild-page-read-key__shape--stretch {
-  font-size: 0.78rem;
+  font-size: 0.86rem;
+}
+
+.guild-page-read-key__progress {
+  margin: 0.55rem 0 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-ink-primary, #1e1a12);
 }
 
 /* Field Guide — Learn the tools */
