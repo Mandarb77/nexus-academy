@@ -6234,6 +6234,20 @@ body:has(.bench-chrome) {
   animation: teacher-alert-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+.student-review-banner--denied {
+  border-color: #8a5a3a;
+}
+
+.student-review-banner--denied .student-review-banner__dismiss {
+  background: #8a5a3a;
+  border-color: #8a5a3a;
+}
+
+.student-review-banner--denied .student-review-banner__dismiss:hover {
+  background: #734a2f;
+  border-color: #734a2f;
+}
+
 .student-review-banner__title {
   margin: 0 0 0.35rem;
   font-family: var(--font-display);

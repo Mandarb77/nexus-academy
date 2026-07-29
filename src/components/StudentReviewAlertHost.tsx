@@ -1,5 +1,6 @@
 /*
- * Global student toast when a teacher approves plan, checklist, shop, or redemption.
+ * Global student toast when a teacher approves or denies plan, checklist,
+ * final packet, shop, or redemption.
  */
 
 import { useEffect, useState } from 'react'
@@ -48,6 +49,7 @@ export function StudentReviewAlertHost() {
   return (
     <StudentReviewBanner
       message={toast.message}
+      tone={toast.tone}
       onDismiss={() => {
         clearStudentReviewAlertAfterDismiss(toast.alertId)
         setToast(null)

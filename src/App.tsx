@@ -6,7 +6,7 @@
  * approvals, quest tooling, reset). Wraps the tree in `AuthProvider` so any page can
  * read session/profile; mounts global Realtime UX once at the top (no per-page wiring):
  *   - Students: `ApprovalCelebrationHost` + `ApprovalCelebrationSync` (final quest approved → WP/gold toast + chime)
- *     and `StudentReviewAlertHost` + `StudentReviewAlertSync` (plan/checklist/shop/redemption approvals)
+ *     and `StudentReviewAlertHost` + `StudentReviewAlertSync` (plan/checklist/final/shop/redemption approve + deny)
  *   - Teachers: `TeacherSubmissionAlertHost` + `TeacherSubmissionAlertSync` (pending review banner + chime; toggle on Teacher panel)
  * See docs/developer-handoff-recent-work.md for bench chrome vs patent ledger split.
  * The dev-only ribbon (`import.meta.env.DEV`) is
