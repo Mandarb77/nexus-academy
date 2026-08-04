@@ -5,6 +5,9 @@
  * enforce gold balance, lock state, semester stock, and `max_purchases_per_chicago_school_day` using
  * `isSameEasternCalendarDay` so “one per day” matches Kents Hill’s instructional timezone, not
  * the laptop’s local midnight.
+ *
+ * Purchase moments pass `preferredFirstNameForVoice(profile)` so Fran/Barry copy says the
+ * student’s name instead of the authored “Marcus” placeholder.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -14,7 +17,8 @@ import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
 import { markKitHasNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { LOCKED_SHOP_REQUEST_MOMENT, purchaseMomentForItem } from '../lib/shopPurchaseMoments'
+import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
+import { lockedShopRequestMoment, purchaseMomentForItem } from '../lib/shopPurchaseMoments'
 import type { ShopCatalogItem, ShopLimitStatus, ShopTierEmbed } from '../types/shopCatalog'
 
 type RpcResult = {
@@ -596,7 +600,9 @@ export function GoldShopPage() {
 
   function confirmPurchase(confirmation: PurchaseConfirmation) {
     const { item } = confirmation
-    const momentText = confirmation.kind === 'request' ? LOCKED_SHOP_REQUEST_MOMENT : purchaseMomentForItem(item)
+    const firstName = preferredFirstNameForVoice(profile)
+    const momentText =
+      confirmation.kind === 'request' ? lockedShopRequestMoment(firstName) : purchaseMomentForItem(item, firstName)
     showPurchaseMomentThen(item.name, momentText, () => {
       void completeBuy(item)
     })
@@ -617,7 +623,7 @@ export function GoldShopPage() {
 
   function confirmFilamentRequest(confirmation: PurchaseConfirmation) {
     const { item, grams = 0, calculatedGoldCost } = confirmation
-    showPurchaseMomentThen(item.name, purchaseMomentForItem(item), () => {
+    showPurchaseMomentThen(item.name, purchaseMomentForItem(item, preferredFirstNameForVoice(profile)), () => {
       void requestItemApproval(
         item,
         grams,

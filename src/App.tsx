@@ -8,6 +8,7 @@
  *   - Students: `ApprovalCelebrationHost` + `ApprovalCelebrationSync` (final quest approved → WP/gold toast + chime)
  *     and `StudentReviewAlertHost` + `StudentReviewAlertSync` (plan/checklist/final/shop/redemption approve + deny)
  *   - Teachers: `TeacherSubmissionAlertHost` + `TeacherSubmissionAlertSync` (pending review banner + chime; toggle on Teacher panel)
+ *   - Students: `PreferredFirstNameGate` (one-time name for Fran voice; blocks student UI until set)
  * See docs/developer-handoff-recent-work.md for bench chrome vs patent ledger split.
  * The dev-only ribbon (`import.meta.env.DEV`) is
  * intentionally absent in production builds so students never see local-debug hints
@@ -47,6 +48,7 @@ import { TeacherSubmissionAlertHost } from './components/TeacherSubmissionAlertH
 import { TeacherSubmissionAlertSync } from './components/TeacherSubmissionAlertSync'
 import { StudentReviewAlertHost } from './components/StudentReviewAlertHost'
 import { StudentReviewAlertSync } from './components/StudentReviewAlertSync'
+import { PreferredFirstNameGate } from './components/PreferredFirstNameGate'
 import './App.css'
 
 export default function App() {
@@ -70,6 +72,7 @@ export default function App() {
         <StudentReviewAlertSync />
         <TeacherSubmissionAlertHost />
         <TeacherSubmissionAlertSync />
+        <PreferredFirstNameGate />
         <Routes>
           {/* ========== Public / entry ========== */}
           <Route path="/" element={<HomeRoute />} />

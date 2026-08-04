@@ -1,21 +1,26 @@
 /*
  * Student landing hub after sign-in (`/` via `HomeRoute`)
  *
- * Surfaces the student status summary used after sign-in.
+ * Welcome line prefers `preferred_first_name` (Fran voice) over Google display_name
+ * so the hub matches Supply / Kit personalization.
  */
 
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
+import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 
 export function StudentHomePage() {
   const { profile, user, signOut } = useAuth()
 
-  const displayName =
-    profile?.display_name?.trim() ||
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.name ||
-    user?.email ||
-    'Student'
+  const voiceName = preferredFirstNameForVoice(profile)
+  const welcomeName =
+    voiceName !== 'friend'
+      ? voiceName
+      : profile?.display_name?.trim() ||
+        user?.user_metadata?.full_name ||
+        user?.user_metadata?.name ||
+        user?.email ||
+        'Student'
 
   const wpTotal = profile?.wp ?? 0
   const gold = profile?.gold ?? 0
@@ -33,7 +38,7 @@ export function StudentHomePage() {
       <header className="student-home-header">
         <div>
           <p className="student-home-label">Welcome back</p>
-          <p className="student-home-name">{displayName}</p>
+          <p className="student-home-name">{welcomeName}</p>
         </div>
       </header>
 

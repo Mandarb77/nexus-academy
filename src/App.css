@@ -6649,7 +6649,88 @@ body:has(.bench-chrome) {
   color: var(--color-ink-secondary);
 }
 
+/* Preferred first name gate — blocks student UI until Fran knows what to call them. */
+.preferred-name-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(46, 38, 28, 0.45);
+}
 
+.preferred-name-card {
+  width: min(94vw, 26rem);
+  padding: 1.35rem 1.4rem 1.25rem;
+  border: 2px solid var(--color-rule-strong, #8b7355);
+  border-radius: 2px;
+  background: var(--color-panel, #f7f0e4);
+  color: var(--color-ink-primary, #1e1a12);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  box-shadow: none;
+}
+
+.preferred-name-card__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary, #5c5346);
+}
+
+.preferred-name-card__title {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.preferred-name-card__body {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary, #5c5346);
+}
+
+.preferred-name-card__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.preferred-name-card__input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-rule-strong, #8b7355);
+  border-radius: 2px;
+  background: #fffdf8;
+  font: inherit;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.preferred-name-card__input:focus {
+  outline: 2px solid var(--color-forge, #c47b2b);
+  outline-offset: 1px;
+}
+
+.preferred-name-card__error {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  color: #8b2e1f;
+}
+
+.preferred-name-card__submit {
+  width: 100%;
+}
 
 /* ============================================================
  * END TEXTURE LAYER

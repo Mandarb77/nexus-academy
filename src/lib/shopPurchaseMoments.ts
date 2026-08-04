@@ -1,4 +1,13 @@
+/*
+ * Fran/Barry purchase “moments” shown after Trade (Supply) or on Kit cards.
+ *
+ * Copy is authored with “Marcus” as a stand-in student. Call sites pass the
+ * preferred first name so `withName` personalizes before display — keeps DB/static
+ * strings stable while voice stays personal.
+ */
+
 import type { ShopCatalogItem } from '../types/shopCatalog'
+import { personalizeMarcusCopy } from './preferredFirstName'
 
 const FALLBACK_PURCHASE_MOMENT = `Fran writes it in the ledger.
 (Barry, from the back, somewhere.)`
@@ -6,6 +15,12 @@ const FALLBACK_PURCHASE_MOMENT = `Fran writes it in the ledger.
 export const LOCKED_SHOP_REQUEST_MOMENT = `Fran writes Marcus's request in the ledger.
 "I'll let Mr. Cook know. He'll get back to you."
 (Barry, from the back: "He's good about responding.")`
+
+/** Prefer preferred first name; fall back to soft “friend” so copy never shows blank. */
+function withName(text: string, firstName?: string | null): string {
+  if (!firstName?.trim()) return personalizeMarcusCopy(text, 'friend')
+  return personalizeMarcusCopy(text, firstName)
+}
 
 const MOMENTS_BY_KEY: Record<string, string> = {
   pick_class_playlist: `Fran writes Marcus into the ledger.
@@ -135,13 +150,13 @@ function normalizeShopName(name: string): string {
   return name.trim().toLowerCase().replace(/[—–]/g, '-').replace(/\s+/g, ' ')
 }
 
-export function purchaseMomentForItem(item: ShopCatalogItem): string {
-  return (
+export function purchaseMomentForItem(item: ShopCatalogItem, firstName?: string | null): string {
+  const raw =
     item.purchase_moment_text?.trim() ||
     MOMENTS_BY_KEY[item.item_key] ||
     MOMENTS_BY_NAME[normalizeShopName(item.name)] ||
     FALLBACK_PURCHASE_MOMENT
-  )
+  return withName(raw, firstName)
 }
 
 type KitShopItemRef = {
@@ -150,16 +165,23 @@ type KitShopItemRef = {
   purchase_moment_text?: string | null
 }
 
-export function purchaseMomentForKitItem(row: {
-  item_name: string
-  shop_items?: KitShopItemRef | KitShopItemRef[] | null
-}): string {
+export function purchaseMomentForKitItem(
+  row: {
+    item_name: string
+    shop_items?: KitShopItemRef | KitShopItemRef[] | null
+  },
+  firstName?: string | null,
+): string {
   const shopItem = Array.isArray(row.shop_items) ? row.shop_items[0] : row.shop_items
-  return (
+  const raw =
     shopItem?.purchase_moment_text?.trim() ||
     (shopItem?.item_key ? MOMENTS_BY_KEY[shopItem.item_key] : undefined) ||
     (shopItem?.name ? MOMENTS_BY_NAME[normalizeShopName(shopItem.name)] : undefined) ||
     MOMENTS_BY_NAME[normalizeShopName(row.item_name)] ||
     FALLBACK_PURCHASE_MOMENT
-  )
+  return withName(raw, firstName)
+}
+
+export function lockedShopRequestMoment(firstName?: string | null): string {
+  return withName(LOCKED_SHOP_REQUEST_MOMENT, firstName)
 }
