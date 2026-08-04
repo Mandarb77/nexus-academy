@@ -2433,7 +2433,7 @@ a.btn-primary {
 
 
 
-/* ── 2×2 approval boxes grid ── */
+/* ── Approval boxes grid (plans / checklists / skills / redemptions / shop) ── */
 .teacher-panel-approvals-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2441,8 +2441,28 @@ a.btn-primary {
   margin-bottom: 2.25rem;
 }
 
+/* Dense five-queue layout: fit Plans → Shop on one screen; shrink type/padding below. */
+.teacher-panel-approvals-grid--dense {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 1280px) {
+  .teacher-panel-approvals-grid--dense {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .teacher-panel-approvals-grid--dense {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 640px) {
-  .teacher-panel-approvals-grid {
+  .teacher-panel-approvals-grid,
+  .teacher-panel-approvals-grid--dense {
     grid-template-columns: 1fr;
   }
 }
@@ -2459,6 +2479,12 @@ a.btn-primary {
   overflow: hidden;
 }
 
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box {
+  padding: 0.65rem 0.7rem;
+  min-height: 0;
+  border-radius: 8px;
+}
+
 .teacher-panel-approval-box .teacher-panel-section-title {
   margin: 0 0 0.65rem;
   font-size: 0.95rem;
@@ -2468,8 +2494,18 @@ a.btn-primary {
   color: var(--text-h);
 }
 
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-section-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
 .teacher-panel-approval-box .teacher-panel-list {
   gap: 0.65rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-list {
+  gap: 0.4rem;
 }
 
 .teacher-panel-approval-box .teacher-panel-item {
@@ -2478,9 +2514,58 @@ a.btn-primary {
   box-shadow: none;
 }
 
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-item {
+  padding: 0.45rem 0.55rem;
+  gap: 0.45rem 0.6rem;
+  border-radius: 6px;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-student {
+  margin: 0 0 0.15rem;
+  font-size: 0.88rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-skill {
+  margin: 0 0 0.15rem;
+  font-size: 0.8rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-guild {
+  font-size: 0.72rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-actions {
+  gap: 0.35rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-actions .btn-primary,
+.teacher-panel-approvals-grid--dense .teacher-panel-actions .btn-secondary {
+  min-height: 1.85rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-patent {
+  margin-top: 0.35rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-patent-title {
+  font-size: 0.78rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box video,
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box img {
+  max-height: 120px !important;
+}
+
 .teacher-panel-approval-box .teacher-panel-section-empty {
   font-size: 0.88rem;
   opacity: 0.65;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-section-empty {
+  margin: 0;
+  font-size: 0.78rem;
 }
 
 .teacher-panel-header {
@@ -2556,6 +2641,25 @@ a.btn-primary {
   flex-wrap: wrap;
   gap: 0.5rem;
   flex-shrink: 0;
+}
+
+/* Roster collapsed by default — open only when teacher wants student drill-down. */
+.teacher-panel-progress-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.teacher-panel-progress-toggle-row .teacher-panel-section-title {
+  margin: 0;
+}
+
+.teacher-panel-progress-hidden-note {
+  margin: 0;
+  font-size: 0.85rem;
 }
 
 .teacher-panel-section {
@@ -2727,6 +2831,86 @@ a.btn-primary {
 .teacher-panel-award-note {
   margin: -0.25rem 0 0.85rem;
   font-size: 0.9rem;
+}
+
+/* Storyline cue — compact strip under approval queues (see TeacherStorylineWidget). */
+.teacher-panel-storyline {
+  margin: 0 0 1rem;
+}
+
+.teacher-panel-storyline__card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.85rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.teacher-panel-storyline__label {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-tertiary, #7a7368);
+}
+
+.teacher-panel-storyline__text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--color-ink-primary, #1e1a12);
+}
+
+.teacher-panel-storyline__error {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-storyline__card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-storyline__card .btn-secondary {
+  min-height: 1.85rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+/* Preview balance lives below queues — secondary testing aid, not the main scan path. */
+.teacher-panel-section--preview-balance {
+  margin-bottom: 1.35rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-award-card {
+  padding: 0.85rem 1rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-award-note {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-preview-balance {
+  margin: 0 0 0.65rem;
+  gap: 0.5rem 0.85rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-preview-balance dd {
+  font-size: 0.95rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-award-form {
+  gap: 0.55rem;
 }
 
 .teacher-panel-preview-balance {
