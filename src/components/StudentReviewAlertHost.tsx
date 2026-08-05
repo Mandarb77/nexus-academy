@@ -17,7 +17,11 @@ import { isTeacherProfile } from '../lib/teacher'
 
 export function StudentReviewAlertHost() {
   const { user, profile, studentPreviewMode } = useAuth()
-  const [toast, setToast] = useState<StudentReviewAlert | null>(() => peekStudentReviewAlert())
+  const [toast, setToast] = useState<StudentReviewAlert | null>(() => {
+    const p = peekStudentReviewAlert()
+    if (p) clearStudentReviewAlertAfterDismiss(p.alertId)
+    return p
+  })
 
   useEffect(() => {
     setStudentReviewAlertNotifier(setToast)
@@ -39,7 +43,10 @@ export function StudentReviewAlertHost() {
 
   useEffect(() => {
     const p = peekStudentReviewAlert()
-    if (p) setToast(p)
+    if (p) {
+      clearStudentReviewAlertAfterDismiss(p.alertId)
+      setToast(p)
+    }
   }, [user?.id])
 
   if (!user?.id) return null
