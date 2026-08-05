@@ -51,7 +51,11 @@ type PurchaseConfirmation = {
   calculatedGoldCost: number
 }
 
-const SHOP_WELCOME_SEEN_KEY = 'nexus:shop-welcome-seen'
+const SHOP_WELCOME_SEEN_KEY_PREFIX = 'nexus:shop-welcome-seen'
+
+function shopWelcomeSeenKey(userId: string): string {
+  return `${SHOP_WELCOME_SEEN_KEY_PREFIX}:${userId}`
+}
 
 function renderMomentLine(line: string) {
   return line.split(/(\*[^*]+\*)/g).map((part, index) => {
@@ -233,6 +237,7 @@ function normalizeLimitStatus(raw: Record<string, unknown>): ShopLimitStatus | n
 
 export function GoldShopPage() {
   const { profile, user, signOut, refreshProfile } = useAuth()
+  const userId = user?.id
   const [catalog, setCatalog] = useState<ShopCatalogItem[]>([])
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [catalogLoading, setCatalogLoading] = useState(true)
@@ -267,16 +272,24 @@ export function GoldShopPage() {
   }, [])
 
   useEffect(() => {
-    setDisplayGold(profile?.gold ?? 0)
+    const syncTimer = window.setTimeout(() => setDisplayGold(profile?.gold ?? 0), 0)
+    return () => window.clearTimeout(syncTimer)
   }, [profile?.gold])
 
   useEffect(() => {
-    try {
-      if (window.localStorage.getItem(SHOP_WELCOME_SEEN_KEY) !== '1') setShowWelcome(true)
-    } catch {
-      setShowWelcome(false)
-    }
-  }, [])
+    const loadTimer = window.setTimeout(() => {
+      if (!userId) {
+        setShowWelcome(false)
+        return
+      }
+      try {
+        setShowWelcome(window.localStorage.getItem(shopWelcomeSeenKey(userId)) !== '1')
+      } catch {
+        setShowWelcome(false)
+      }
+    }, 0)
+    return () => window.clearTimeout(loadTimer)
+  }, [userId])
 
   useEffect(() => {
     return () => {
@@ -318,12 +331,12 @@ export function GoldShopPage() {
 
   const dismissWelcome = useCallback(() => {
     try {
-      window.localStorage.setItem(SHOP_WELCOME_SEEN_KEY, '1')
+      if (userId) window.localStorage.setItem(shopWelcomeSeenKey(userId), '1')
     } catch {
       /* private browsing can reject storage; closing the overlay still matters. */
     }
     setShowWelcome(false)
-  }, [])
+  }, [userId])
 
   const pulseGold = useCallback(() => {
     if (goldTimer.current != null) window.clearTimeout(goldTimer.current)

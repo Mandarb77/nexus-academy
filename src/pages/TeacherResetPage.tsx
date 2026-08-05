@@ -11,11 +11,15 @@ import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
+const PROTECTED_DELETE_EMAIL = 'ccookmaker@gmail.com'
+const DELETE_CONFIRMATION_PHRASE = 'Husky'
+
 type ResetType = 'skill_completions' | 'inventory_and_purchases' | 'redemption_requests' | 'patents'
 
 type StudentRow = {
   id: string
   display_name: string | null
+  email: string | null
 }
 
 type TileRow = {
@@ -31,6 +35,10 @@ type CompletionRow = {
   wp_awarded: number | null
   gold_awarded: number | null
   patent_id: string | null
+}
+
+type ResetDeleteResult = {
+  error: { message: string } | null
 }
 
 type SemesterPreviewRow = {
@@ -169,6 +177,7 @@ export function TeacherResetPage() {
   const [studentsLoading, setStudentsLoading] = useState(false)
   const [studentId, setStudentId] = useState<string>('')
   const [studentResetType, setStudentResetType] = useState<ResetType | ''>('')
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
 
   const [tiles, setTiles] = useState<TileRow[]>([])
   const [tilesLoading, setTilesLoading] = useState(false)
@@ -183,6 +192,8 @@ export function TeacherResetPage() {
     if (!studentId) return null
     return students.find((s) => s.id === studentId) ?? null
   }, [students, studentId])
+  const selectedStudentIsProtected =
+    selectedStudent?.email?.trim().toLowerCase() === PROTECTED_DELETE_EMAIL
 
   const selectedTile = useMemo(() => {
     if (!tileId) return null
@@ -192,11 +203,12 @@ export function TeacherResetPage() {
   useEffect(() => {
     if (!isSupabaseConfigured) return
     let cancelled = false
-    setStudentsLoading(true)
     void (async () => {
+      await Promise.resolve()
+      setStudentsLoading(true)
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, role')
+        .select('id, display_name, email, role')
         .eq('role', 'student')
         .order('display_name', { ascending: true })
       if (cancelled) return
@@ -210,6 +222,7 @@ export function TeacherResetPage() {
         (data ?? []).map((r) => ({
           id: r.id as string,
           display_name: (r.display_name as string | null) ?? null,
+          email: (r.email as string | null) ?? null,
         })),
       )
     })()
@@ -221,8 +234,9 @@ export function TeacherResetPage() {
   useEffect(() => {
     if (!isSupabaseConfigured) return
     let cancelled = false
-    setTilesLoading(true)
     void (async () => {
+      await Promise.resolve()
+      setTilesLoading(true)
       const { data, error } = await supabase
         .from('tiles')
         .select('id, guild, skill_name')
@@ -369,7 +383,7 @@ export function TeacherResetPage() {
     }
 
     // Delete per-table rows for this student
-    const deletes: Array<[string, () => Promise<{ error: any }>]> = [
+    const deletes: Array<[string, () => Promise<ResetDeleteResult>]> = [
       [
         'skill_completions',
         async () => await supabase.from('skill_completions').delete().eq('student_id', studentId),
@@ -500,6 +514,65 @@ export function TeacherResetPage() {
 
     setBusy(false)
     setMessage(`${label} reset complete for ${name}.`)
+  }
+
+  const deleteStudentAccount = async () => {
+    if (!isSupabaseConfigured || busy || !selectedStudent) return
+
+    const email = selectedStudent.email?.trim().toLowerCase() ?? ''
+    const name = selectedStudent.display_name?.trim() || email || `Student (${selectedStudent.id.slice(0, 8)}…)`
+    if (email === PROTECTED_DELETE_EMAIL) {
+      setMessage(`${PROTECTED_DELETE_EMAIL} is protected and cannot be deleted.`)
+      return
+    }
+    if (deleteConfirmation !== DELETE_CONFIRMATION_PHRASE) {
+      setMessage(`Type ${DELETE_CONFIRMATION_PHRASE} exactly to confirm account deletion.`)
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Permanently delete ${name}${email ? ` (${email})` : ''}?\n\nThis removes the Supabase Auth account, profile, progress, purchases, and uploaded files. This cannot be undone.`,
+    )
+    if (!confirmed) return
+
+    setBusy(true)
+    setMessage(null)
+    const { data, error } = await supabase.functions.invoke('delete-student-account', {
+      body: {
+        studentId: selectedStudent.id,
+        confirmation: deleteConfirmation,
+      },
+    })
+    setBusy(false)
+
+    if (error) {
+      let detail = error.message
+      const context = (error as { context?: unknown }).context
+      if (context instanceof Response) {
+        try {
+          const body = (await context.clone().json()) as { error?: unknown }
+          if (typeof body.error === 'string') detail = body.error
+        } catch {
+          /* Keep the Functions client error when the response has no JSON body. */
+        }
+      }
+      setMessage(`Account deletion failed: ${detail}`)
+      return
+    }
+
+    const result = data as { ok?: boolean; error?: string; studentEmail?: string } | null
+    if (!result?.ok) {
+      setMessage(`Account deletion failed: ${result?.error ?? 'Unknown error'}`)
+      return
+    }
+
+    setStudents((current) => current.filter((student) => student.id !== selectedStudent.id))
+    setStudentId('')
+    setStudentResetType('')
+    setDeleteConfirmation('')
+    setMessage(
+      `Deleted ${result.studentEmail ?? email}. Sign that test account out or reload its browser, then sign in with Google again to replay first login.`,
+    )
   }
 
   const loadCompletionsForTile = async (tid: string) => {
@@ -666,7 +739,10 @@ export function TeacherResetPage() {
           <select
             className="teacher-panel-select"
             value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
+            onChange={(e) => {
+              setStudentId(e.target.value)
+              setDeleteConfirmation('')
+            }}
             disabled={busy || studentsLoading}
           >
             <option value="">{studentsLoading ? 'Loading…' : 'Choose a student…'}</option>
@@ -695,7 +771,7 @@ export function TeacherResetPage() {
                 <select
                   className="teacher-panel-select"
                   value={studentResetType}
-                  onChange={(e) => setStudentResetType(e.target.value as any)}
+                  onChange={(e) => setStudentResetType(e.target.value as ResetType | '')}
                   disabled={busy}
                 >
                   <option value="">Choose…</option>
@@ -716,6 +792,66 @@ export function TeacherResetPage() {
             </div>
           </div>
         ) : null}
+      </section>
+
+      <section className="teacher-panel-section" aria-labelledby="teacher-delete-account-heading">
+        <h2 id="teacher-delete-account-heading" className="teacher-panel-section-title">
+          Delete student account
+        </h2>
+        <p className="muted teacher-panel-reset-hint">
+          Permanently removes the selected student from Supabase Auth, including their profile,
+          progress, purchases, and uploaded files. Signing in with the same Google account afterward
+          creates a new student and replays first login.
+        </p>
+
+        {selectedStudent ? (
+          <div className="card bench-inset-card" style={{ marginTop: '0.9rem' }}>
+            <p style={{ margin: 0 }}>
+              <strong>{selectedStudent.display_name?.trim() || 'Student'}</strong>
+              {selectedStudent.email?.trim() ? (
+                <span className="muted"> · {selectedStudent.email.trim()}</span>
+              ) : null}
+            </p>
+
+            {selectedStudentIsProtected ? (
+              <p className="muted" style={{ margin: '0.75rem 0 0' }}>
+                This external test account is protected and cannot be deleted.
+              </p>
+            ) : (
+              <>
+                <label className="teacher-panel-reset-label" style={{ marginTop: '0.9rem' }}>
+                  Type {DELETE_CONFIRMATION_PHRASE} to confirm
+                  <input
+                    className="teacher-panel-select"
+                    type="text"
+                    value={deleteConfirmation}
+                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                    disabled={busy}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  style={{ marginTop: '0.75rem' }}
+                  disabled={
+                    busy ||
+                    !isSupabaseConfigured ||
+                    deleteConfirmation !== DELETE_CONFIRMATION_PHRASE
+                  }
+                  onClick={() => void deleteStudentAccount()}
+                >
+                  {busy ? 'Working…' : 'Permanently delete account'}
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: '0.75rem' }}>
+            Choose a student in “Reset individual student” above.
+          </p>
+        )}
       </section>
 
       <section className="teacher-panel-section" aria-labelledby="teacher-reset-quest-heading">
