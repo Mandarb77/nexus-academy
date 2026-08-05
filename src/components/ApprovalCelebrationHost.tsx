@@ -22,7 +22,11 @@ import { isTeacherProfile } from '../lib/teacher'
 
 export function ApprovalCelebrationHost() {
   const { user, profile, studentPreviewMode } = useAuth()
-  const [toast, setToast] = useState<PendingApprovalCelebration | null>(() => peekPendingCelebration())
+  const [toast, setToast] = useState<PendingApprovalCelebration | null>(() => {
+    const p = peekPendingCelebration()
+    if (p) clearPendingCelebrationAfterDismiss(p.completionId)
+    return p
+  })
 
   useEffect(() => {
     setApprovalCelebrationNotifier(setToast)
@@ -33,7 +37,10 @@ export function ApprovalCelebrationHost() {
 
   useEffect(() => {
     const p = peekPendingCelebration()
-    if (p) setToast(p)
+    if (p) {
+      clearPendingCelebrationAfterDismiss(p.completionId)
+      setToast(p)
+    }
   }, [user?.id])
 
   if (!user?.id) return null

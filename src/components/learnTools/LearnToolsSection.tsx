@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  groupResourcesByGuild,
-  LEARN_TOOL_GUILDS,
-  LEARN_TOOL_GUILD_HEADINGS,
+  groupResourcesByDisplayBlock,
   normalizeLearnToolRow,
 } from '../../lib/learnToolResources'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
@@ -54,7 +52,7 @@ export function LearnToolsSection({ sectionId = 'field-guide-learn' }: Props) {
     void loadResources()
   }, [loadResources])
 
-  const byGuild = groupResourcesByGuild(resources)
+  const blocks = groupResourcesByDisplayBlock(resources)
 
   return (
     <section
@@ -75,24 +73,21 @@ export function LearnToolsSection({ sectionId = 'field-guide-learn' }: Props) {
       ) : error ? (
         <p className="error" role="alert">{error}</p>
       ) : (
-        LEARN_TOOL_GUILDS.map((guild) => {
-          const links = byGuild.get(guild) ?? []
-          if (!links.length) return null
-          return (
-            <div key={guild} className="learn-tools-guild">
-              <h3
-                className={`learn-tools-guild__heading learn-tools-guild__heading--${GUILD_HEADING_MOD[guild] ?? 'default'}`}
-              >
-                {LEARN_TOOL_GUILD_HEADINGS[guild]}
-              </h3>
-              <ul className="learn-tools-list">
-                {links.map((resource) => (
-                  <LearnToolLink key={resource.id} resource={resource} />
-                ))}
-              </ul>
-            </div>
-          )
-        })
+        blocks.map(({ block, resources: links }) => (
+          <div key={`${block.guild}:${block.heading}`} className="learn-tools-guild">
+            <h3
+              className={`learn-tools-guild__heading learn-tools-guild__heading--${GUILD_HEADING_MOD[block.guild] ?? 'default'}`}
+            >
+              {block.heading}
+            </h3>
+            {block.note ? <p className="learn-tools-guild__note">{block.note}</p> : null}
+            <ul className="learn-tools-list">
+              {links.map((resource) => (
+                <LearnToolLink key={resource.id} resource={resource} />
+              ))}
+            </ul>
+          </div>
+        ))
       )}
 
       <div className="learn-tools-student">

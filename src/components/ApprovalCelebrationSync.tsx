@@ -1,23 +1,31 @@
 /*
  * Realtime listener: teacher approved a skill → queue celebration + rewards display
  *
- * Subscribes to `skill_completions` UPDATEs for the signed-in student. The `prev.status`
- * vs `next.status` guard ensures we only fire on the transition into `approved`, not on
- * unrelated column updates to an already-approved row (prevents double banners). When
- * the websocket payload lacks `wp_awarded` / `gold_awarded` yet (race with DB trigger),
- * we re-fetch that row. `catchUpRecentApprovals` covers the case the tab was backgrounded
- * and missed the event — it scans the last two minutes after subscribe. Effect deps
- * intentionally use `profile?.role` rather than whole `profile` so routine WP refreshes
- * from `AuthContext` do not tear down the channel and drop events.
+ * Fires on every transition into `approved` (plan/checklist use StudentReviewAlertSync).
+ * Awards may land in a follow-up trigger update — we still notify on the status change,
+ * then refresh WP/gold when available.
  */
 
 import { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import {
-  queueApprovalCelebration,
-  shouldQueueCompletionCelebration,
-} from '../lib/approvalCelebration'
+import { queueApprovalCelebration } from '../lib/approvalCelebration'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+
+function hasOwn(obj: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key)
+}
+
+function isFinalApproval(prev: Record<string, unknown>, next: Record<string, unknown>): boolean {
+  if (next.status !== 'approved') return false
+  if (hasOwn(prev, 'status')) return prev.status !== 'approved'
+  return true
+}
+
+function numAward(v: unknown): number {
+  if (typeof v === 'number' && Number.isFinite(v)) return v
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
 
 export function ApprovalCelebrationSync() {
   const { user, profile, studentPreviewMode } = useAuth()
@@ -30,11 +38,9 @@ export function ApprovalCelebrationSync() {
     const uid = user.id
 
     const emit = (completionId: string, wp: number, gold: number) => {
-      if (!shouldQueueCompletionCelebration(completionId)) return
       queueApprovalCelebration({ wp, gold, completionId })
     }
 
-    /* If the student had the tab asleep during approval, Realtime might not deliver — poll a short recent window once subscribed. */
     const catchUpRecentApprovals = async () => {
       const since = new Date(Date.now() - 120_000).toISOString()
       const { data, error } = await supabase
@@ -42,8 +48,6 @@ export function ApprovalCelebrationSync() {
         .select('id, wp_awarded, gold_awarded')
         .eq('student_id', uid)
         .eq('status', 'approved')
-        .not('wp_awarded', 'is', null)
-        .not('gold_awarded', 'is', null)
         .gte('approved_at', since)
         .order('approved_at', { ascending: false })
         .limit(8)
@@ -52,9 +56,7 @@ export function ApprovalCelebrationSync() {
       for (const row of data) {
         const id = row.id != null ? String(row.id) : ''
         if (!id) continue
-        const wp = typeof row.wp_awarded === 'number' ? row.wp_awarded : Number(row.wp_awarded) || 0
-        const gold = typeof row.gold_awarded === 'number' ? row.gold_awarded : Number(row.gold_awarded) || 0
-        emit(id, wp, gold)
+        emit(id, numAward(row.wp_awarded), numAward(row.gold_awarded))
         break
       }
     }
@@ -65,32 +67,31 @@ export function ApprovalCelebrationSync() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'skill_completions', filter: `student_id=eq.${uid}` },
         (payload) => {
-          const prev = payload.old as Record<string, unknown>
-          const next = payload.new as Record<string, unknown>
-          if (next.status !== 'approved') return
-          /* Transition-only: ignore later updates to notes/attachments on an already-approved completion. */
-          if (prev.status === 'approved') return
+          const prev = (payload.old ?? {}) as Record<string, unknown>
+          const next = (payload.new ?? {}) as Record<string, unknown>
+          if (!isFinalApproval(prev, next)) return
+
           const id = next.id != null ? String(next.id) : ''
           if (!id) return
 
           if (next.wp_awarded != null && next.gold_awarded != null) {
-            const wp = typeof next.wp_awarded === 'number' ? next.wp_awarded : Number(next.wp_awarded) || 0
-            const gold = typeof next.gold_awarded === 'number' ? next.gold_awarded : Number(next.gold_awarded) || 0
-            emit(id, wp, gold)
+            emit(id, numAward(next.wp_awarded), numAward(next.gold_awarded))
             return
           }
 
-          /* Trigger may fill award columns after the row update event — follow-up read avoids showing 0 WP. */
+          /* Always notify on approve; fill awards when the trigger has written them. */
+          emit(id, 0, 0)
           void supabase
             .from('skill_completions')
             .select('wp_awarded, gold_awarded')
             .eq('id', id)
             .maybeSingle()
             .then(({ data }) => {
-              if (data?.wp_awarded == null || data?.gold_awarded == null) return
-              const wp = typeof data.wp_awarded === 'number' ? data.wp_awarded : Number(data.wp_awarded) || 0
-              const gold = typeof data.gold_awarded === 'number' ? data.gold_awarded : Number(data.gold_awarded) || 0
-              emit(id, wp, gold)
+              if (data?.wp_awarded == null && data?.gold_awarded == null) return
+              const wp = numAward(data?.wp_awarded)
+              const gold = numAward(data?.gold_awarded)
+              /* Replace pending toast amounts if still showing this completion. */
+              queueApprovalCelebration({ wp, gold, completionId: id })
             })
         },
       )

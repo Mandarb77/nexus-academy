@@ -5,8 +5,10 @@
  * gold shop, inventory, journey/codex, patent flows) vs teacher areas (dashboard,
  * approvals, quest tooling, reset). Wraps the tree in `AuthProvider` so any page can
  * read session/profile; mounts global Realtime UX once at the top (no per-page wiring):
- *   - Students: `ApprovalCelebrationHost` + `ApprovalCelebrationSync` (approved quest toast + chime)
- *   - Teachers: `TeacherSubmissionAlertHost` + `TeacherSubmissionAlertSync` (pending review banner + chime)
+ *   - Students: `ApprovalCelebrationHost` + `ApprovalCelebrationSync` (final quest approved → WP/gold toast + chime)
+ *     and `StudentReviewAlertHost` + `StudentReviewAlertSync` (plan/checklist/final/shop/redemption approve + deny)
+ *   - Teachers: `TeacherSubmissionAlertHost` + `TeacherSubmissionAlertSync` (pending review banner + chime; toggle on Teacher panel)
+ *   - Students: `PreferredFirstNameGate` (one-time name for Fran voice; blocks student UI until set)
  * See docs/developer-handoff-recent-work.md for bench chrome vs patent ledger split.
  * The dev-only ribbon (`import.meta.env.DEV`) is
  * intentionally absent in production builds so students never see local-debug hints
@@ -44,6 +46,9 @@ import { ApprovalCelebrationHost } from './components/ApprovalCelebrationHost'
 import { ApprovalCelebrationSync } from './components/ApprovalCelebrationSync'
 import { TeacherSubmissionAlertHost } from './components/TeacherSubmissionAlertHost'
 import { TeacherSubmissionAlertSync } from './components/TeacherSubmissionAlertSync'
+import { StudentReviewAlertHost } from './components/StudentReviewAlertHost'
+import { StudentReviewAlertSync } from './components/StudentReviewAlertSync'
+import { PreferredFirstNameGate } from './components/PreferredFirstNameGate'
 import './App.css'
 
 export default function App() {
@@ -63,8 +68,11 @@ export default function App() {
         {/* ========== Global: quest-approval toast + Realtime → localStorage bridge ========== */}
         <ApprovalCelebrationHost />
         <ApprovalCelebrationSync />
+        <StudentReviewAlertHost />
+        <StudentReviewAlertSync />
         <TeacherSubmissionAlertHost />
         <TeacherSubmissionAlertSync />
+        <PreferredFirstNameGate />
         <Routes>
           {/* ========== Public / entry ========== */}
           <Route path="/" element={<HomeRoute />} />

@@ -10,6 +10,7 @@
  */
 
 import { playSubmissionAlertChime } from './alertSound'
+import { areTeacherSubmissionAlertsEnabled } from './notificationPreferences'
 
 export const TEACHER_SUBMISSION_ALERT_EVENT = 'nexus-teacher-submission-alert'
 
@@ -83,6 +84,8 @@ export function markTeacherAlertsShown(alertIds: string[]) {
 export function queueTeacherSubmissionAlert(toast: TeacherSubmissionToast) {
   if (typeof window === 'undefined') return
   if (!toast.alertIds.length) return
+  markTeacherAlertsShown(toast.alertIds)
+  if (!areTeacherSubmissionAlertsEnabled()) return
   localStorage.setItem(PENDING_KEY, JSON.stringify(toast))
   liveNotifier?.(toast)
   dispatchAlertEvent()

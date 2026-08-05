@@ -13,6 +13,8 @@ export interface Profile {
   id: string
   email: string | null
   display_name: string | null
+  /** What Fran/Barry and student UI should call them (preferred first name). */
+  preferred_first_name: string | null
   wp: number
   gold: number
   role: ProfileRole

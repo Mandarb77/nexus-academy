@@ -2433,7 +2433,7 @@ a.btn-primary {
 
 
 
-/* ── 2×2 approval boxes grid ── */
+/* ── Approval boxes grid (plans / checklists / skills / redemptions / shop) ── */
 .teacher-panel-approvals-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2441,8 +2441,28 @@ a.btn-primary {
   margin-bottom: 2.25rem;
 }
 
+/* Dense five-queue layout: fit Plans → Shop on one screen; shrink type/padding below. */
+.teacher-panel-approvals-grid--dense {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 1280px) {
+  .teacher-panel-approvals-grid--dense {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .teacher-panel-approvals-grid--dense {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 640px) {
-  .teacher-panel-approvals-grid {
+  .teacher-panel-approvals-grid,
+  .teacher-panel-approvals-grid--dense {
     grid-template-columns: 1fr;
   }
 }
@@ -2459,6 +2479,12 @@ a.btn-primary {
   overflow: hidden;
 }
 
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box {
+  padding: 0.65rem 0.7rem;
+  min-height: 0;
+  border-radius: 8px;
+}
+
 .teacher-panel-approval-box .teacher-panel-section-title {
   margin: 0 0 0.65rem;
   font-size: 0.95rem;
@@ -2468,8 +2494,18 @@ a.btn-primary {
   color: var(--text-h);
 }
 
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-section-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
 .teacher-panel-approval-box .teacher-panel-list {
   gap: 0.65rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-list {
+  gap: 0.4rem;
 }
 
 .teacher-panel-approval-box .teacher-panel-item {
@@ -2478,9 +2514,58 @@ a.btn-primary {
   box-shadow: none;
 }
 
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-item {
+  padding: 0.45rem 0.55rem;
+  gap: 0.45rem 0.6rem;
+  border-radius: 6px;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-student {
+  margin: 0 0 0.15rem;
+  font-size: 0.88rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-skill {
+  margin: 0 0 0.15rem;
+  font-size: 0.8rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-guild {
+  font-size: 0.72rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-actions {
+  gap: 0.35rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-actions .btn-primary,
+.teacher-panel-approvals-grid--dense .teacher-panel-actions .btn-secondary {
+  min-height: 1.85rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-patent {
+  margin-top: 0.35rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-patent-title {
+  font-size: 0.78rem;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box video,
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box img {
+  max-height: 120px !important;
+}
+
 .teacher-panel-approval-box .teacher-panel-section-empty {
   font-size: 0.88rem;
   opacity: 0.65;
+}
+
+.teacher-panel-approvals-grid--dense .teacher-panel-approval-box .teacher-panel-section-empty {
+  margin: 0;
+  font-size: 0.78rem;
 }
 
 .teacher-panel-header {
@@ -2556,6 +2641,25 @@ a.btn-primary {
   flex-wrap: wrap;
   gap: 0.5rem;
   flex-shrink: 0;
+}
+
+/* Roster collapsed by default — open only when teacher wants student drill-down. */
+.teacher-panel-progress-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.teacher-panel-progress-toggle-row .teacher-panel-section-title {
+  margin: 0;
+}
+
+.teacher-panel-progress-hidden-note {
+  margin: 0;
+  font-size: 0.85rem;
 }
 
 .teacher-panel-section {
@@ -2729,6 +2833,86 @@ a.btn-primary {
   font-size: 0.9rem;
 }
 
+/* Storyline cue — compact strip under approval queues (see TeacherStorylineWidget). */
+.teacher-panel-storyline {
+  margin: 0 0 1rem;
+}
+
+.teacher-panel-storyline__card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.85rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.teacher-panel-storyline__label {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-tertiary, #7a7368);
+}
+
+.teacher-panel-storyline__text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--color-ink-primary, #1e1a12);
+}
+
+.teacher-panel-storyline__error {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-storyline__card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule-light);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.bench-chrome.teacher-panel-page .teacher-panel-storyline__card .btn-secondary {
+  min-height: 1.85rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+/* Preview balance lives below queues — secondary testing aid, not the main scan path. */
+.teacher-panel-section--preview-balance {
+  margin-bottom: 1.35rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-award-card {
+  padding: 0.85rem 1rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-award-note {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-preview-balance {
+  margin: 0 0 0.65rem;
+  gap: 0.5rem 0.85rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-preview-balance dd {
+  font-size: 0.95rem;
+}
+
+.teacher-panel-section--preview-balance .teacher-panel-award-form {
+  gap: 0.55rem;
+}
+
 .teacher-panel-preview-balance {
   display: flex;
   flex-wrap: wrap;
@@ -2780,6 +2964,133 @@ a.btn-primary {
 
 @media (max-width: 720px) {
   .teacher-panel-award-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.teacher-economy-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.35rem;
+}
+
+.teacher-economy-tool {
+  margin: 0;
+  min-width: 0;
+}
+
+.teacher-economy-tool .teacher-panel-award-card {
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+}
+
+.teacher-economy-tool .teacher-panel-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.teacher-economy-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.teacher-economy-student-field {
+  min-width: 0;
+  margin-bottom: 0.75rem;
+}
+
+.teacher-economy-form .teacher-economy-student-field {
+  margin-bottom: 0;
+}
+
+.teacher-economy-success {
+  margin: 0;
+  color: #166534;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.teacher-economy-history {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.teacher-economy-history summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.teacher-economy-history-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  gap: 0.2rem 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.teacher-economy-history-row > span:nth-of-type(2) {
+  grid-column: 1 / -1;
+}
+
+.teacher-economy-history-row time {
+  grid-column: 1 / -1;
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.teacher-economy-completions {
+  margin: 0.75rem 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.teacher-economy-completion {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.teacher-economy-completion:has(input:checked) {
+  border-color: var(--accent-border);
+  background: rgba(109, 40, 217, 0.04);
+}
+
+.teacher-economy-completion:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.teacher-economy-completion > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.teacher-economy-completion > span > span {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.teacher-economy-rescind {
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .teacher-economy-tools {
     grid-template-columns: 1fr;
   }
 }
@@ -3719,24 +4030,28 @@ body:has(.bench-chrome) {
   align-self: flex-start;
 }
 
-/* Guilds — how to read this page (shape key) */
+/* Guilds — how to read this page (shape key + progress reminder) */
 .guild-page-read-key {
-  margin: 0 0 1.25rem;
+  margin: 0 0 1.35rem;
+  padding: 0.75rem 1rem 0.85rem;
+  border: 1px solid var(--color-rule-light, #cfc6b8);
+  border-radius: 2px;
+  background: var(--color-panel, #f7f0e4);
 }
 
 .guild-page-read-key__title {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.45rem;
   font-family: var(--font-ui);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: center;
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-primary, #1e1a12);
 }
 
 .guild-page-read-key__legend {
-  --guild-page-read-key-accent: var(--color-ink-secondary);
+  --guild-page-read-key-accent: var(--color-ink-primary, #1e1a12);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3745,9 +4060,10 @@ body:has(.bench-chrome) {
   margin: 0;
   padding: 0;
   font-family: var(--font-ui);
-  font-size: 0.82rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   line-height: 1.35;
-  color: var(--color-ink-tertiary);
+  color: var(--color-ink-primary, #1e1a12);
 }
 
 .guild-page-read-key__item {
@@ -3758,21 +4074,31 @@ body:has(.bench-chrome) {
 }
 
 .guild-page-read-key__sep {
-  color: var(--color-ink-tertiary);
-  opacity: 0.65;
+  color: var(--color-ink-secondary, #5c5346);
+  opacity: 0.8;
   user-select: none;
 }
 
 .guild-page-read-key__shape {
   display: inline-block;
   flex-shrink: 0;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   line-height: 1;
   color: var(--guild-page-read-key-accent);
 }
 
 .guild-page-read-key__shape--stretch {
-  font-size: 0.78rem;
+  font-size: 0.86rem;
+}
+
+.guild-page-read-key__progress {
+  margin: 0.55rem 0 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-ink-primary, #1e1a12);
 }
 
 /* Field Guide — Learn the tools */
@@ -3890,6 +4216,14 @@ body:has(.bench-chrome) {
 .learn-tools-guild__heading--prism { color: var(--color-prism); }
 .learn-tools-guild__heading--silicon { color: var(--color-silicon); }
 .learn-tools-guild__heading--folded { color: var(--color-folded); }
+
+.learn-tools-guild__note {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary);
+}
 
 .learn-tools-list {
   list-style: none;
@@ -4149,6 +4483,11 @@ body:has(.bench-chrome) {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+  min-width: 0;
+}
+
+.bench-chrome.shop-page .shop-brand-lockup > div {
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-mark {
@@ -4173,12 +4512,7 @@ body:has(.bench-chrome) {
   font-weight: 400;
   max-width: 48rem;
   line-height: 1.25;
-}
-
-@media (min-width: 760px) {
-  .bench-chrome.shop-page .shop-subtitle {
-    white-space: nowrap;
-  }
+  overflow-wrap: anywhere;
 }
 
 .bench-chrome.shop-page .shop-header-actions {
@@ -4494,19 +4828,25 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelves--tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   gap: 0.9rem 1rem;
   align-items: start;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bench-chrome.shop-page .shop-shelves--has-expanded {
   display: block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bench-chrome.shop-page .shop-shelf {
   border: 0;
   background: transparent;
   overflow: visible;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle {
@@ -4555,9 +4895,12 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelf-sign {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: 120px;
+  /* Always size to the shelf column. Fixed height + width:auto used to inflate
+     page min-content wider than a split browser window and push Trade off-screen. */
+  width: 100%;
+  max-width: 22rem;
+  height: auto;
+  max-height: 120px;
   margin: 0 auto;
   object-fit: contain;
   mix-blend-mode: multiply;
@@ -4700,12 +5043,13 @@ body:has(.bench-chrome) {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
   gap: 0;
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-shelves--has-expanded .shop-items-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @keyframes shopShelfReveal {
@@ -4730,6 +5074,9 @@ body:has(.bench-chrome) {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   transition: background-color 180ms ease;
 }
 
@@ -4750,6 +5097,7 @@ body:has(.bench-chrome) {
   display: flex;
   gap: 0.65rem;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-item__glyph-wrap {
@@ -4764,6 +5112,11 @@ body:has(.bench-chrome) {
   color: var(--color-ink-secondary);
 }
 
+.bench-chrome.shop-page .shop-item__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .bench-chrome.shop-page .shop-item-glyph {
   width: 1.35rem;
   height: 1.35rem;
@@ -4776,6 +5129,7 @@ body:has(.bench-chrome) {
   font-weight: 500;
   color: var(--color-ink-primary);
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .bench-chrome.shop-page .shop-item__desc {
@@ -4856,21 +5210,34 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-item__foot {
-  display: flex;
-  flex-wrap: wrap;
+  /* Price left, Trade right; min-width:0 + narrow breakpoint stack keep Trade on-screen
+     when the shelf column is squeezed (split browser / Zoom share). */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 0.75rem;
+  column-gap: 0.75rem;
+  row-gap: 0.55rem;
   padding-top: 0.35rem;
   background: transparent;
   border: 0;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bench-chrome.shop-page .shop-item__actions {
+  grid-column: 2;
+  justify-self: end;
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-item__price {
+  grid-column: 1;
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-ink-primary);
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-item__price-value {
@@ -4909,13 +5276,44 @@ body:has(.bench-chrome) {
   font-family: 'Playfair Display', Georgia, serif;
   font-weight: 600;
   font-size: 0.68rem;
-  padding: 0.4rem 0.65rem;
-  min-height: auto;
+  padding: 0.45rem 0.75rem;
+  min-height: 2.1rem;
+  white-space: nowrap;
+  /* Transparent "ink on paper" borders vanish on cream at low contrast; keep a clear edge. */
+  border: 1px solid var(--color-ink-primary);
+  color: var(--color-ink-primary);
+  background: rgba(255, 253, 248, 0.72);
 }
 
 .bench-chrome.shop-page .shop-item__buy--ready {
   border-color: var(--color-ink-primary);
   color: var(--color-ink-primary);
+}
+
+.bench-chrome.shop-page .shop-item__buy:disabled {
+  opacity: 0.55;
+}
+
+/* Split / phone / zoomed viewports: stack Trade under price so it cannot leave the card. */
+@media (max-width: 1100px) {
+  .bench-chrome.shop-page .shop-item__foot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bench-chrome.shop-page .shop-item__price,
+  .bench-chrome.shop-page .shop-item__actions {
+    grid-column: 1;
+    justify-self: stretch;
+  }
+
+  .bench-chrome.shop-page .shop-item__buy {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .bench-chrome.shop-page .shop-subtitle {
+    white-space: normal;
+  }
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle:focus-visible {
@@ -6164,6 +6562,103 @@ body:has(.bench-chrome) {
   color: var(--color-ink-primary);
 }
 
+.teacher-panel-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.teacher-alert-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.teacher-alert-toggle input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-forge);
+  cursor: pointer;
+}
+
+.teacher-alert-toggle__label {
+  letter-spacing: 0.04em;
+}
+
+.student-review-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1240;
+  width: min(94vw, 30rem);
+  padding: 1.1rem 1.25rem;
+  border-radius: 2px;
+  background: var(--color-panel);
+  border: 2px solid #4a7c59;
+  color: var(--color-ink-primary);
+  font-family: var(--font-ui);
+  text-align: left;
+  box-shadow: none;
+  animation: teacher-alert-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.student-review-banner--denied {
+  border-color: #8a5a3a;
+}
+
+.student-review-banner--denied .student-review-banner__dismiss {
+  background: #8a5a3a;
+  border-color: #8a5a3a;
+}
+
+.student-review-banner--denied .student-review-banner__dismiss:hover {
+  background: #734a2f;
+  border-color: #734a2f;
+}
+
+.student-review-banner__title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
+}
+
+.student-review-banner__message {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary);
+}
+
+.student-review-banner__dismiss {
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-panel);
+  background: #4a7c59;
+  border: 1px solid #4a7c59;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.student-review-banner__dismiss:hover {
+  background: #3d6849;
+  border-color: #3d6849;
+}
+
 /* ============================================================
  * Dispatch — Where You Are (flip cards)
  * ============================================================ */
@@ -6402,7 +6897,88 @@ body:has(.bench-chrome) {
   color: var(--color-ink-secondary);
 }
 
+/* Preferred first name gate — blocks student UI until Fran knows what to call them. */
+.preferred-name-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(46, 38, 28, 0.45);
+}
 
+.preferred-name-card {
+  width: min(94vw, 26rem);
+  padding: 1.35rem 1.4rem 1.25rem;
+  border: 2px solid var(--color-rule-strong, #8b7355);
+  border-radius: 2px;
+  background: var(--color-panel, #f7f0e4);
+  color: var(--color-ink-primary, #1e1a12);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  box-shadow: none;
+}
+
+.preferred-name-card__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary, #5c5346);
+}
+
+.preferred-name-card__title {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.preferred-name-card__body {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--color-ink-secondary, #5c5346);
+}
+
+.preferred-name-card__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.preferred-name-card__input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-rule-strong, #8b7355);
+  border-radius: 2px;
+  background: #fffdf8;
+  font: inherit;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.preferred-name-card__input:focus {
+  outline: 2px solid var(--color-forge, #c47b2b);
+  outline-offset: 1px;
+}
+
+.preferred-name-card__error {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  color: #8b2e1f;
+}
+
+.preferred-name-card__submit {
+  width: 100%;
+}
 
 /* ============================================================
  * END TEXTURE LAYER

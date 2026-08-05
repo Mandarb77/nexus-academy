@@ -1,12 +1,15 @@
 /*
  * Teacher approvals console (`/teacher`)
  *
- * Four pending queues: plans, checklists, skill completions (final packet → WP/gold),
- * redemption requests. Realtime refreshes lists; new items also surface globally via
- * TeacherSubmissionAlertSync (banner + chime in App.tsx).
+ * Five pending queues in one dense grid (plans, checklists, skills, redemptions, shop)
+ * so everything fits on screen at once. Student preview balance sits *below* the queues
+ * (testing aid, not the primary job). Storyline widget sits after the grid.
  *
- * UI: bench-chrome (warm workshop — not legacy purple). Long instructional subtitle
- * under the page title was removed intentionally.
+ * Student progress roster is collapsed behind “Show student progress” by default —
+ * privacy if kids glimpse the teacher laptop during class.
+ *
+ * Realtime refreshes lists; new items also surface globally via
+ * TeacherSubmissionAlertSync (banner + chime in App.tsx).
  *
  * “Duplicate plan rows” in approve/return handlers: loops touch every pending plan row
  * for a student+tile so stray duplicate inserts cannot stay stuck in limbo.
@@ -16,6 +19,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
+import { TeacherStorylineWidget } from '../components/TeacherStorylineWidget'
+import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAlertToggle'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
@@ -219,6 +224,8 @@ export function TeacherPanelPage() {
   const [previewAwardGoldAmount, setPreviewAwardGoldAmount] = useState('')
   const [previewAwarding, setPreviewAwarding] = useState(false)
   const [previewClearing, setPreviewClearing] = useState(false)
+  /* Roster hidden until opened — avoids flashing student names if the panel is visible. */
+  const [showStudentProgress, setShowStudentProgress] = useState(false)
   const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
     () => new Map(),
   )
@@ -1293,9 +1300,12 @@ export function TeacherPanelPage() {
           <div>
             <h1 className="teacher-panel-title bench-page-title">Teacher panel</h1>
           </div>
-          <button type="button" className="btn-secondary" onClick={() => signOut()}>
-            Sign out
-          </button>
+          <div className="teacher-panel-top-actions">
+            <TeacherSubmissionAlertToggle />
+            <button type="button" className="btn-secondary" onClick={() => signOut()}>
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1316,71 +1326,8 @@ export function TeacherPanelPage() {
         <p className="muted">Loading pending requests…</p>
       ) : loadError ? null : (
         <>
-          <section className="teacher-panel-section" aria-labelledby="teacher-panel-preview-awards-heading">
-            <div className="card teacher-panel-student-block teacher-panel-award-card">
-              <h2 id="teacher-panel-preview-awards-heading" className="teacher-panel-section-title">
-                Student preview balance
-              </h2>
-              <p className="muted teacher-panel-award-note">
-                Preview as student uses your teacher profile. Add WP or gold here to test Supply and progression in preview mode.
-              </p>
-              <dl className="teacher-panel-preview-balance">
-                <div>
-                  <dt>Preview WP</dt>
-                  <dd>{profile?.wp ?? 0}</dd>
-                </div>
-                <div>
-                  <dt>Preview gold</dt>
-                  <dd>{profile?.gold ?? 0}</dd>
-                </div>
-              </dl>
-              <form
-                className="teacher-panel-award-form"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  void awardPreviewProfile()
-                }}
-              >
-                <label className="teacher-panel-award-field">
-                  <span>WP to add</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={previewAwardWpAmount}
-                    onChange={(e) => setPreviewAwardWpAmount(e.target.value)}
-                    disabled={previewAwarding || previewClearing}
-                  />
-                </label>
-                <label className="teacher-panel-award-field">
-                  <span>Gold to add</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={previewAwardGoldAmount}
-                    onChange={(e) => setPreviewAwardGoldAmount(e.target.value)}
-                    disabled={previewAwarding || previewClearing}
-                  />
-                </label>
-                <button type="submit" className="btn-secondary" disabled={previewAwarding || previewClearing}>
-                  {previewAwarding ? 'Adding…' : 'Add to preview'}
-                </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  style={{ color: '#b91c1c' }}
-                  disabled={previewAwarding || previewClearing || !isSupabaseConfigured}
-                  onClick={() => void clearPreviewProfile()}
-                >
-                  {previewClearing ? 'Clearing…' : 'Clear preview data'}
-                </button>
-              </form>
-            </div>
-          </section>
-
-          {/* ========== Patent gates (no WP/gold until final skill approval) ========== */}
-          <div className="teacher-panel-approvals-grid">
+          {/* ========== Pending queues (plans → shop), then preview balance beneath ========== */}
+          <div className="teacher-panel-approvals-grid teacher-panel-approvals-grid--dense">
           <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-plans-heading">
             <h2 id="teacher-panel-plans-heading" className="teacher-panel-section-title">
               Plan approvals
@@ -1518,10 +1465,7 @@ export function TeacherPanelPage() {
               </ul>
             )}
           </section>
-          </div>{/* end patent gates grid */}
 
-          {/* ========== Final payouts + shop queue (WP/gold triggers on skill approve) ========== */}
-          <div className="teacher-panel-approvals-grid">
           <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-skills-heading">
             <h2 id="teacher-panel-skills-heading" className="teacher-panel-section-title">
               Skill completions
@@ -1710,16 +1654,109 @@ export function TeacherPanelPage() {
               </ul>
             )}
           </section>
-          </div>{/* end skills + redemptions grid */}
+          </div>{/* end pending queues grid */}
 
-          {/* ========== Roster + drill-down (read-only except completion reset) ========== */}
+          <TeacherStorylineWidget enabled={isSupabaseConfigured} />
+
+          {/* Preview balance after queues — keep approval work above testing tools. */}
+          <section
+            className="teacher-panel-section teacher-panel-section--preview-balance"
+            aria-labelledby="teacher-panel-preview-awards-heading"
+          >
+            <div className="card teacher-panel-student-block teacher-panel-award-card">
+              <h2 id="teacher-panel-preview-awards-heading" className="teacher-panel-section-title">
+                Student preview balance
+              </h2>
+              <p className="muted teacher-panel-award-note">
+                Preview as student uses your teacher profile. Add WP or gold here to test Supply and progression in preview mode.
+              </p>
+              <dl className="teacher-panel-preview-balance">
+                <div>
+                  <dt>Preview WP</dt>
+                  <dd>{profile?.wp ?? 0}</dd>
+                </div>
+                <div>
+                  <dt>Preview gold</dt>
+                  <dd>{profile?.gold ?? 0}</dd>
+                </div>
+              </dl>
+              <form
+                className="teacher-panel-award-form"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void awardPreviewProfile()
+                }}
+              >
+                <label className="teacher-panel-award-field">
+                  <span>WP to add</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={previewAwardWpAmount}
+                    onChange={(e) => setPreviewAwardWpAmount(e.target.value)}
+                    disabled={previewAwarding || previewClearing}
+                  />
+                </label>
+                <label className="teacher-panel-award-field">
+                  <span>Gold to add</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={previewAwardGoldAmount}
+                    onChange={(e) => setPreviewAwardGoldAmount(e.target.value)}
+                    disabled={previewAwarding || previewClearing}
+                  />
+                </label>
+                <button type="submit" className="btn-secondary" disabled={previewAwarding || previewClearing}>
+                  {previewAwarding ? 'Adding…' : 'Add to preview'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ color: '#b91c1c' }}
+                  disabled={previewAwarding || previewClearing || !isSupabaseConfigured}
+                  onClick={() => void clearPreviewProfile()}
+                >
+                  {previewClearing ? 'Clearing…' : 'Clear preview data'}
+                </button>
+              </form>
+            </div>
+          </section>
+
+          {/* ========== Roster + drill-down (hidden by default — privacy if kids glimpse this page) ========== */}
           <section className="teacher-panel-section" aria-labelledby="teacher-panel-progress-heading">
-            <h2 id="teacher-panel-progress-heading" className="teacher-panel-section-title">
-              Student progress
-            </h2>
+            <div className="teacher-panel-progress-toggle-row">
+              <h2 id="teacher-panel-progress-heading" className="teacher-panel-section-title">
+                Student progress
+              </h2>
+              <button
+                type="button"
+                className="btn-secondary teacher-panel-progress-toggle"
+                aria-expanded={showStudentProgress}
+                aria-controls="teacher-panel-progress-panel"
+                onClick={() => {
+                  setShowStudentProgress((open) => {
+                    if (open) {
+                      setSelectedStudentId(null)
+                      setStudentProfile(null)
+                      setStudentSkills([])
+                      setStudentInventory([])
+                      setStudentRedemptions([])
+                    }
+                    return !open
+                  })
+                }}
+              >
+                {showStudentProgress ? 'Hide student progress' : 'Show student progress'}
+              </button>
+            </div>
 
-            {selectedStudentId ? (
-              <div className="teacher-panel-student-detail">
+            {showStudentProgress ? (
+              <div id="teacher-panel-progress-panel">
+                {selectedStudentId ? (
+                  <div className="teacher-panel-student-detail">
                 <button
                   type="button"
                   className="btn-secondary"
@@ -1912,44 +1949,52 @@ export function TeacherPanelPage() {
                   )}
                 </div>
               </div>
-            ) : studentsBusy ? (
-              <p className="muted">Loading students…</p>
-            ) : students.length === 0 ? (
-              <p className="muted">No students found.</p>
+                ) : (
+              studentsBusy ? (
+                <p className="muted">Loading students…</p>
+              ) : students.length === 0 ? (
+                <p className="muted">No students found.</p>
+              ) : (
+                <ul className="teacher-panel-students">
+                  {students.map((s) => {
+                    const name = s.display_name?.trim() || `Student (${s.id.slice(0, 8)}…)`
+                    const archiving = archivingStudentId === s.id
+                    return (
+                      <li key={s.id}>
+                        <div className="teacher-panel-student-roster-row">
+                          <button
+                            type="button"
+                            className="teacher-panel-student-row"
+                            onClick={() => {
+                              setSelectedStudentId(s.id)
+                              void loadStudentDetail(s.id)
+                            }}
+                          >
+                            <span className="teacher-panel-student-row-name">{name}</span>
+                            <span className="teacher-panel-student-row-meta muted">
+                              {s.wp} WP · {s.gold} gold
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary teacher-panel-archive-student"
+                            disabled={Boolean(archivingStudentId)}
+                            onClick={() => void archiveStudentFromRoster(s)}
+                          >
+                            {archiving ? 'Archiving…' : 'Archive'}
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )
+                )}
+              </div>
             ) : (
-              <ul className="teacher-panel-students">
-                {students.map((s) => {
-                  const name = s.display_name?.trim() || `Student (${s.id.slice(0, 8)}…)`
-                  const archiving = archivingStudentId === s.id
-                  return (
-                    <li key={s.id}>
-                      <div className="teacher-panel-student-roster-row">
-                        <button
-                          type="button"
-                          className="teacher-panel-student-row"
-                          onClick={() => {
-                            setSelectedStudentId(s.id)
-                            void loadStudentDetail(s.id)
-                          }}
-                        >
-                          <span className="teacher-panel-student-row-name">{name}</span>
-                          <span className="teacher-panel-student-row-meta muted">
-                            {s.wp} WP · {s.gold} gold
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary teacher-panel-archive-student"
-                          disabled={Boolean(archivingStudentId)}
-                          onClick={() => void archiveStudentFromRoster(s)}
-                        >
-                          {archiving ? 'Archiving…' : 'Archive'}
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
+              <p className="muted teacher-panel-progress-hidden-note">
+                Roster is hidden until you open it.
+              </p>
             )}
           </section>
         </>

@@ -1,5 +1,8 @@
 /*
  * Guilds — inline shape key for reading quest tiles on skill-tree pages.
+ *
+ * Kept quiet visually, but high enough contrast that students notice it on first
+ * arrival. Includes a one-line progress reminder: required path first, then stretch/gates.
  */
 
 export function ReadingGuildPagesKey() {
@@ -33,6 +36,9 @@ export function ReadingGuildPagesKey() {
           </span>
           this is a gate
         </span>
+      </p>
+      <p className="guild-page-read-key__progress">
+        Your progress is the solid dots — work those in order. Hollow ones and gates open after.
       </p>
     </section>
   )

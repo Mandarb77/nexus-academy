@@ -43,6 +43,12 @@ export function TeacherSubmissionAlertSync() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'redemption_requests' }, () => {
         void refresh()
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'shop_purchase_requests' }, () => {
+        void refresh()
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'shop_purchase_requests' }, () => {
+        void refresh()
+      })
       .subscribe()
 
     return () => {

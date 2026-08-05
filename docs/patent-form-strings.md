@@ -299,7 +299,7 @@ Inventory of user-facing strings from the patent form. Use when editing copy or 
 
 1. Step 1 — Sketch your design on paper. Before opening any software draw at least one rough sketch of your game piece. What symbol or shape represents you as a maker? Your finished piece must be no larger than 1 inch wide, 1 inch deep, and 2 inches tall.
 2. Step 2 — Join the TinkerCAD class and learn the basics. Class code: 2XTJEL26G. Then watch the intro video before you start building.
-3. Step 3 — Build your design in TinkerCAD. Place objects, size them while keeping scale, and align them carefully. Use what you learned in the video.
+3. Step 3 — Build your design in TinkerCAD using the locked base. Place objects, size them while keeping scale, and align them carefully. The base includes a storage pocket for your Maker's Mark disc — size the recess to about 1.55"–1.6" diameter × 0.5" deep so a 1.5" rigid metal disc drops in without a forced fit.
 4. Step 4 — Optional: Import a base from Thingiverse or Printables.
 5. Step 5 — Check your dimensions in inches. Select your whole model and confirm it is no wider than 1 inch, no deeper than 1 inch, and no taller than 2 inches.
 6. Step 6 — Show the teacher your design before printing. Export your STL and get approval before sending to the printer.

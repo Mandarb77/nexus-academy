@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
+import { TeacherEconomyTools } from '../components/TeacherEconomyTools'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { ToolGlossaryEntry } from '../types/toolGlossary'
@@ -148,10 +149,9 @@ export function TeacherToolGlossaryPage() {
         <MainNav variant="teacher" />
         <div className="teacher-panel-top-row">
           <div>
-            <h1 className="teacher-panel-title bench-page-title">Tool glossary</h1>
+            <h1 className="teacher-panel-title bench-page-title">Teacher tools</h1>
             <p className="muted teacher-panel-subtitle">
-              Kid-facing hints for tile tool-chips. <strong>Tool name</strong> must match the chip label exactly.
-              Chips are labels-only for now; click-to-show-hint will read from this table later.
+              Student corrections and tool-glossary administration.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => void signOut()}>
@@ -160,8 +160,15 @@ export function TeacherToolGlossaryPage() {
         </div>
       </header>
 
+      <TeacherEconomyTools />
+
       <section className="teacher-panel-section" style={{ maxWidth: '720px' }}>
-        <h2 className="teacher-panel-section-title">{editingId ? `Editing: ${toolName || 'Tool'}` : 'New entry'}</h2>
+        <h2 className="teacher-panel-section-title">
+          {editingId ? `Editing glossary entry: ${toolName || 'Tool'}` : 'New glossary entry'}
+        </h2>
+        <p className="muted teacher-panel-award-note">
+          Kid-facing hints for tile tool-chips. Tool names must match the chip label exactly.
+        </p>
 
         <label className="patent-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
           <span className="patent-label">Tool name *</span>

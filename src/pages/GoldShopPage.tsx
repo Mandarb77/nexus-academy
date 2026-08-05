@@ -5,6 +5,9 @@
  * enforce gold balance, lock state, semester stock, and `max_purchases_per_chicago_school_day` using
  * `isSameEasternCalendarDay` so “one per day” matches Kents Hill’s instructional timezone, not
  * the laptop’s local midnight.
+ *
+ * Purchase moments pass `preferredFirstNameForVoice(profile)` so Fran/Barry copy says the
+ * student’s name instead of the authored “Marcus” placeholder.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -14,7 +17,8 @@ import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
 import { markKitHasNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { LOCKED_SHOP_REQUEST_MOMENT, purchaseMomentForItem } from '../lib/shopPurchaseMoments'
+import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
+import { lockedShopRequestMoment, purchaseMomentForItem } from '../lib/shopPurchaseMoments'
 import type { ShopCatalogItem, ShopLimitStatus, ShopTierEmbed } from '../types/shopCatalog'
 
 type RpcResult = {
@@ -47,7 +51,11 @@ type PurchaseConfirmation = {
   calculatedGoldCost: number
 }
 
-const SHOP_WELCOME_SEEN_KEY = 'nexus:shop-welcome-seen'
+const SHOP_WELCOME_SEEN_KEY_PREFIX = 'nexus:shop-welcome-seen'
+
+function shopWelcomeSeenKey(userId: string): string {
+  return `${SHOP_WELCOME_SEEN_KEY_PREFIX}:${userId}`
+}
 
 function renderMomentLine(line: string) {
   return line.split(/(\*[^*]+\*)/g).map((part, index) => {
@@ -229,6 +237,7 @@ function normalizeLimitStatus(raw: Record<string, unknown>): ShopLimitStatus | n
 
 export function GoldShopPage() {
   const { profile, user, signOut, refreshProfile } = useAuth()
+  const userId = user?.id
   const [catalog, setCatalog] = useState<ShopCatalogItem[]>([])
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [catalogLoading, setCatalogLoading] = useState(true)
@@ -263,16 +272,24 @@ export function GoldShopPage() {
   }, [])
 
   useEffect(() => {
-    setDisplayGold(profile?.gold ?? 0)
+    const syncTimer = window.setTimeout(() => setDisplayGold(profile?.gold ?? 0), 0)
+    return () => window.clearTimeout(syncTimer)
   }, [profile?.gold])
 
   useEffect(() => {
-    try {
-      if (window.localStorage.getItem(SHOP_WELCOME_SEEN_KEY) !== '1') setShowWelcome(true)
-    } catch {
-      setShowWelcome(false)
-    }
-  }, [])
+    const loadTimer = window.setTimeout(() => {
+      if (!userId) {
+        setShowWelcome(false)
+        return
+      }
+      try {
+        setShowWelcome(window.localStorage.getItem(shopWelcomeSeenKey(userId)) !== '1')
+      } catch {
+        setShowWelcome(false)
+      }
+    }, 0)
+    return () => window.clearTimeout(loadTimer)
+  }, [userId])
 
   useEffect(() => {
     return () => {
@@ -314,12 +331,12 @@ export function GoldShopPage() {
 
   const dismissWelcome = useCallback(() => {
     try {
-      window.localStorage.setItem(SHOP_WELCOME_SEEN_KEY, '1')
+      if (userId) window.localStorage.setItem(shopWelcomeSeenKey(userId), '1')
     } catch {
       /* private browsing can reject storage; closing the overlay still matters. */
     }
     setShowWelcome(false)
-  }, [])
+  }, [userId])
 
   const pulseGold = useCallback(() => {
     if (goldTimer.current != null) window.clearTimeout(goldTimer.current)
@@ -596,7 +613,9 @@ export function GoldShopPage() {
 
   function confirmPurchase(confirmation: PurchaseConfirmation) {
     const { item } = confirmation
-    const momentText = confirmation.kind === 'request' ? LOCKED_SHOP_REQUEST_MOMENT : purchaseMomentForItem(item)
+    const firstName = preferredFirstNameForVoice(profile)
+    const momentText =
+      confirmation.kind === 'request' ? lockedShopRequestMoment(firstName) : purchaseMomentForItem(item, firstName)
     showPurchaseMomentThen(item.name, momentText, () => {
       void completeBuy(item)
     })
@@ -617,7 +636,7 @@ export function GoldShopPage() {
 
   function confirmFilamentRequest(confirmation: PurchaseConfirmation) {
     const { item, grams = 0, calculatedGoldCost } = confirmation
-    showPurchaseMomentThen(item.name, purchaseMomentForItem(item), () => {
+    showPurchaseMomentThen(item.name, purchaseMomentForItem(item, preferredFirstNameForVoice(profile)), () => {
       void requestItemApproval(
         item,
         grams,

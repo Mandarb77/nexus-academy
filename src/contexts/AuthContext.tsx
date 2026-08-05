@@ -2,12 +2,13 @@
  * Authentication and profile context for the whole SPA
  *
  * Wraps Supabase Auth (`getSession`, `onAuthStateChange`) and the `profiles` row
- * (WP, gold, role, display name). Student pages read `profile` for economy
- * state; teacher pages use `role`. `refreshProfile` is called after skill approvals
- * and from a Realtime listener on the signed-in user’s profile so WP changes from
- * the server appear without a full reload. `studentPreviewMode` lets teachers walk
- * the student UI without losing their session. Retries in `fetchProfile` exist because
- * right after Google OAuth the row can lag briefly behind the session.
+ * (WP, gold, role, display name, preferred_first_name). Student pages read `profile`
+ * for economy state; teacher pages use `role`. `updatePreferredFirstName` persists the
+ * Fran-voice name collected by PreferredFirstNameGate. `refreshProfile` is called after
+ * skill approvals and from a Realtime listener on the signed-in user’s profile so WP
+ * changes from the server appear without a full reload. `studentPreviewMode` lets
+ * teachers walk the student UI without losing their session. Retries in `fetchProfile`
+ * exist because right after Google OAuth the row can lag briefly behind the session.
  */
 
 import {
@@ -30,7 +31,7 @@ import type { Profile } from '../types/profile'
 
 /* Narrow select keeps payload small and ignores legacy DB columns that the app no longer surfaces. */
 const PROFILE_COLUMNS =
-  'id, email, display_name, wp, gold, role, portfolio_quote' as const
+  'id, email, display_name, preferred_first_name, wp, gold, role, portfolio_quote' as const
 
 function displayNameFromUser(user: User): string {
   const meta = user.user_metadata
@@ -75,6 +76,8 @@ type AuthContextValue = {
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  /** Persist preferred first name (Fran/Barry voice + welcome). */
+  updatePreferredFirstName: (name: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -91,6 +94,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
       const p = data as Profile
       return {
         ...p,
+        preferred_first_name: p.preferred_first_name?.trim() || null,
         /* Defensive normalize: DB could theoretically hold unexpected strings; routing only cares about teacher vs not. */
         role: p.role === 'teacher' ? 'teacher' : 'student',
       }
@@ -135,6 +139,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setProfile(p)
   }, [user])
+
+  const updatePreferredFirstName = useCallback(
+    async (name: string) => {
+      const uid = user?.id
+      if (!uid || !isSupabaseConfigured) {
+        return { error: 'Not signed in.' }
+      }
+      const cleaned = name.trim().replace(/\s+/g, ' ')
+      if (!cleaned) return { error: 'Enter a first name.' }
+      if (cleaned.length > 40) return { error: 'Keep it under 40 characters.' }
+      if (!/^[A-Za-z][A-Za-z'\- ]{0,38}[A-Za-z]?$/.test(cleaned)) {
+        return { error: 'Use letters only (hyphens and apostrophes are fine).' }
+      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ preferred_first_name: cleaned })
+        .eq('id', uid)
+      if (error) {
+        console.error('preferred_first_name update:', error.message)
+        return { error: error.message }
+      }
+      setProfile((prev) => (prev ? { ...prev, preferred_first_name: cleaned } : prev))
+      return { error: null }
+    },
+    [user?.id],
+  )
 
   // --- Effect: restore Supabase session + subscribe to auth changes ---
   useEffect(() => {
@@ -297,6 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       signOut,
       refreshProfile,
+      updatePreferredFirstName,
     }),
     [
       user,
@@ -309,6 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       signOut,
       refreshProfile,
+      updatePreferredFirstName,
     ],
   )
 

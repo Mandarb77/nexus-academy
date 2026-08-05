@@ -5,6 +5,8 @@
  * so the UI can show “awaiting teacher approval” without letting the student mark an item
  * used twice. `use` actions hit Supabase RPC or updates depending on how your migrations
  * define fulfillment — see body of `load` for paired queries rationale.
+ *
+ * Kit voice scenes reuse Supply purchase moments, personalized with preferred first name.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -12,6 +14,7 @@ import franBarrySupplyLogo from '../assets/fran-barry-supply-logo.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
 import { clearKitNewItem } from '../lib/kitNotification'
+import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 import { purchaseMomentForKitItem } from '../lib/shopPurchaseMoments'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InventoryRow } from '../types/inventory'
@@ -29,8 +32,8 @@ function renderKitVoiceLine(line: string) {
   })
 }
 
-function InventoryVoiceScene({ row }: { row: InventoryRow }) {
-  const text = purchaseMomentForKitItem(row)
+function InventoryVoiceScene({ row, firstName }: { row: InventoryRow; firstName: string }) {
+  const text = purchaseMomentForKitItem(row, firstName)
   return (
     <div className="inventory-item-voice" aria-label="Fran and Barry note">
       <div className="inventory-item-voice__head">
@@ -58,7 +61,8 @@ function InventoryVoiceScene({ row }: { row: InventoryRow }) {
 }
 
 export function InventoryPage() {
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
+  const firstName = preferredFirstNameForVoice(profile)
   const [rows, setRows] = useState<InventoryRow[]>([])
   const [pendingInventoryIds, setPendingInventoryIds] = useState<Set<string>>(
     () => new Set(),
@@ -221,7 +225,7 @@ export function InventoryPage() {
                     Paid <span className="gold-currency-text">{row.gold_cost}</span>{' '}
                     <span className="gold-currency-text">gold</span>
                   </p>
-                  <InventoryVoiceScene row={row} />
+                  <InventoryVoiceScene row={row} firstName={firstName} />
                 </div>
                 <div className="inventory-item-action">
                   {isUsed ? (
