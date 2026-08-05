@@ -16,6 +16,7 @@ type ResetType = 'skill_completions' | 'inventory_and_purchases' | 'redemption_r
 type StudentRow = {
   id: string
   display_name: string | null
+  email: string | null
 }
 
 type TileRow = {
@@ -39,6 +40,21 @@ type SemesterPreviewRow = {
   email: string | null
   gold_before: number
   gold_after: number
+}
+
+async function edgeFunctionErrorMessage(error: unknown): Promise<string> {
+  if (error && typeof error === 'object' && 'context' in error) {
+    const context = (error as { context?: unknown }).context
+    if (context instanceof Response) {
+      try {
+        const body = (await context.clone().json()) as { error?: unknown }
+        if (typeof body.error === 'string' && body.error.trim()) return body.error
+      } catch {
+        // Fall through to the standard Error message.
+      }
+    }
+  }
+  return error instanceof Error ? error.message : String(error)
 }
 
 function SemesterGoldResetSection({
@@ -196,7 +212,7 @@ export function TeacherResetPage() {
     void (async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, role')
+        .select('id, display_name, email, role')
         .eq('role', 'student')
         .order('display_name', { ascending: true })
       if (cancelled) return
@@ -210,6 +226,7 @@ export function TeacherResetPage() {
         (data ?? []).map((r) => ({
           id: r.id as string,
           display_name: (r.display_name as string | null) ?? null,
+          email: (r.email as string | null) ?? null,
         })),
       )
     })()
@@ -398,6 +415,57 @@ export function TeacherResetPage() {
 
     setBusy(false)
     setMessage(`Reset complete for ${name}.`)
+  }
+
+  const deleteStudentAccount = async () => {
+    if (!isSupabaseConfigured || busy || !studentId || !selectedStudent) return
+
+    const name =
+      selectedStudent.display_name?.trim() ||
+      selectedStudent.email?.trim() ||
+      `Student (${studentId.slice(0, 8)}…)`
+    const confirmationPhrase = `DELETE ${name}`
+    const typed = window.prompt(
+      `Permanently delete ${name}?\n\nThis removes the student's login, profile, progress, purchases, submissions, and uploaded files. It cannot be undone.\n\nType exactly:\n${confirmationPhrase}`,
+    )
+    if (typed !== confirmationPhrase) {
+      if (typed !== null) setMessage('Student deletion cancelled: confirmation did not match.')
+      return
+    }
+
+    setBusy(true)
+    setMessage(null)
+
+    const { data, error } = await supabase.functions.invoke('delete-student-account', {
+      body: {
+        studentId,
+        confirmation: studentId,
+      },
+    })
+
+    if (error) {
+      const detail = await edgeFunctionErrorMessage(error)
+      setMessage(`Student deletion failed: ${detail}`)
+      setBusy(false)
+      return
+    }
+
+    const result = data as { ok?: boolean; error?: string; warning?: string | null } | null
+    if (!result?.ok) {
+      setMessage(`Student deletion failed: ${result?.error || 'Unknown error'}`)
+      setBusy(false)
+      return
+    }
+
+    setStudents((current) => current.filter((student) => student.id !== studentId))
+    setStudentId('')
+    setStudentResetType('')
+    setBusy(false)
+    setMessage(
+      result.warning
+        ? `${name}'s account was deleted. ${result.warning}`
+        : `${name}'s account was permanently deleted.`,
+    )
   }
 
   const resetStudentByType = async () => {
@@ -712,6 +780,22 @@ export function TeacherResetPage() {
                 onClick={() => void resetStudentByType()}
               >
                 Reset selected
+              </button>
+            </div>
+
+            <div className="card bench-inset-card">
+              <strong className="bench-inset-card__title">Delete student account</strong>
+              <p className="muted teacher-panel-reset-hint">
+                Permanently removes this student’s login and all associated data. This is different
+                from resetting progress and cannot be undone.
+              </p>
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={busy || !isSupabaseConfigured}
+                onClick={() => void deleteStudentAccount()}
+              >
+                {busy ? 'Working…' : 'Delete student account'}
               </button>
             </div>
           </div>
