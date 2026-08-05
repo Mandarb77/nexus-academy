@@ -4483,6 +4483,11 @@ body:has(.bench-chrome) {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+  min-width: 0;
+}
+
+.bench-chrome.shop-page .shop-brand-lockup > div {
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-mark {
@@ -4507,12 +4512,7 @@ body:has(.bench-chrome) {
   font-weight: 400;
   max-width: 48rem;
   line-height: 1.25;
-}
-
-@media (min-width: 760px) {
-  .bench-chrome.shop-page .shop-subtitle {
-    white-space: nowrap;
-  }
+  overflow-wrap: anywhere;
 }
 
 .bench-chrome.shop-page .shop-header-actions {
@@ -4828,19 +4828,25 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelves--tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   gap: 0.9rem 1rem;
   align-items: start;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bench-chrome.shop-page .shop-shelves--has-expanded {
   display: block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bench-chrome.shop-page .shop-shelf {
   border: 0;
   background: transparent;
   overflow: visible;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle {
@@ -4889,9 +4895,12 @@ body:has(.bench-chrome) {
 
 .bench-chrome.shop-page .shop-shelf-sign {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: 120px;
+  /* Always size to the shelf column. Fixed height + width:auto used to inflate
+     page min-content wider than a split browser window and push Trade off-screen. */
+  width: 100%;
+  max-width: 22rem;
+  height: auto;
+  max-height: 120px;
   margin: 0 auto;
   object-fit: contain;
   mix-blend-mode: multiply;
@@ -5034,12 +5043,13 @@ body:has(.bench-chrome) {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
   gap: 0;
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-shelves--has-expanded .shop-items-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @keyframes shopShelfReveal {
@@ -5064,6 +5074,9 @@ body:has(.bench-chrome) {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   transition: background-color 180ms ease;
 }
 
@@ -5084,6 +5097,7 @@ body:has(.bench-chrome) {
   display: flex;
   gap: 0.65rem;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-item__glyph-wrap {
@@ -5098,6 +5112,11 @@ body:has(.bench-chrome) {
   color: var(--color-ink-secondary);
 }
 
+.bench-chrome.shop-page .shop-item__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .bench-chrome.shop-page .shop-item-glyph {
   width: 1.35rem;
   height: 1.35rem;
@@ -5110,6 +5129,7 @@ body:has(.bench-chrome) {
   font-weight: 500;
   color: var(--color-ink-primary);
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .bench-chrome.shop-page .shop-item__desc {
@@ -5190,21 +5210,34 @@ body:has(.bench-chrome) {
 }
 
 .bench-chrome.shop-page .shop-item__foot {
-  display: flex;
-  flex-wrap: wrap;
+  /* Price left, Trade right; min-width:0 + narrow breakpoint stack keep Trade on-screen
+     when the shelf column is squeezed (split browser / Zoom share). */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 0.75rem;
+  column-gap: 0.75rem;
+  row-gap: 0.55rem;
   padding-top: 0.35rem;
   background: transparent;
   border: 0;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bench-chrome.shop-page .shop-item__actions {
+  grid-column: 2;
+  justify-self: end;
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-item__price {
+  grid-column: 1;
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-ink-primary);
+  min-width: 0;
 }
 
 .bench-chrome.shop-page .shop-item__price-value {
@@ -5243,13 +5276,44 @@ body:has(.bench-chrome) {
   font-family: 'Playfair Display', Georgia, serif;
   font-weight: 600;
   font-size: 0.68rem;
-  padding: 0.4rem 0.65rem;
-  min-height: auto;
+  padding: 0.45rem 0.75rem;
+  min-height: 2.1rem;
+  white-space: nowrap;
+  /* Transparent "ink on paper" borders vanish on cream at low contrast; keep a clear edge. */
+  border: 1px solid var(--color-ink-primary);
+  color: var(--color-ink-primary);
+  background: rgba(255, 253, 248, 0.72);
 }
 
 .bench-chrome.shop-page .shop-item__buy--ready {
   border-color: var(--color-ink-primary);
   color: var(--color-ink-primary);
+}
+
+.bench-chrome.shop-page .shop-item__buy:disabled {
+  opacity: 0.55;
+}
+
+/* Split / phone / zoomed viewports: stack Trade under price so it cannot leave the card. */
+@media (max-width: 1100px) {
+  .bench-chrome.shop-page .shop-item__foot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bench-chrome.shop-page .shop-item__price,
+  .bench-chrome.shop-page .shop-item__actions {
+    grid-column: 1;
+    justify-self: stretch;
+  }
+
+  .bench-chrome.shop-page .shop-item__buy {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .bench-chrome.shop-page .shop-subtitle {
+    white-space: normal;
+  }
 }
 
 .bench-chrome.shop-page .shop-shelf-toggle:focus-visible {

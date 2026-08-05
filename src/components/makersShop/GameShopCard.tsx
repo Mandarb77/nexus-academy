@@ -1,5 +1,9 @@
 /*
  * Single catalog card in Supply — trading-post (legacy) or bench tile (compact grid).
+ *
+ * Bench foot layout: price + Trade must both stay visible in split/narrow viewports.
+ * Do not put the buy CTA in the price slot (“Ask Fran” is label-only); CSS stacks Trade
+ * under price when the column is tight (see `.shop-item__foot` in App.css).
  */
 
 import { useState } from 'react'
@@ -351,7 +355,12 @@ function BenchShopCard(props: GameShopCardProps) {
         {isSpecialtyFilament ? (
           <span className="shop-item__price shop-item__price--locked">Calculated</span>
         ) : catalogLocked && price == null ? (
-          <span className="shop-item__price shop-item__price--locked">{lockLabel(true)}</span>
+          /*
+           * Price slot only — the real action stays on PurchaseButton below.
+           * Showing “ASK FRAN” here made Legacy look clickable while Convenience/Craft
+           * only showed “5 gold” and hid Trade off-screen in split view.
+           */
+          <span className="shop-item__price shop-item__price--locked">Ask Fran</span>
         ) : (
           <span className="shop-item__price">
             <span className="shop-item__price-value">{price}</span>{' '}
