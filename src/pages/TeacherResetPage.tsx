@@ -42,6 +42,8 @@ type SemesterPreviewRow = {
   gold_after: number
 }
 
+const STUDENT_DELETE_CONFIRMATION = 'Husky'
+
 async function edgeFunctionErrorMessage(error: unknown): Promise<string> {
   if (error && typeof error === 'object' && 'context' in error) {
     const context = (error as { context?: unknown }).context
@@ -424,12 +426,11 @@ export function TeacherResetPage() {
       selectedStudent.display_name?.trim() ||
       selectedStudent.email?.trim() ||
       `Student (${studentId.slice(0, 8)}…)`
-    const confirmationPhrase = `DELETE ${name}`
     const typed = window.prompt(
-      `Permanently delete ${name}?\n\nThis removes the student's login, profile, progress, purchases, submissions, and uploaded files. It cannot be undone.\n\nType exactly:\n${confirmationPhrase}`,
+      `Permanently delete ${name}?\n\nThis removes the student's login, profile, progress, purchases, submissions, and uploaded files. It cannot be undone.\n\nEnter the deletion password to continue:`,
     )
-    if (typed !== confirmationPhrase) {
-      if (typed !== null) setMessage('Student deletion cancelled: confirmation did not match.')
+    if (typed !== STUDENT_DELETE_CONFIRMATION) {
+      if (typed !== null) setMessage('Student deletion cancelled: incorrect password.')
       return
     }
 

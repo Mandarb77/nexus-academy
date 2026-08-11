@@ -104,6 +104,7 @@ type PendingPlanRow = {
 type StudentSummary = {
   id: string
   display_name: string | null
+  email: string | null
   wp: number
   gold: number
 }
@@ -879,7 +880,7 @@ export function TeacherPanelPage() {
     setStudentsBusy(true)
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, display_name, wp, gold, role')
+      .select('id, display_name, email, wp, gold, role')
       .eq('role', 'student')
       .is('archived_from_class_at', null)
       .order('display_name', { ascending: true })
@@ -893,6 +894,7 @@ export function TeacherPanelPage() {
     const list: StudentSummary[] = (data ?? []).map((p) => ({
       id: p.id as string,
       display_name: (p.display_name as string | null) ?? null,
+      email: (p.email as string | null) ?? null,
       wp: (p.wp as number) ?? 0,
       gold: (p.gold as number) ?? 0,
     }))
@@ -952,7 +954,7 @@ export function TeacherPanelPage() {
       const [profRes, skillsRes, invRes, redRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, display_name, wp, gold, role')
+          .select('id, display_name, email, wp, gold, role')
           .eq('id', studentId)
           .maybeSingle(),
         supabase
@@ -997,6 +999,7 @@ export function TeacherPanelPage() {
           ? {
               id: p.id as string,
               display_name: (p.display_name as string | null) ?? null,
+              email: (p.email as string | null) ?? null,
               wp: (p.wp as number) ?? 0,
               gold: (p.gold as number) ?? 0,
             }
@@ -1113,7 +1116,7 @@ export function TeacherPanelPage() {
       .update({ wp: nextWp, gold: nextGold })
       .eq('id', selectedStudentId)
       .eq('role', 'student')
-      .select('id, display_name, wp, gold')
+      .select('id, display_name, email, wp, gold')
       .maybeSingle()
     setAwardingStudentId(null)
 
@@ -1129,6 +1132,7 @@ export function TeacherPanelPage() {
     const updated: StudentSummary = {
       id: data.id as string,
       display_name: (data.display_name as string | null) ?? null,
+      email: (data.email as string | null) ?? null,
       wp: (data.wp as number) ?? 0,
       gold: (data.gold as number) ?? 0,
     }
@@ -1777,6 +1781,20 @@ export function TeacherPanelPage() {
                     <div>
                       <dt>Name</dt>
                       <dd>{studentProfile?.display_name?.trim() || selectedStudent?.display_name?.trim() || selectedStudentId}</dd>
+                    </div>
+                    <div>
+                      <dt>Email</dt>
+                      <dd>
+                        {studentProfile?.email?.trim() || selectedStudent?.email?.trim() ? (
+                          <a
+                            href={`mailto:${studentProfile?.email?.trim() || selectedStudent?.email?.trim()}`}
+                          >
+                            {studentProfile?.email?.trim() || selectedStudent?.email?.trim()}
+                          </a>
+                        ) : (
+                          <span className="muted">Not available</span>
+                        )}
+                      </dd>
                     </div>
                     <div>
                       <dt>WP</dt>
