@@ -20,10 +20,14 @@ export type InventoryRow = {
     item_key: string
     name: string
     purchase_moment_text: string | null
+    fulfillment_kind?: string | null
+    completion_reward_gold?: number | null
   } | {
     item_key: string
     name: string
     purchase_moment_text: string | null
+    fulfillment_kind?: string | null
+    completion_reward_gold?: number | null
   }[] | null
 }
 

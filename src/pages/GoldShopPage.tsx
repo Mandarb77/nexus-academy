@@ -220,6 +220,7 @@ function normalizeLimitStatus(raw: Record<string, unknown>): ShopLimitStatus | n
     messages,
     semester_count: (raw.semester_count as number | null | undefined) ?? null,
     semester_cap: (raw.semester_cap as number | null | undefined) ?? null,
+    cap_period: (raw.cap_period as 'semester' | 'week' | null | undefined) ?? null,
     today_count: (raw.today_count as number | null | undefined) ?? null,
     daily_limit: (raw.daily_limit as number | null | undefined) ?? null,
     lifetime_count: (raw.lifetime_count as number | null | undefined) ?? null,
@@ -370,6 +371,7 @@ export function GoldShopPage() {
       return 'You already purchased this today.'
     }
     if (errorCode === 'semester_cap_reached') return "You've hit your limit. Back next semester."
+    if (errorCode === 'week_cap_reached') return "You've hit your limit. Back next week."
     if (errorCode === 'rate_limit_active') return 'That trade is cooling down.'
     if (errorCode === 'lifetime_cap_reached') return "You've already got yours."
     if (errorCode === 'workshop_stock_exhausted') return 'Sold Out — Fran will let you know when more come in'
@@ -434,6 +436,9 @@ export function GoldShopPage() {
           convenience_band,
           stock_per_semester,
           per_kid_semester_cap,
+          cap_period,
+          fulfillment_kind,
+          completion_reward_gold,
           per_kid_daily_rate_limit,
           per_kid_rate_limit_days,
           per_kid_lifetime_cap,

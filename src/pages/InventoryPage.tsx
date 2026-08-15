@@ -2,11 +2,11 @@
  * Purchased shop items — “My stuff” inventory (`/inventory`)
  *
  * Lists `inventory` rows for the signed-in student and merges pending `redemption_requests`
- * so the UI can show “awaiting teacher approval” without letting the student mark an item
- * used twice. `use` actions hit Supabase RPC or updates depending on how your migrations
- * define fulfillment — see body of `load` for paired queries rationale.
+ * / `shop_duty_completions` so the UI can show “awaiting teacher approval” without letting
+ * the student mark an item used twice.
  *
  * Kit voice scenes reuse Supply purchase moments, personalized with preferred first name.
+ * Duty items (fulfillment_kind = duty_completion) use Mark complete → gold-only teacher queue.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -18,6 +18,16 @@ import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 import { purchaseMomentForKitItem } from '../lib/shopPurchaseMoments'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { InventoryRow } from '../types/inventory'
+
+function shopItemEmbed(row: InventoryRow) {
+  const raw = row.shop_items
+  if (!raw) return null
+  return Array.isArray(raw) ? raw[0] ?? null : raw
+}
+
+function isDutyItem(row: InventoryRow): boolean {
+  return shopItemEmbed(row)?.fulfillment_kind === 'duty_completion'
+}
 
 function renderKitVoiceLine(line: string) {
   return line.split(/(\*[^*]+\*)/g).map((part, index) => {
@@ -85,7 +95,7 @@ export function InventoryPage() {
     setLoading(true)
     setLoadError(null)
 
-    const [invRes, redRes] = await Promise.all([
+    const [invRes, redRes, dutyRes] = await Promise.all([
       supabase
         .from('inventory')
         .select(`
@@ -100,14 +110,21 @@ export function InventoryPage() {
           shop_items (
             item_key,
             name,
-            purchase_moment_text
+            purchase_moment_text,
+            fulfillment_kind,
+            completion_reward_gold
           )
         `)
         .eq('student_id', studentId)
         .order('created_at', { ascending: false }),
-      /* Pending redemption hides “Mark as used” until staff approves physical perks that need verification. */
+      /* Pending redemption hides “Mark as used” until staff approves physical perks. */
       supabase
         .from('redemption_requests')
+        .select('inventory_id')
+        .eq('student_id', studentId)
+        .eq('status', 'pending'),
+      supabase
+        .from('shop_duty_completions')
         .select('inventory_id')
         .eq('student_id', studentId)
         .eq('status', 'pending'),
@@ -129,9 +146,20 @@ export function InventoryPage() {
       setLoading(false)
       return
     }
+    if (dutyRes.error) {
+      console.error('shop_duty_completions:', dutyRes.error.message)
+      setRows([])
+      setPendingInventoryIds(new Set())
+      setLoadError(dutyRes.error.message)
+      setLoading(false)
+      return
+    }
 
     const pending = new Set<string>()
     for (const r of redRes.data ?? []) {
+      pending.add(r.inventory_id as string)
+    }
+    for (const r of dutyRes.data ?? []) {
       pending.add(r.inventory_id as string)
     }
     setPendingInventoryIds(pending)
@@ -168,6 +196,34 @@ export function InventoryPage() {
     void load()
   }
 
+  const markDutyComplete = async (row: InventoryRow) => {
+    if (!studentId || !isSupabaseConfigured) return
+    setUseError(null)
+    setUsingId(row.id)
+    const { data, error } = await supabase.rpc('submit_shop_duty_completion', {
+      p_inventory_id: row.id,
+    })
+    setUsingId(null)
+    if (error) {
+      setUseError(error.message)
+      return
+    }
+    const res = data as { ok?: boolean; error?: string } | null
+    if (!res?.ok) {
+      if (res?.error === 'already_pending') {
+        setUseError('This duty is already waiting for teacher approval.')
+      } else if (res?.error === 'already_used') {
+        setUseError('This item is already used.')
+      } else if (res?.error === 'not_duty_item') {
+        setUseError('This item is not a duty completion.')
+      } else {
+        setUseError(res?.error ?? 'Could not submit duty completion.')
+      }
+      return
+    }
+    void load()
+  }
+
   return (
     <div className="app-shell bench-chrome inventory-page">
       <MainNav />
@@ -177,6 +233,7 @@ export function InventoryPage() {
             <h1 className="inventory-title bench-page-title">Kit</h1>
             <p className="muted inventory-subtitle">
               Items you bought in the shop. Use an item to ask your teacher to approve it in class.
+              Duty items: mark complete after the work is done.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>
@@ -215,6 +272,8 @@ export function InventoryPage() {
             const isUsed = row.status === 'used'
             const isPending = pendingInventoryIds.has(row.id)
             const busy = usingId === row.id
+            const duty = isDutyItem(row)
+            const rewardGold = shopItemEmbed(row)?.completion_reward_gold
 
             return (
               <li key={row.id} className="card inventory-item">
@@ -224,6 +283,13 @@ export function InventoryPage() {
                   <p className="muted inventory-item-meta">
                     Paid <span className="gold-currency-text">{row.gold_cost}</span>{' '}
                     <span className="gold-currency-text">gold</span>
+                    {duty && rewardGold != null ? (
+                      <>
+                        {' '}
+                        · Complete for{' '}
+                        <span className="gold-currency-text">+{rewardGold} gold</span> if approved
+                      </>
+                    ) : null}
                   </p>
                   <InventoryVoiceScene row={row} firstName={firstName} />
                 </div>
@@ -233,6 +299,15 @@ export function InventoryPage() {
                   ) : isPending ? (
                     <button type="button" className="btn-skill btn-skill--pending" disabled>
                       Pending
+                    </button>
+                  ) : duty ? (
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={!isSupabaseConfigured || busy}
+                      onClick={() => void markDutyComplete(row)}
+                    >
+                      {busy ? 'Sending…' : 'Mark complete'}
                     </button>
                   ) : (
                     <button

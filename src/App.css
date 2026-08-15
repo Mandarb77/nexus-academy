@@ -2441,14 +2441,14 @@ a.btn-primary {
   margin-bottom: 2.25rem;
 }
 
-/* Dense five-queue layout: fit Plans → Shop on one screen; shrink type/padding below. */
+/* Dense six-queue layout: fit Plans → Shop on one screen; shrink type/padding below. */
 .teacher-panel-approvals-grid--dense {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.55rem;
   margin-bottom: 1rem;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1400px) {
   .teacher-panel-approvals-grid--dense {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

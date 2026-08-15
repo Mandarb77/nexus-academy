@@ -8,10 +8,14 @@ import type { TeacherSubmissionAlert } from './teacherSubmissionAlert'
 export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAlert[]> {
   if (!isSupabaseConfigured) return []
 
-  const [compRes, redRes, shopReqRes, planRes, checklistRes] = await Promise.all([
+  const [compRes, dutyRes, redRes, shopReqRes, planRes, checklistRes] = await Promise.all([
     supabase
       .from('skill_completions')
       .select('id, student_id, tile_id, status')
+      .eq('status', 'pending'),
+    supabase
+      .from('shop_duty_completions')
+      .select('id, student_id, item_name, status')
       .eq('status', 'pending'),
     supabase
       .from('redemption_requests')
@@ -35,11 +39,19 @@ export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAl
       .eq('checklist_approved', false),
   ])
 
-  if (compRes.error || redRes.error || shopReqRes.error || planRes.error || checklistRes.error) {
+  if (
+    compRes.error ||
+    dutyRes.error ||
+    redRes.error ||
+    shopReqRes.error ||
+    planRes.error ||
+    checklistRes.error
+  ) {
     return []
   }
 
   const completions = compRes.data ?? []
+  const duties = dutyRes.data ?? []
   const redemptions = redRes.data ?? []
   const shopRequests = shopReqRes.data ?? []
   const plans = planRes.data ?? []
@@ -48,6 +60,7 @@ export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAl
   const studentIds = [
     ...new Set([
       ...completions.map((r) => r.student_id as string),
+      ...duties.map((r) => r.student_id as string),
       ...redemptions.map((r) => r.student_id as string),
       ...shopRequests.map((r) => r.student_id as string),
       ...plans.map((r) => r.student_id as string),
@@ -119,6 +132,16 @@ export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAl
       kind: 'skill',
       studentName: nameById.get(sid) ?? null,
       detail: tileNameById.get(tid) ?? 'Skill completion',
+    })
+  }
+
+  for (const r of duties) {
+    const sid = r.student_id as string
+    items.push({
+      alertId: `duty:${r.id as string}`,
+      kind: 'duty',
+      studentName: nameById.get(sid) ?? null,
+      detail: ((r.item_name as string) ?? 'Shop duty').trim() || 'Shop duty',
     })
   }
 

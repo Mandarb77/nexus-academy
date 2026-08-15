@@ -32,6 +32,9 @@ const MOMENTS_BY_KEY: Record<string, string> = {
 (Barry: "Sage doesn't.")`,
   opt_out_cleaning_session: `Fran writes it in the ledger. "Five gold. Someone else does your share."
 (Barry, from somewhere: "We're not your mother.")`,
+  keepers_duty: `Fran: "Two gold. Fifteen minutes. Real work."
+(Barry, from the back: "Then you get six back — if it's done right.")
+(Fran: "If.")`,
   sit_teacher_chair: `Fran writes Marcus into the ledger without looking up.
 "The chair. Don't lean back too far. The wheels are particular."
 (Barry, from the back: "He's fixed those wheels twice.")`,
@@ -114,6 +117,7 @@ const MOMENTS_BY_NAME: Record<string, string> = {
   'pick the class playlist': MOMENTS_BY_KEY.pick_class_playlist,
   snack: MOMENTS_BY_KEY.snack,
   'opt out of a cleaning session': MOMENTS_BY_KEY.opt_out_cleaning_session,
+  "keeper's duty": MOMENTS_BY_KEY.keepers_duty,
   'sit in the teacher chair': MOMENTS_BY_KEY.sit_teacher_chair,
   'rename the laser cutter for a week': MOMENTS_BY_KEY.rename_laser_cutter_week,
   'give yourself a temporary shop title': MOMENTS_BY_KEY.temporary_shop_title,

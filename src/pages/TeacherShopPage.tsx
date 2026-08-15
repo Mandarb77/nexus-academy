@@ -30,7 +30,17 @@ function tierFromRow(row: ItemRow): TierRow | null {
 
 function limitSummary(row: ItemRow): string {
   const parts: string[] = []
-  if (row.per_kid_semester_cap != null) parts.push(`${row.per_kid_semester_cap}/kid/sem`)
+  if (row.per_kid_semester_cap != null) {
+    const period = row.cap_period === 'week' ? 'week' : 'sem'
+    parts.push(`${row.per_kid_semester_cap}/kid/${period}`)
+  }
+  if (row.fulfillment_kind === 'duty_completion') {
+    parts.push(
+      row.completion_reward_gold != null
+        ? `duty +${row.completion_reward_gold}g`
+        : 'duty completion',
+    )
+  }
   if (row.per_kid_daily_rate_limit != null) parts.push(`${row.per_kid_daily_rate_limit}/kid/day`)
   if (row.per_kid_rate_limit_days != null) parts.push(`every ${row.per_kid_rate_limit_days} days`)
   if (row.per_kid_lifetime_cap != null) parts.push(`${row.per_kid_lifetime_cap}/kid/life`)
@@ -57,6 +67,9 @@ const BLANK = {
   displayOrder: 100,
   maxPerDay: '' as string,
   perKidSemesterCap: '' as string,
+  capPeriod: 'semester' as 'semester' | 'week',
+  fulfillmentKind: 'redemption' as 'redemption' | 'duty_completion',
+  completionRewardGold: '' as string,
   perKidDailyRateLimit: '' as string,
   perKidRateLimitDays: '' as string,
   perKidLifetimeCap: '' as string,
@@ -88,6 +101,9 @@ export function TeacherShopPage() {
   const [displayOrder, setDisplayOrder] = useState(BLANK.displayOrder)
   const [maxPerDay, setMaxPerDay] = useState(BLANK.maxPerDay)
   const [perKidSemesterCap, setPerKidSemesterCap] = useState(BLANK.perKidSemesterCap)
+  const [capPeriod, setCapPeriod] = useState(BLANK.capPeriod)
+  const [fulfillmentKind, setFulfillmentKind] = useState(BLANK.fulfillmentKind)
+  const [completionRewardGold, setCompletionRewardGold] = useState(BLANK.completionRewardGold)
   const [perKidDailyRateLimit, setPerKidDailyRateLimit] = useState(BLANK.perKidDailyRateLimit)
   const [perKidRateLimitDays, setPerKidRateLimitDays] = useState(BLANK.perKidRateLimitDays)
   const [perKidLifetimeCap, setPerKidLifetimeCap] = useState(BLANK.perKidLifetimeCap)
@@ -117,7 +133,8 @@ export function TeacherShopPage() {
           purchase_moment_text,
           is_locked, display_order, max_purchases_per_chicago_school_day,
           convenience_band, stock_per_semester,
-          per_kid_semester_cap, per_kid_daily_rate_limit, per_kid_rate_limit_days,
+          per_kid_semester_cap, cap_period, fulfillment_kind, completion_reward_gold,
+          per_kid_daily_rate_limit, per_kid_rate_limit_days,
           per_kid_lifetime_cap, workshop_total_stock, time_window_start, time_window_end,
           gate_requirement,
           shop_tiers ( id, name, subtitle, sort_order )
@@ -170,6 +187,9 @@ export function TeacherShopPage() {
     setDisplayOrder(100)
     setMaxPerDay('')
     setPerKidSemesterCap('')
+    setCapPeriod('semester')
+    setFulfillmentKind('redemption')
+    setCompletionRewardGold('')
     setPerKidDailyRateLimit('')
     setPerKidRateLimitDays('')
     setPerKidLifetimeCap('')
@@ -211,6 +231,11 @@ export function TeacherShopPage() {
         : '',
     )
     setPerKidSemesterCap(row.per_kid_semester_cap != null ? String(row.per_kid_semester_cap) : '')
+    setCapPeriod(row.cap_period === 'week' ? 'week' : 'semester')
+    setFulfillmentKind(row.fulfillment_kind === 'duty_completion' ? 'duty_completion' : 'redemption')
+    setCompletionRewardGold(
+      row.completion_reward_gold != null ? String(row.completion_reward_gold) : '',
+    )
     setPerKidDailyRateLimit(row.per_kid_daily_rate_limit != null ? String(row.per_kid_daily_rate_limit) : '')
     setPerKidRateLimitDays(row.per_kid_rate_limit_days != null ? String(row.per_kid_rate_limit_days) : '')
     setPerKidLifetimeCap(row.per_kid_lifetime_cap != null ? String(row.per_kid_lifetime_cap) : '')
@@ -259,6 +284,12 @@ export function TeacherShopPage() {
       convenience_band: tierName === 'Convenience' ? band : null,
       stock_per_semester: stockPerSemester.trim() ? Number(stockPerSemester) : null,
       per_kid_semester_cap: perKidSemesterCap.trim() ? Number(perKidSemesterCap) : null,
+      cap_period: capPeriod,
+      fulfillment_kind: fulfillmentKind,
+      completion_reward_gold:
+        fulfillmentKind === 'duty_completion' && completionRewardGold.trim()
+          ? Number(completionRewardGold)
+          : null,
       per_kid_daily_rate_limit: perKidDailyRateLimit.trim() ? Number(perKidDailyRateLimit) : null,
       per_kid_rate_limit_days: perKidRateLimitDays.trim() ? Number(perKidRateLimitDays) : null,
       per_kid_lifetime_cap: perKidLifetimeCap.trim() ? Number(perKidLifetimeCap) : null,
@@ -438,12 +469,42 @@ export function TeacherShopPage() {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
             <label className="patent-field" style={{ margin: 0 }}>
-              <span className="patent-label">Per-kid semester cap</span>
+              <span className="patent-label">Per-kid period cap</span>
               <input type="number" min={0} placeholder="∞" value={perKidSemesterCap} onChange={(e) => setPerKidSemesterCap(e.target.value)} />
+            </label>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Cap period</span>
+              <select value={capPeriod} onChange={(e) => setCapPeriod(e.target.value as 'semester' | 'week')}>
+                <option value="semester">Semester</option>
+                <option value="week">Week (Eastern)</option>
+              </select>
             </label>
             <label className="patent-field" style={{ margin: 0 }}>
               <span className="patent-label">Per-kid daily limit</span>
               <input type="number" min={1} placeholder="∞" value={perKidDailyRateLimit} onChange={(e) => setPerKidDailyRateLimit(e.target.value)} />
+            </label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Fulfillment</span>
+              <select
+                value={fulfillmentKind}
+                onChange={(e) => setFulfillmentKind(e.target.value as 'redemption' | 'duty_completion')}
+              >
+                <option value="redemption">Redemption (Use item)</option>
+                <option value="duty_completion">Duty completion</option>
+              </select>
+            </label>
+            <label className="patent-field" style={{ margin: 0 }}>
+              <span className="patent-label">Duty reward gold</span>
+              <input
+                type="number"
+                min={0}
+                placeholder={fulfillmentKind === 'duty_completion' ? 'e.g. 6' : 'n/a'}
+                disabled={fulfillmentKind !== 'duty_completion'}
+                value={completionRewardGold}
+                onChange={(e) => setCompletionRewardGold(e.target.value)}
+              />
             </label>
             <label className="patent-field" style={{ margin: 0 }}>
               <span className="patent-label">Cooldown days</span>

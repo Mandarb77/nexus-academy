@@ -14,7 +14,7 @@ import { areTeacherSubmissionAlertsEnabled } from './notificationPreferences'
 
 export const TEACHER_SUBMISSION_ALERT_EVENT = 'nexus-teacher-submission-alert'
 
-export type TeacherPendingKind = 'plan' | 'checklist' | 'skill' | 'redemption'
+export type TeacherPendingKind = 'plan' | 'checklist' | 'skill' | 'duty' | 'redemption'
 
 export type TeacherSubmissionAlert = {
   alertId: string
@@ -53,6 +53,8 @@ export function kindLabel(kind: TeacherPendingKind): string {
       return 'Checklist'
     case 'skill':
       return 'Final submission'
+    case 'duty':
+      return 'Duty'
     case 'redemption':
       return 'Redemption'
   }

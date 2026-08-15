@@ -1,7 +1,7 @@
 /*
  * Teacher approvals console (`/teacher`)
  *
- * Five pending queues in one dense grid (plans, checklists, skills, redemptions, shop)
+ * Six pending queues in one dense grid (plans, checklists, skills, duties, redemptions, shop)
  * so everything fits on screen at once. Student preview balance sits *below* the queues
  * (testing aid, not the primary job). Storyline widget sits after the grid.
  *
@@ -81,6 +81,16 @@ type PendingShopPurchaseRequestRow = {
   display_name: string | null
 }
 
+type PendingDutyRow = {
+  id: string
+  student_id: string
+  inventory_id: string
+  item_name: string
+  gold_reward: number
+  created_at: string
+  display_name: string | null
+}
+
 type PendingChecklistRow = {
   id: string
   student_id: string
@@ -142,6 +152,7 @@ type Acting =
   | { scope: 'skill'; id: string; action: 'approve' | 'return' }
   | { scope: 'redemption'; id: string; action: 'approve' | 'return' }
   | { scope: 'shopRequest'; id: string; action: 'approve' | 'return' }
+  | { scope: 'duty'; id: string; action: 'approve' | 'return' }
   | null
 
 // -----------------------------------------------------------------------------
@@ -190,6 +201,7 @@ export function TeacherPanelPage() {
   // Pending queues — what needs teacher action right now
   // ---------------------------------------------------------------------------
   const [skillRows, setSkillRows] = useState<PendingSkillRow[]>([])
+  const [dutyRows, setDutyRows] = useState<PendingDutyRow[]>([])
   const [redemptionRows, setRedemptionRows] = useState<PendingRedemptionRow[]>([])
   const [shopRequestRows, setShopRequestRows] = useState<PendingShopPurchaseRequestRow[]>([])
   const [planRows, setPlanRows] = useState<PendingPlanRow[]>([])
@@ -238,6 +250,7 @@ export function TeacherPanelPage() {
   const loadPending = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setSkillRows([])
+      setDutyRows([])
       setRedemptionRows([])
       setShopRequestRows([])
       setLoadError(null)
@@ -247,10 +260,15 @@ export function TeacherPanelPage() {
     setLoading(true)
     setLoadError(null)
 
-    const [compRes, redRes, shopReqRes, planRes, checklistRes] = await Promise.all([
+    const [compRes, dutyRes, redRes, shopReqRes, planRes, checklistRes] = await Promise.all([
       supabase
         .from('skill_completions')
         .select('id, student_id, tile_id, patent_id, created_at, status')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('shop_duty_completions')
+        .select('id, student_id, inventory_id, item_name, gold_reward, created_at, status')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
       supabase
@@ -282,14 +300,23 @@ export function TeacherPanelPage() {
     if (compRes.error) {
       console.error('teacher panel skill completions:', compRes.error.message)
       setSkillRows([])
+      setDutyRows([])
       setRedemptionRows([])
       setLoadError(compRes.error.message)
+      setLoading(false)
+      return
+    }
+    if (dutyRes.error) {
+      console.error('teacher panel duty completions:', dutyRes.error.message)
+      setDutyRows([])
+      setLoadError(dutyRes.error.message)
       setLoading(false)
       return
     }
     if (redRes.error) {
       console.error('teacher panel redemptions:', redRes.error.message)
       setSkillRows([])
+      setDutyRows([])
       setRedemptionRows([])
       setLoadError(redRes.error.message)
       setLoading(false)
@@ -305,6 +332,7 @@ export function TeacherPanelPage() {
     if (planRes.error) {
       console.error('teacher panel plan approvals:', planRes.error.message)
       setSkillRows([])
+      setDutyRows([])
       setRedemptionRows([])
       setPlanRows([])
       setLoadError(planRes.error.message)
@@ -320,6 +348,7 @@ export function TeacherPanelPage() {
     }
 
     const completions = compRes.data ?? []
+    const duties = dutyRes.data ?? []
     const redemptions = redRes.data ?? []
     const shopRequests = shopReqRes.data ?? []
     const plans = planRes.data ?? []
@@ -328,6 +357,7 @@ export function TeacherPanelPage() {
     const studentIds = [
       ...new Set([
         ...completions.map((r) => r.student_id as string),
+        ...duties.map((r) => r.student_id as string),
         ...redemptions.map((r) => r.student_id as string),
         ...shopRequests.map((r) => r.student_id as string),
         ...plans.map((r) => r.student_id as string),
@@ -455,6 +485,18 @@ export function TeacherPanelPage() {
       })),
     )
 
+    setDutyRows(
+      duties.map((r) => ({
+        id: r.id as string,
+        student_id: r.student_id as string,
+        inventory_id: r.inventory_id as string,
+        item_name: r.item_name as string,
+        gold_reward: (r.gold_reward as number) ?? 0,
+        created_at: r.created_at as string,
+        display_name: nameById.get(r.student_id as string) ?? null,
+      })),
+    )
+
     setRedemptionRows(
       redemptions.map((r) => ({
         id: r.id as string,
@@ -537,6 +579,15 @@ export function TeacherPanelPage() {
           detail: tileById.get(tid)?.skill_name ?? 'Skill completion',
         }
       }),
+      ...duties.map((r) => {
+        const sid = r.student_id as string
+        return {
+          alertId: `duty:${r.id as string}`,
+          kind: 'duty' as const,
+          studentName: nameById.get(sid) ?? null,
+          detail: ((r.item_name as string) ?? 'Shop duty').trim() || 'Shop duty',
+        }
+      }),
       ...redemptions.map((r) => {
         const sid = r.student_id as string
         return {
@@ -594,6 +645,16 @@ export function TeacherPanelPage() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'skill_completions' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'shop_duty_completions' },
+        () => { void loadPending() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'shop_duty_completions' },
         () => { void loadPending() },
       )
       .on(
@@ -666,6 +727,38 @@ export function TeacherPanelPage() {
     clearActing()
     if (error) {
       console.error('return skill:', error.message)
+      return
+    }
+    void loadPending()
+  }
+
+  const approveDuty = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActing({ scope: 'duty', id, action: 'approve' })
+    const { error } = await supabase
+      .from('shop_duty_completions')
+      .update({ status: 'approved' })
+      .eq('id', id)
+    clearActing()
+    if (error) {
+      console.error('approve duty:', error.message)
+      setAdminMessage(`Could not approve duty: ${error.message}`)
+      return
+    }
+    void loadPending()
+  }
+
+  const returnDuty = async (id: string) => {
+    if (!isSupabaseConfigured) return
+    setActing({ scope: 'duty', id, action: 'return' })
+    const { error } = await supabase
+      .from('shop_duty_completions')
+      .update({ status: 'returned' })
+      .eq('id', id)
+    clearActing()
+    if (error) {
+      console.error('return duty:', error.message)
+      setAdminMessage(`Could not return duty: ${error.message}`)
       return
     }
     void loadPending()
@@ -862,11 +955,13 @@ export function TeacherPanelPage() {
   // ---------------------------------------------------------------------------
   // Row busy helpers — disable approve/return while matching RPC in flight
   // ---------------------------------------------------------------------------
-  const isActing = (scope: 'skill' | 'redemption' | 'shopRequest', id: string, action: 'approve' | 'return') =>
+  const isActing = (scope: 'skill' | 'redemption' | 'shopRequest' | 'duty', id: string, action: 'approve' | 'return') =>
     acting?.scope === scope && acting.id === id && acting.action === action
 
   const busySkill = (id: string) =>
     acting?.scope === 'skill' && acting.id === id ? acting : null
+  const busyDuty = (id: string) =>
+    acting?.scope === 'duty' && acting.id === id ? acting : null
   const busyRedemption = (id: string) =>
     acting?.scope === 'redemption' && acting.id === id ? acting : null
   const busyShopRequest = (id: string) =>
@@ -1543,6 +1638,56 @@ export function TeacherPanelPage() {
                           onClick={() => void returnSkill(row.id)}
                         >
                           {isActing('skill', row.id, 'return') ? 'Returning…' : 'Return'}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-duties-heading">
+            <h2 id="teacher-panel-duties-heading" className="teacher-panel-section-title">
+              Duty completions
+            </h2>
+            {dutyRows.length === 0 ? (
+              <p className="muted teacher-panel-section-empty">No pending duty completions.</p>
+            ) : (
+              <ul className="teacher-panel-list">
+                {dutyRows.map((row) => {
+                  const studentName =
+                    row.display_name?.trim() ||
+                    `Student (${row.student_id.slice(0, 8)}…)`
+                  const busy = Boolean(busyDuty(row.id))
+
+                  return (
+                    <li key={row.id} className="card teacher-panel-item">
+                      <div className="teacher-panel-item-main">
+                        <p className="teacher-panel-student">{studentName}</p>
+                        <p className="teacher-panel-skill">
+                          <strong>{row.item_name}</strong>
+                        </p>
+                        <p className="muted teacher-panel-guild">
+                          Shop duty · +{row.gold_reward} gold on approval (no WP)
+                        </p>
+                      </div>
+                      <div className="teacher-panel-actions">
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={busy}
+                          onClick={() => void approveDuty(row.id)}
+                        >
+                          {isActing('duty', row.id, 'approve') ? 'Approving…' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={busy}
+                          onClick={() => void returnDuty(row.id)}
+                        >
+                          {isActing('duty', row.id, 'return') ? 'Returning…' : 'Return'}
                         </button>
                       </div>
                     </li>
