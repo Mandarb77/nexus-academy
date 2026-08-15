@@ -1,6 +1,10 @@
 /*
  * Shop catalog admin (`/teacher/shop`)
  * Dev notes: docs/shop-catalog-and-teacher-editor.md
+ *
+ * Cap period + fulfillment editors support Keeper's Duty–style items without code changes:
+ * set Cap period = Week and Per-kid period cap = N for weekly limits; set Fulfillment =
+ * Duty completion and Duty reward gold for Mark-complete → gold-only teacher approval.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -30,6 +34,7 @@ function tierFromRow(row: ItemRow): TierRow | null {
 
 function limitSummary(row: ItemRow): string {
   const parts: string[] = []
+  // Cap count column is still per_kid_semester_cap; label by cap_period so staff see week vs sem.
   if (row.per_kid_semester_cap != null) {
     const period = row.cap_period === 'week' ? 'week' : 'sem'
     parts.push(`${row.per_kid_semester_cap}/kid/${period}`)

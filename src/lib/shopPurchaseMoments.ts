@@ -32,6 +32,7 @@ const MOMENTS_BY_KEY: Record<string, string> = {
 (Barry: "Sage doesn't.")`,
   opt_out_cleaning_session: `Fran writes it in the ledger. "Five gold. Someone else does your share."
 (Barry, from somewhere: "We're not your mother.")`,
+  // Buy-in chore (not opt-out): 2 gold now, +6 gold only after teacher-approved completion.
   keepers_duty: `Fran: "Two gold. Fifteen minutes. Real work."
 (Barry, from the back: "Then you get six back — if it's done right.")
 (Fran: "If.")`,

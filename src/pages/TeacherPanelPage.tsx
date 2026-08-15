@@ -2,11 +2,14 @@
  * Teacher approvals console (`/teacher`)
  *
  * Six pending queues in one dense grid (plans, checklists, skills, duties, redemptions, shop)
- * so everything fits on screen at once. Student preview balance sits *below* the queues
- * (testing aid, not the primary job). Storyline widget sits after the grid.
+ * so everything fits on screen at once. Duty completions are shop chores (Keeper's Duty):
+ * same Approve/Return UX as skills, but the DB awards gold only — never WP.
+ * Student preview balance sits *below* the queues (testing aid, not the primary job).
+ * Storyline widget sits after the grid.
  *
  * Student progress roster is collapsed behind “Show student progress” by default —
- * privacy if kids glimpse the teacher laptop during class.
+ * privacy if kids glimpse the teacher laptop during class. Profile email is a mailto:
+ * link for quick contact without leaving the panel.
  *
  * Realtime refreshes lists; new items also surface globally via
  * TeacherSubmissionAlertSync (banner + chime in App.tsx).
@@ -86,6 +89,7 @@ type PendingDutyRow = {
   student_id: string
   inventory_id: string
   item_name: string
+  /** Stamped at submit from shop_items.completion_reward_gold; award trigger credits this only. */
   gold_reward: number
   created_at: string
   display_name: string | null
@@ -735,6 +739,7 @@ export function TeacherPanelPage() {
   const approveDuty = async (id: string) => {
     if (!isSupabaseConfigured) return
     setActing({ scope: 'duty', id, action: 'approve' })
+    // Status flip fires award_gold_on_shop_duty_approval (+gold only, marks inventory used).
     const { error } = await supabase
       .from('shop_duty_completions')
       .update({ status: 'approved' })
@@ -751,6 +756,7 @@ export function TeacherPanelPage() {
   const returnDuty = async (id: string) => {
     if (!isSupabaseConfigured) return
     setActing({ scope: 'duty', id, action: 'return' })
+    // No gold refund of buy-in; inventory stays unused so the student can resubmit.
     const { error } = await supabase
       .from('shop_duty_completions')
       .update({ status: 'returned' })
@@ -1648,6 +1654,7 @@ export function TeacherPanelPage() {
           </section>
 
           <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-duties-heading">
+            {/* Shop chores (e.g. Keeper's Duty): approve → +gold only via DB trigger, never WP. */}
             <h2 id="teacher-panel-duties-heading" className="teacher-panel-section-title">
               Duty completions
             </h2>
@@ -1930,6 +1937,7 @@ export function TeacherPanelPage() {
                     <div>
                       <dt>Email</dt>
                       <dd>
+                        {/* mailto: so teachers can email the student from the progress profile without copy-paste. */}
                         {studentProfile?.email?.trim() || selectedStudent?.email?.trim() ? (
                           <a
                             href={`mailto:${studentProfile?.email?.trim() || selectedStudent?.email?.trim()}`}

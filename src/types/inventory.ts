@@ -1,8 +1,11 @@
 /*
  * Gold shop purchase rows — what the student bought and whether they “spent” it in class
  *
- * Written when students redeem items from `shop_items`; teachers may flip status when
- * the physical perk is delivered. Consumed by `InventoryPage` and related dashboard views.
+ * Written by buy_shop_item (and approved shop_purchase_requests). Teachers flip status when
+ * a privilege is redeemed, or when a duty completion is approved.
+ *
+ * shop_items embed carries fulfillment_kind so Kit can show “Mark complete” vs “Use item”
+ * without hardcoding SKU names (Keeper's Duty uses duty_completion).
  */
 
 export type InventoryStatus = 'unused' | 'used'
@@ -16,6 +19,7 @@ export type InventoryRow = {
   gold_cost: number
   status: InventoryStatus
   created_at: string
+  /** Joined catalog fields used for Fran/Barry voice + duty vs redemption branching. */
   shop_items?: {
     item_key: string
     name: string

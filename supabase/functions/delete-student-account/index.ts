@@ -1,3 +1,16 @@
+/**
+ * Edge Function: permanent student account deletion (teacher-only).
+ *
+ * Why an Edge Function (not a plain SQL RPC):
+ *   auth.admin.deleteUser needs the service role. Cascades on profiles / student-owned
+ *   tables (see teacher_delete_student_account migration) clear progress in the same
+ *   DB transaction once Auth deletes the user. We also walk Storage buckets under the
+ *   student id and write account_deletion_log for audit (no FK to the deleted student).
+ *
+ * Body: { studentId, confirmation } — confirmation must equal studentId (UI already
+ * typed the classroom password "Husky" before invoke).
+ */
+
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";

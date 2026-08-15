@@ -25,6 +25,7 @@ function shopItemEmbed(row: InventoryRow) {
   return Array.isArray(raw) ? raw[0] ?? null : raw
 }
 
+/** Branch on catalog data, not item_key — any duty_completion SKU gets Mark complete. */
 function isDutyItem(row: InventoryRow): boolean {
   return shopItemEmbed(row)?.fulfillment_kind === 'duty_completion'
 }
@@ -200,6 +201,7 @@ export function InventoryPage() {
     if (!studentId || !isSupabaseConfigured) return
     setUseError(null)
     setUsingId(row.id)
+    // RPC validates unused + duty_completion and stamps gold_reward; no client INSERT.
     const { data, error } = await supabase.rpc('submit_shop_duty_completion', {
       p_inventory_id: row.id,
     })

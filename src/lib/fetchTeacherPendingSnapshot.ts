@@ -1,5 +1,8 @@
 /*
  * Lightweight pending-queue read for teacher submission alerts (ids + display labels only).
+ *
+ * Includes shop_duty_completions so Keeper's Duty (and any future duty SKU) chimes the
+ * same way skill / plan / redemption queues do when a student marks work complete.
  */
 
 import { isSupabaseConfigured, supabase } from './supabase'

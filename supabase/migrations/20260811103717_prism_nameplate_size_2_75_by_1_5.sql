@@ -1,4 +1,8 @@
--- Prism Tile 1: match the wall-board nameplate blank's final dimensions.
+-- Prism Tile 1 ("A Name Worth Keeping"): wall-board nameplate blank is 2.75" × 1.5".
+-- Earlier copy said 2.5" × 1.1"; students were cutting to the wrong size.
+-- Update both the tile_description blurb and every steps[].description that still
+-- embeds the old dimensions so packet / checklist text stays consistent.
+
 update public.tiles
 set
   tile_description = replace(

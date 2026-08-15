@@ -2,8 +2,9 @@
  * Teacher-facing alert when a new item enters any approval queue.
  *
  * Why: teachers need the same heads-up students get on approval — banner + chime when
- * plan, checklist, final skill, or redemption rows appear. Wired from App.tsx via
- * TeacherSubmissionAlertSync → fetchTeacherPendingSnapshot → applyTeacherPendingSnapshot.
+ * plan, checklist, final skill, duty completion, or redemption rows appear. Wired from
+ * App.tsx via TeacherSubmissionAlertSync → fetchTeacherPendingSnapshot →
+ * applyTeacherPendingSnapshot.
  *
  * Mirrors student approvalCelebration.ts (notifier + localStorage). See
  * docs/developer-handoff-recent-work.md

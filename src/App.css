@@ -2441,7 +2441,9 @@ a.btn-primary {
   margin-bottom: 2.25rem;
 }
 
-/* Dense six-queue layout: fit Plans → Shop on one screen; shrink type/padding below. */
+/* Dense six-queue layout: Plans, Checklists, Skills, Duties, Redemptions, Shop.
+   Duties was added for Keeper's Duty–style gold-only completions; keep the same
+   dense card treatment so the teacher panel still fits one screen on wide displays. */
 .teacher-panel-approvals-grid--dense {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.55rem;

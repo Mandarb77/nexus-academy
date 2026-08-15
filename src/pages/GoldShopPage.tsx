@@ -6,6 +6,9 @@
  * `isSameEasternCalendarDay` so “one per day” matches Kents Hill’s instructional timezone, not
  * the laptop’s local midnight.
  *
+ * Limits also honor `cap_period`: semester (legacy) or Eastern calendar week. Keeper's Duty
+ * uses week + buy_shop_item (immediate 2-gold buy-in); weekly exhaustion returns week_cap_reached.
+ *
  * Purchase moments pass `preferredFirstNameForVoice(profile)` so Fran/Barry copy says the
  * student’s name instead of the authored “Marcus” placeholder.
  */
@@ -371,6 +374,7 @@ export function GoldShopPage() {
       return 'You already purchased this today.'
     }
     if (errorCode === 'semester_cap_reached') return "You've hit your limit. Back next semester."
+    // Week window from shop_items.cap_period — keep copy distinct from semester.
     if (errorCode === 'week_cap_reached') return "You've hit your limit. Back next week."
     if (errorCode === 'rate_limit_active') return 'That trade is cooling down.'
     if (errorCode === 'lifetime_cap_reached') return "You've already got yours."

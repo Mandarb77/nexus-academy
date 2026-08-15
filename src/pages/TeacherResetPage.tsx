@@ -4,6 +4,11 @@
  * Lets staff reset `skill_completions`, inventory/economy, or redemption queues for demo days
  * or mistaken submissions. All operations should remain behind teacher auth + Supabase RLS;
  * this UI is the controlled front-end to those maintenance RPCs/deletes.
+ *
+ * Permanent account deletion lives here (not on the main teacher panel) so class-visible
+ * screens never show a one-click wipe. Flow: confirm typed password → Edge Function
+ * `delete-student-account` (admin deleteUser + storage cleanup + account_deletion_log).
+ * Confirmation string is intentional classroom obfuscation, not a crypto secret.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -42,6 +47,7 @@ type SemesterPreviewRow = {
   gold_after: number
 }
 
+/** Must match the prompt text teachers are told to type; changed from a weaker phrase on request. */
 const STUDENT_DELETE_CONFIRMATION = 'Husky'
 
 async function edgeFunctionErrorMessage(error: unknown): Promise<string> {
@@ -426,6 +432,7 @@ export function TeacherResetPage() {
       selectedStudent.display_name?.trim() ||
       selectedStudent.email?.trim() ||
       `Student (${studentId.slice(0, 8)}…)`
+    // Local password gate before calling the Edge Function (which also checks teacher role).
     const typed = window.prompt(
       `Permanently delete ${name}?\n\nThis removes the student's login, profile, progress, purchases, submissions, and uploaded files. It cannot be undone.\n\nEnter the deletion password to continue:`,
     )
@@ -437,6 +444,7 @@ export function TeacherResetPage() {
     setBusy(true)
     setMessage(null)
 
+    // confirmation: studentId is an additional server-side check that the caller meant this id.
     const { data, error } = await supabase.functions.invoke('delete-student-account', {
       body: {
         studentId,
@@ -785,6 +793,7 @@ export function TeacherResetPage() {
             </div>
 
             <div className="card bench-inset-card">
+              {/* Kept under Reset individual student so deletion is never on the busy grading panel. */}
               <strong className="bench-inset-card__title">Delete student account</strong>
               <p className="muted teacher-panel-reset-hint">
                 Permanently removes this student’s login and all associated data. This is different

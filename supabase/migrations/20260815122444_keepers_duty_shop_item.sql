@@ -1,5 +1,22 @@
--- Keeper's Duty: weekly cap_period on shop_items, duty-completion queue, gold-only award.
--- Existing semester-capped items keep default cap_period = 'semester' (unchanged behavior).
+-- Keeper's Duty shop chore + reusable weekly caps / duty-completion path
+--
+-- Why this exists:
+--   "Keeper's Duty" is not a flat privilege (opt-out cleaning) and not a skill tile.
+--   Students pay 2 gold up front (buy_shop_item), do 15 minutes of shop upkeep, then
+--   a teacher approves for +6 gold only — never WP. Denying completion keeps the 2 spent.
+--
+-- Design choices (locked in after investigation):
+--   1. cap_period on shop_items ('semester'|'week'), default 'semester' so every existing
+--      SKU keeps identical behavior. per_kid_semester_cap stays the count column; when
+--      cap_period = 'week' that count means "per Eastern calendar week". Cap logic
+--      branches on the column — never hardcode keepers_duty by name or id.
+--   2. Separate Convenience SKU (keepers_duty), not merged with opt_out_cleaning_session.
+--   3. Buy-in via buy_shop_item (immediate deduct), not shop_purchase_requests (those
+--      charge on teacher approve — wrong economics for a buy-in).
+--   4. shop_duty_completions queue mirrors skill_completions UX, but award_gold_on_shop_duty_approval
+--      touches profiles.gold only — deliberately narrower than award_wp_on_skill_approval.
+--   5. fulfillment_kind / completion_reward_gold make Kit + teacher UI data-driven so
+--      future duty SKUs do not need another name special-case.
 
 -- ---------------------------------------------------------------------------
 -- Cap period + duty fulfillment columns
@@ -46,6 +63,10 @@ comment on column public.shop_items.completion_reward_gold is
 
 -- ---------------------------------------------------------------------------
 -- Limit status: branch period window on cap_period (no item-key hardcoding)
+--
+-- Semester path keeps the prior created_at >= semester_start comparison so
+-- existing messages/counts stay byte-compatible. Week path uses Eastern dates
+-- with ISO Monday start (date_trunc('week', ...)) and week_cap_reached copy.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.shop_item_limit_status_for_student(
@@ -283,6 +304,8 @@ revoke execute on function public.shop_item_limit_status_for_student(uuid, uuid)
 
 -- ---------------------------------------------------------------------------
 -- Seed Keeper's Duty (Convenience, immediate buy, weekly cap 2, duty payout 6)
+-- Upsert on item_key so re-applying the migration refreshes catalog fields
+-- without duplicating the SKU.
 -- ---------------------------------------------------------------------------
 
 insert into public.shop_items (
@@ -345,6 +368,11 @@ set
 
 -- ---------------------------------------------------------------------------
 -- Duty completions: mark done → teacher queue → gold-only award
+--
+-- gold_reward is stamped from shop_items.completion_reward_gold at submit time
+-- so a later catalog edit cannot change a pending payout. One pending row per
+-- inventory id blocks double-submit; return leaves inventory unused so the
+-- student can mark complete again; approve marks inventory used + credits gold.
 -- ---------------------------------------------------------------------------
 
 create table if not exists public.shop_duty_completions (
@@ -387,7 +415,8 @@ create policy "Teachers update shop duty completions"
   using (public.is_teacher())
   with check (public.is_teacher());
 
--- No direct student INSERT; use submit_shop_duty_completion().
+-- No direct student INSERT; use submit_shop_duty_completion() so we validate
+-- ownership, unused status, fulfillment_kind, and stamp gold_reward server-side.
 
 create or replace function public.submit_shop_duty_completion(p_inventory_id uuid)
 returns jsonb
@@ -494,7 +523,9 @@ create trigger tr_stamp_shop_duty_completion_decided_at
   when (old.status is distinct from new.status)
   execute function public.stamp_shop_duty_completion_decided_at();
 
--- Gold-only award path (never touches WP)
+-- Gold-only award path (never touches WP).
+-- Intentionally does NOT call or share award_wp_on_skill_approval — that trigger
+-- always updates wp and gold together and is tied to the tile/skill domain.
 create or replace function public.award_gold_on_shop_duty_approval()
 returns trigger
 language plpgsql
@@ -508,6 +539,7 @@ begin
     update public.profiles
     set gold = gold + new.gold_reward
     where id = new.student_id;
+    -- WP intentionally omitted.
 
     update public.inventory
     set status = 'used'

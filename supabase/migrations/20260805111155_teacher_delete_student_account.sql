@@ -1,8 +1,11 @@
 -- Permanent student-account deletion support.
 --
--- The Edge Function deletes the auth user with an admin client. These cascades
--- ensure the profile and all student-owned rows disappear in the same database
--- transaction. The audit row intentionally has no FK to the deleted student.
+-- Why this migration exists:
+--   Classroom needs a way to fully remove a student's login + data (FERPA / leave /
+--   wrong account), not just reset WP/gold. The Edge Function delete-student-account
+--   deletes the auth user with the admin client; these cascades make the profile and
+--   student-owned rows disappear in the same database transaction. account_deletion_log
+--   intentionally has no FK to the deleted student so the audit row survives the wipe.
 
 create table public.account_deletion_log (
   id uuid primary key default gen_random_uuid(),
