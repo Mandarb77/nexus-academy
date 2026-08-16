@@ -5,8 +5,9 @@
  * (WP, gold, role, display name, preferred_first_name). Student pages read `profile`
  * for economy state; teacher pages use `role`. `updatePreferredFirstName` persists the
  * Fran-voice name collected by PreferredFirstNameGate. `refreshProfile` is called after
- * skill approvals and from a Realtime listener on the signed-in user’s profile so WP
- * changes from the server appear without a full reload. `studentPreviewMode` lets
+ * skill approvals and from a Realtime listener on the signed-in user’s profile
+ * (`profiles` is in `supabase_realtime`) so WP/gold appear without a full reload.
+ * `studentPreviewMode` lets
  * teachers walk the student UI without losing their session. Retries in `fetchProfile`
  * exist because right after Google OAuth the row can lag briefly behind the session.
  */

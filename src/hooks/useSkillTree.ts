@@ -216,6 +216,43 @@ export function useSkillTree() {
     void refreshAll()
   }, [refreshAll])
 
+  // Teacher approval (and plan/checklist gates) should flip tree state without a full reload.
+  useEffect(() => {
+    if (!studentId || !isSupabaseConfigured) return
+
+    const channel = supabase
+      .channel(`skill-tree-live-${studentId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'skill_completions',
+          filter: `student_id=eq.${studentId}`,
+        },
+        () => {
+          void refreshCompletions()
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'patents',
+          filter: `student_id=eq.${studentId}`,
+        },
+        () => {
+          void refreshPatentProgress()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [studentId, refreshCompletions, refreshPatentProgress])
+
   // --- Derived: tiles grouped under canonical guild labels (for `/tree` sections) ---
   const tilesByGuild = useMemo(() => {
     const map = new Map<string, TileRow[]>()

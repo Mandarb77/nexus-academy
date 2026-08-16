@@ -3,7 +3,7 @@
  *
  * Fires on every transition into `approved` (plan/checklist use StudentReviewAlertSync).
  * Awards may land in a follow-up trigger update — we still notify on the status change,
- * then refresh WP/gold when available.
+ * then refresh the profile (WP/gold) so Workshop updates without a manual reload.
  */
 
 import { useEffect } from 'react'
@@ -28,7 +28,7 @@ function numAward(v: unknown): number {
 }
 
 export function ApprovalCelebrationSync() {
-  const { user, profile, studentPreviewMode } = useAuth()
+  const { user, profile, studentPreviewMode, refreshProfile } = useAuth()
   const roleIsTeacher = profile?.role === 'teacher'
 
   useEffect(() => {
@@ -36,9 +36,18 @@ export function ApprovalCelebrationSync() {
     if (roleIsTeacher && !studentPreviewMode) return
 
     const uid = user.id
+    const retryTimers: number[] = []
+
+    /** Award trigger writes profiles after the completion UPDATE — pull twice so WP/gold catch up. */
+    const refreshBalanceSoon = () => {
+      void refreshProfile()
+      retryTimers.push(window.setTimeout(() => void refreshProfile(), 400))
+      retryTimers.push(window.setTimeout(() => void refreshProfile(), 1200))
+    }
 
     const emit = (completionId: string, wp: number, gold: number) => {
       queueApprovalCelebration({ wp, gold, completionId })
+      refreshBalanceSoon()
     }
 
     const catchUpRecentApprovals = async () => {
@@ -104,9 +113,10 @@ export function ApprovalCelebrationSync() {
       })
 
     return () => {
+      for (const t of retryTimers) window.clearTimeout(t)
       void supabase.removeChannel(channel)
     }
-  }, [user?.id, roleIsTeacher, studentPreviewMode])
+  }, [user?.id, roleIsTeacher, studentPreviewMode, refreshProfile])
 
   return null
 }
