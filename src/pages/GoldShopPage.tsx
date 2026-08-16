@@ -112,14 +112,18 @@ function ShopPurchaseMomentOverlay({
 
 function ShopPurchaseConfirmDialog({
   confirmation,
+  gold,
   onCancel,
   onConfirm,
 }: {
   confirmation: PurchaseConfirmation | null
+  gold: number
   onCancel: () => void
   onConfirm: () => void
 }) {
   if (!confirmation) return null
+  const cost = confirmation.calculatedGoldCost
+  const canAfford = gold >= cost
   return (
     <div className="shop-purchase-confirm-layer" role="presentation">
       <section
@@ -127,6 +131,7 @@ function ShopPurchaseConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="shop-purchase-confirm-title"
+        aria-describedby={canAfford ? undefined : 'shop-purchase-confirm-shortfall'}
       >
         <img
           src={franBarrySupplyLogo}
@@ -135,13 +140,23 @@ function ShopPurchaseConfirmDialog({
           aria-hidden="true"
         />
         <p id="shop-purchase-confirm-title" className="shop-purchase-confirm__title">
-          Buy {confirmation.item.name} for {confirmation.calculatedGoldCost} gold?
+          Buy {confirmation.item.name} for {cost} gold?
         </p>
+        {canAfford ? null : (
+          <p id="shop-purchase-confirm-shortfall" className="shop-purchase-confirm__shortfall" role="status">
+            Not enough gold — you have {gold}, this costs {cost}.
+          </p>
+        )}
         <div className="shop-purchase-confirm__actions">
           <button type="button" className="btn-secondary shop-purchase-confirm__cancel" onClick={onCancel}>
             Cancel
           </button>
-          <button type="button" className="btn-primary shop-purchase-confirm__confirm" onClick={onConfirm}>
+          <button
+            type="button"
+            className="btn-primary shop-purchase-confirm__confirm"
+            disabled={!canAfford}
+            onClick={onConfirm}
+          >
             Confirm
           </button>
         </div>
@@ -647,10 +662,12 @@ export function GoldShopPage() {
       <ShopWelcomeOverlay open={showWelcome} onDismiss={dismissWelcome} />
       <ShopPurchaseConfirmDialog
         confirmation={purchaseConfirmation}
+        gold={gold}
         onCancel={() => setPurchaseConfirmation(null)}
         onConfirm={() => {
           const confirmation = purchaseConfirmation
           if (!confirmation) return
+          if (gold < confirmation.calculatedGoldCost) return
           setPurchaseConfirmation(null)
           if (confirmation.kind === 'request' && confirmation.grams != null) {
             confirmFilamentRequest(confirmation)

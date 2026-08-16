@@ -4907,6 +4907,14 @@ body:has(.bench-chrome) {
   line-height: 1.45;
 }
 
+.bench-chrome.shop-page .shop-purchase-confirm__shortfall {
+  margin: 0.65rem 0 0;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #3a2820;
+}
+
 .bench-chrome.shop-page .shop-purchase-confirm__actions {
   display: flex;
   justify-content: flex-end;
@@ -4917,6 +4925,16 @@ body:has(.bench-chrome) {
 .bench-chrome.shop-page .shop-purchase-confirm__confirm {
   font-family: 'Playfair Display', Georgia, serif;
   font-weight: 600;
+}
+
+.bench-chrome.shop-page .shop-purchase-confirm__confirm:disabled,
+.bench-chrome.shop-page .shop-purchase-confirm__confirm:disabled:hover {
+  background: #b7aea3;
+  border-color: #b7aea3;
+  color: #f1e8d2;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: none;
 }
 
 .bench-chrome.shop-page .shop-purchase-confirm__cancel {
