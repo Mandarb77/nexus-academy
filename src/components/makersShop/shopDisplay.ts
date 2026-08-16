@@ -41,6 +41,7 @@ export function iconVariantForItemKey(itemKey: string): string {
   if (k.includes('playlist') || k.includes('dj')) return 'playlist'
   if (k.includes('sound') || k.includes('microbit')) return 'gear'
   if (k.includes('decorate') || k.includes('corner')) return 'frame'
+  if (k.includes('autopsy')) return 'tool'
   if (k.includes('snack')) return 'snack'
   if (k.includes('tardy')) return 'tardy'
   if (k.includes('clean')) return 'broom'

@@ -55,6 +55,9 @@ const MOMENTS_BY_KEY: Record<string, string> = {
 (Barry, from the back, vaguely: "Sure.")`,
   decorate_workshop_corner: `Fran writes it in the ledger.
 (Barry, from the back: "Make it good or don't bother.")`,
+  autopsy_hour: `Fran writes Marcus into the ledger. "Fifteen gold. Forty minutes. Pick one from the pile."
+(Barry, from the back: "Screws out. No smashing.")
+(Fran: "He means it.")`,
   scrap_bin_pass: `Fran: "Five minutes. Five gold."
 What you find is yours.`,
   standard_lumber_small: `Fran writes Marcus into the ledger.
@@ -126,6 +129,7 @@ const MOMENTS_BY_NAME: Record<string, string> = {
   'one tardy pass (under 15 minutes)': MOMENTS_BY_KEY.one_tardy_pass_under_15,
   'sound-effect button': MOMENTS_BY_KEY.sound_effect_button,
   'decorate a corner': MOMENTS_BY_KEY.decorate_workshop_corner,
+  'autopsy hour': MOMENTS_BY_KEY.autopsy_hour,
   'scrap bin pass': MOMENTS_BY_KEY.scrap_bin_pass,
   'standard lumber - small': MOMENTS_BY_KEY.standard_lumber_small,
   'standard lumber - medium': MOMENTS_BY_KEY.standard_lumber_medium,
