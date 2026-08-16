@@ -1,13 +1,15 @@
 /*
- * Presentational “Quest Approved!” banner (WP + gold)
+ * Presentational patent-approved banner (chickadee copy + WP / gold amounts)
  *
- * Used by `ApprovalCelebrationHost` (global fixed toast) and can be embedded `pageTop`
- * on student home / skill tree for the same visual language. Keeps all copy and layout
- * in one component so teacher-facing dashboards never accidentally import this without
- * the celebration queue logic.
+ * Used by `ApprovalCelebrationHost`. Copy is the fixed patent-approved string;
+ * WP/gold are the award amounts, not extra praise.
  */
 
+import { ChickadeeMark } from './ChickadeeMark'
+import { CHICKADEE_PATENT_APPROVED, fillChickadeeNotice } from '../lib/studentReviewAlert'
+
 type Props = {
+  studentName: string
   wp: number
   gold: number
   onDismiss: () => void
@@ -15,14 +17,25 @@ type Props = {
   placement?: 'fixed' | 'pageTop'
 }
 
-export function FinalApprovalBanner({ wp, gold, onDismiss, placement = 'fixed' }: Props) {
+export function FinalApprovalBanner({
+  studentName,
+  wp,
+  gold,
+  onDismiss,
+  placement = 'fixed',
+}: Props) {
   return (
     <div
       className={`final-approval-banner${placement === 'pageTop' ? ' final-approval-banner--page-top' : ''}`}
       role="status"
       aria-live="assertive"
     >
-      <p className="final-approval-banner__title">🎉 Quest Approved!</p>
+      <div className="final-approval-banner__row">
+        <ChickadeeMark />
+        <p className="final-approval-banner__title">
+          {fillChickadeeNotice(CHICKADEE_PATENT_APPROVED, studentName)}
+        </p>
+      </div>
       <div className="final-approval-banner__rewards">
         <div className="final-approval-banner__reward final-approval-banner__wp">
           <span className="final-approval-banner__reward-amount">+{wp}</span>
@@ -33,12 +46,8 @@ export function FinalApprovalBanner({ wp, gold, onDismiss, placement = 'fixed' }
           <span className="final-approval-banner__reward-label">Gold</span>
         </div>
       </div>
-      <button
-        type="button"
-        className="final-approval-banner__dismiss"
-        onClick={onDismiss}
-      >
-        Awesome! ✕
+      <button type="button" className="final-approval-banner__dismiss" onClick={onDismiss}>
+        Got it
       </button>
     </div>
   )

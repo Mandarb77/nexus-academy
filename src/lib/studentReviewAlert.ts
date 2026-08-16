@@ -1,7 +1,7 @@
 /*
- * Student-facing alerts when a teacher approves or denies plan, checklist,
- * final packet, shop request, or redemption.
- * Final quest approval (WP + gold) still flows through approvalCelebration.ts.
+ * Student-facing chickadee notices when a teacher approves or returns plan, checklist,
+ * shop request, redemption, or duty. Final packet approve still flows through
+ * approvalCelebration.ts (same patent-approved string + WP/gold).
  *
  * Dedupe is a short debounce only — the same patent can be returned and re-approved in one
  * session, and each decide must notify again.
@@ -101,6 +101,11 @@ export function clearStudentReviewAlertAfterDismiss(alertId: string) {
   markStudentReviewAlertsShown([alertId])
 }
 
-export function studentReviewAlertTitle(tone: StudentReviewAlertTone = 'approved'): string {
-  return tone === 'denied' ? 'Denied' : 'Approved!'
+/** Fixed chickadee copy. `[Name]` is replaced with the shop voice name — never invent other wording. */
+export const CHICKADEE_PATENT_APPROVED = '[Name] — patent approved.'
+export const CHICKADEE_PATENT_NOT_APPROVED = '[Name] — patent not approved. See Mr. Cook.'
+export const CHICKADEE_USAGE_NOT_NOW = '[Name] — not now. See Mr. Cook.'
+
+export function fillChickadeeNotice(template: string, name: string): string {
+  return template.replaceAll('[Name]', name)
 }

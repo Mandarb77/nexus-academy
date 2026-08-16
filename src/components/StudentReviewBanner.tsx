@@ -1,10 +1,10 @@
 /*
- * Presentational banner for teacher approvals and denials
- * (plan, checklist, final packet, shop, redemption).
+ * Presentational banner for teacher-decision notices (plan, checklist, packet,
+ * shop, redemption, duty). Chickadee is static; copy comes from the queue.
  */
 
+import { ChickadeeMark } from './ChickadeeMark'
 import type { StudentReviewAlertTone } from '../lib/studentReviewAlert'
-import { studentReviewAlertTitle } from '../lib/studentReviewAlert'
 
 type Props = {
   message: string
@@ -20,10 +20,12 @@ export function StudentReviewBanner({ message, tone = 'approved', onDismiss }: P
       role="status"
       aria-live="assertive"
     >
-      <p className="student-review-banner__title">{studentReviewAlertTitle(tone)}</p>
-      <p className="student-review-banner__message">{message}</p>
+      <div className="student-review-banner__row">
+        <ChickadeeMark />
+        <p className="student-review-banner__message">{message}</p>
+      </div>
       <button type="button" className="student-review-banner__dismiss" onClick={onDismiss}>
-        Got it ✕
+        Got it
       </button>
     </div>
   )

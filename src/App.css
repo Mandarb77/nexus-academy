@@ -1870,13 +1870,38 @@ a.btn-primary {
   z-index: 1200;
   width: min(94vw, 28rem);
   padding: 1.4rem 1.6rem;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #052e16 0%, #14532d 100%);
-  border: 2px solid #22c55e;
-  color: #fff;
-  text-align: center;
-  animation: approval-slide-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both,
-             approval-pulse 1.6s ease-out 0.4s 3;
+  border-radius: 2px;
+  background: var(--color-panel);
+  border: 2px solid #4a7c59;
+  color: var(--color-ink-primary);
+  text-align: left;
+  font-family: var(--font-ui);
+  animation: approval-slide-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+.final-approval-banner__row,
+.student-review-banner__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.chickadee-mark {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+
+.final-approval-banner__title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.4;
+  color: var(--color-ink-primary);
 }
 
 /* In-flow variant: first thing under nav on home / skill tree */
@@ -1890,20 +1915,12 @@ a.btn-primary {
   max-width: none;
   margin: 0 auto 1rem;
   box-sizing: border-box;
-  animation: approval-slide-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both,
-             approval-pulse 1.6s ease-out 0.35s 4;
-}
-
-.final-approval-banner__title {
-  font-size: 1.45rem;
-  font-weight: 800;
-  margin: 0 0 0.35rem;
-  letter-spacing: -0.01em;
+  animation: approval-slide-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 
 .final-approval-banner__rewards {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 1.5rem;
   margin: 0.6rem 0 1rem;
 }
@@ -1928,22 +1945,26 @@ a.btn-primary {
   letter-spacing: 0.08em;
 }
 
-.final-approval-banner__wp   { color: #86efac; }
-.final-approval-banner__gold { color: #fde68a; }
+.final-approval-banner__wp { color: #2f6a3c; }
+.final-approval-banner__gold { color: #8a6a12; }
 
 .final-approval-banner__dismiss {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 0.88rem;
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 0.4rem 1.2rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-panel);
+  background: #4a7c59;
+  border: 1px solid #4a7c59;
+  border-radius: 2px;
   cursor: pointer;
 }
 
 .final-approval-banner__dismiss:hover {
-  background: rgba(255,255,255,0.22);
+  background: #3d6849;
+  border-color: #3d6849;
 }
 
 /* ── Approved quest read-only view ── */
@@ -6625,18 +6646,12 @@ body:has(.bench-chrome) {
   border-color: #734a2f;
 }
 
-.student-review-banner__title {
-  margin: 0 0 0.35rem;
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-ink-primary);
+.student-review-banner__row {
+  margin-bottom: 0.85rem;
 }
 
 .student-review-banner__message {
-  margin: 0 0 0.85rem;
+  margin: 0;
   font-size: 0.95rem;
   line-height: 1.45;
   color: var(--color-ink-secondary);

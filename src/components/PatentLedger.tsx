@@ -449,8 +449,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
             showBanner('Plan approved — the Work tab is now open.', 'success')
           else if (!prev.checklist_approved && next.checklist_approved)
             showBanner('Checklist approved — the Record tab is now open.', 'success')
-          else if (next.status === 'returned')
-            showBanner('Returned by your teacher — review the note and try again.', 'returned')
+          /* Plan/checklist/packet returns: chickadee overlay is the messenger (StudentReviewAlertSync). */
         },
       )
       .on(
@@ -461,8 +460,6 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
           if (!patentRowMatchesTile(tile.id, next.tile_id)) return
           void loadFromDatabase()
           void refresh()
-          if (next.status === 'returned')
-            showBanner('Final entry returned — review the note and resubmit.', 'returned')
         },
       )
       .subscribe()

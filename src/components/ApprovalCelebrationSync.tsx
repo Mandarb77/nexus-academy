@@ -8,7 +8,7 @@
 
 import { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { queueApprovalCelebration } from '../lib/approvalCelebration'
+import { hasShownApprovalCelebration, queueApprovalCelebration } from '../lib/approvalCelebration'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 function hasOwn(obj: Record<string, unknown>, key: string): boolean {
@@ -56,6 +56,8 @@ export function ApprovalCelebrationSync() {
       for (const row of data) {
         const id = row.id != null ? String(row.id) : ''
         if (!id) continue
+        /* Catch-up is for a closed tab — never replay a banner this browser already showed. */
+        if (hasShownApprovalCelebration(id)) continue
         emit(id, numAward(row.wp_awarded), numAward(row.gold_awarded))
         break
       }

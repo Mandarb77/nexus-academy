@@ -1,24 +1,27 @@
 /*
- * Realtime: teacher approved or denied plan, checklist, final packet, shop, or redemption
- * → student banner + chime.
+ * Realtime: teacher approved or returned plan, checklist, final packet, shop,
+ * redemption, or duty → student chickadee banner + chime.
  *
  * Plan vs checklist must not be confused when Realtime omits columns on `payload.old`
  * (default replica identity only sends the PK). Prefer explicit transitions; fall back to
  * heuristics when `old` is incomplete.
+ *
+ * Reject/return copy is the fixed chickadee strings. Final packet approve still uses
+ * ApprovalCelebrationSync (same chickadee line + WP/gold amounts).
  */
 
 import { useCallback, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 import {
+  CHICKADEE_PATENT_NOT_APPROVED,
+  CHICKADEE_USAGE_NOT_NOW,
+  fillChickadeeNotice,
   queueStudentReviewAlert,
   shouldQueueStudentReviewAlert,
   type StudentReviewAlertTone,
 } from '../lib/studentReviewAlert'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-
-const PATENT_SENT_BACK = 'Patent sent back — see Mr. Cook for details.'
-const PURCHASE_DENIED = 'Purchase denied — see Mr. Cook for details.'
-const REDEMPTION_DENIED = 'Redemption denied — see Mr. Cook for details.'
 
 async function tileSkillName(tileId: string): Promise<string> {
   const { data } = await supabase.from('tiles').select('skill_name').eq('id', tileId).maybeSingle()
@@ -67,7 +70,7 @@ function isChecklistReturn(prev: Record<string, unknown>, next: Record<string, u
   return next.status === 'approved' && next.checklist_approved !== true
 }
 
-/** True when status newly became approved (shop / redemption). */
+/** True when status newly became approved (shop / redemption / duty). */
 function isStatusApproval(prev: Record<string, unknown>, next: Record<string, unknown>): boolean {
   if (next.status !== 'approved') return false
   if (hasOwn(prev, 'status')) return prev.status !== 'approved'
@@ -88,6 +91,9 @@ function isStatusDenial(
 export function StudentReviewAlertSync() {
   const { user, profile, studentPreviewMode } = useAuth()
   const roleIsTeacher = profile?.role === 'teacher'
+  const studentName = preferredFirstNameForVoice(profile)
+  const patentNotApproved = fillChickadeeNotice(CHICKADEE_PATENT_NOT_APPROVED, studentName)
+  const usageNotNow = fillChickadeeNotice(CHICKADEE_USAGE_NOT_NOW, studentName)
 
   const emit = useCallback((alertId: string, message: string, tone: StudentReviewAlertTone = 'approved') => {
     if (!shouldQueueStudentReviewAlert(alertId)) return
@@ -131,11 +137,11 @@ export function StudentReviewAlertSync() {
           }
 
           if (planReturned) {
-            emit(`patent-return:plan:${tileId}`, PATENT_SENT_BACK, 'denied')
+            emit(`patent-return:plan:${tileId}`, patentNotApproved, 'denied')
           }
 
           if (checklistReturned) {
-            emit(`patent-return:checklist:${tileId}`, PATENT_SENT_BACK, 'denied')
+            emit(`patent-return:checklist:${tileId}`, patentNotApproved, 'denied')
           }
         },
       )
@@ -148,7 +154,7 @@ export function StudentReviewAlertSync() {
           if (!isStatusDenial(prev, next, 'returned')) return
           const id = next.id != null ? String(next.id) : ''
           if (!id) return
-          emit(`patent-return:skill:${id}`, PATENT_SENT_BACK, 'denied')
+          emit(`patent-return:skill:${id}`, patentNotApproved, 'denied')
         },
       )
       .on(
@@ -165,7 +171,7 @@ export function StudentReviewAlertSync() {
             return
           }
           if (isStatusDenial(prev, next, 'returned')) {
-            emit(`redemption-return:${id}`, REDEMPTION_DENIED, 'denied')
+            emit(`redemption-return:${id}`, usageNotNow, 'denied')
           }
         },
       )
@@ -183,7 +189,20 @@ export function StudentReviewAlertSync() {
             return
           }
           if (isStatusDenial(prev, next, 'rejected')) {
-            emit(`shop-reject:${id}`, PURCHASE_DENIED, 'denied')
+            emit(`shop-reject:${id}`, usageNotNow, 'denied')
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'shop_duty_completions', filter: `student_id=eq.${uid}` },
+        (payload) => {
+          const prev = (payload.old ?? {}) as Record<string, unknown>
+          const next = (payload.new ?? {}) as Record<string, unknown>
+          const id = next.id != null ? String(next.id) : ''
+          if (!id) return
+          if (isStatusDenial(prev, next, 'returned')) {
+            emit(`duty-return:${id}`, usageNotNow, 'denied')
           }
         },
       )
@@ -192,7 +211,7 @@ export function StudentReviewAlertSync() {
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [user?.id, roleIsTeacher, studentPreviewMode, emit])
+  }, [user?.id, roleIsTeacher, studentPreviewMode, emit, patentNotApproved, usageNotNow])
 
   return null
 }

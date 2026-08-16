@@ -1,6 +1,6 @@
 /*
- * Global student toast when a teacher approves or denies plan, checklist,
- * final packet, shop, or redemption.
+ * Global student chickadee toast when a teacher approves or returns plan, checklist,
+ * shop, redemption, or duty. Final packet approve uses ApprovalCelebrationHost.
  */
 
 import { useEffect, useState } from 'react'

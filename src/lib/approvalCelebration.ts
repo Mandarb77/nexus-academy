@@ -6,7 +6,9 @@
  * might miss the toast after a tab switch. This module bridges Realtime → `localStorage`
  * pending payload → `CustomEvent` → `ApprovalCelebrationHost`.
  *
- * Dedupe is a short debounce only so a returned-then-reapproved completion notifies again.
+ * Short in-memory debounce ignores duplicate websocket deliveries. Shown completion IDs are
+ * persisted so a refresh (or the 2-minute catch-up query) does not resurrect the banner.
+ * A later return-then-reapprove still notifies: live Realtime queues even if the id was shown.
  */
 
 import { playApprovalChime } from './alertSound'
@@ -15,6 +17,8 @@ import { areStudentApprovalAlertsEnabled } from './notificationPreferences'
 export const APPROVAL_CELEBRATION_EVENT = 'nexus-pending-approval-celebration'
 
 const PENDING_KEY = 'nexus:pending-approval-celebration'
+const SHOWN_KEY = 'nexus:shown-approval-celebrations'
+const SHOWN_MAX = 80
 const DEDUPE_MS = 3_000
 const recentCelebrationAt = new Map<string, number>()
 
@@ -38,6 +42,32 @@ function dispatchCelebrationEvent() {
   }
 }
 
+function readShownCompletionIds(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(SHOWN_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((id): id is string => typeof id === 'string' && id.length > 0)
+  } catch {
+    return []
+  }
+}
+
+export function hasShownApprovalCelebration(completionId: string): boolean {
+  if (!completionId) return false
+  return readShownCompletionIds().includes(completionId)
+}
+
+export function markApprovalCelebrationShown(completionId: string) {
+  if (typeof window === 'undefined' || !completionId) return
+  const ids = readShownCompletionIds().filter((id) => id !== completionId)
+  ids.push(completionId)
+  localStorage.setItem(SHOWN_KEY, JSON.stringify(ids.slice(-SHOWN_MAX)))
+  recentCelebrationAt.set(completionId, Date.now())
+}
+
 export function queueApprovalCelebration(c: PendingApprovalCelebration) {
   if (typeof window === 'undefined') return
   if (!c.completionId) return
@@ -55,7 +85,7 @@ export function queueApprovalCelebration(c: PendingApprovalCelebration) {
   const last = recentCelebrationAt.get(c.completionId) ?? 0
   if (Date.now() - last < DEDUPE_MS) return
 
-  recentCelebrationAt.set(c.completionId, Date.now())
+  markApprovalCelebrationShown(c.completionId)
   localStorage.setItem(PENDING_KEY, JSON.stringify(c))
   liveNotifier?.(c)
   dispatchCelebrationEvent()
@@ -78,13 +108,14 @@ export function peekPendingCelebration(): PendingApprovalCelebration | null {
 export function clearPendingCelebrationAfterDismiss(completionId: string) {
   if (typeof window === 'undefined') return
   localStorage.removeItem(PENDING_KEY)
-  if (completionId) recentCelebrationAt.set(completionId, Date.now())
+  if (completionId) markApprovalCelebrationShown(completionId)
 }
 
 export function shouldQueueCompletionCelebration(completionId: string): boolean {
   if (!completionId) return false
   const pending = peekPendingCelebration()
   if (pending?.completionId === completionId) return true
+  if (hasShownApprovalCelebration(completionId)) return false
   const last = recentCelebrationAt.get(completionId) ?? 0
   if (Date.now() - last < DEDUPE_MS) return false
   return true
