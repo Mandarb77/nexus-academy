@@ -1,9 +1,10 @@
 /*
  * Teacher approvals console (`/teacher`)
  *
- * Six pending queues in one dense grid (plans, checklists, skills, duties, redemptions, shop)
- * so everything fits on screen at once. Duty completions are shop chores (Keeper's Duty):
- * same Approve/Return UX as skills, but the DB awards gold only — never WP.
+ * Patent queues (plan, checklist, packet) share an inbox + wide review pane so the form
+ * is readable. Duty / Kit / shop stay in a compact three-column grid. Duty completions
+ * are shop chores (Keeper's Duty): same Approve/Return UX as skills, but the DB awards
+ * gold only — never WP.
  * Student preview balance sits *below* the queues (testing aid, not the primary job).
  * Storyline widget sits after the grid.
  *
@@ -115,6 +116,51 @@ type PendingPlanRow = {
   patent: { field_1: string; field_2: string } | null
 }
 
+type PatentInboxKind = 'plan' | 'checklist' | 'packet'
+
+type PatentInboxItem =
+  | {
+      key: string
+      kind: 'plan'
+      createdAt: string
+      studentName: string
+      skillName: string
+      guild: string | null
+      plan: PendingPlanRow
+    }
+  | {
+      key: string
+      kind: 'checklist'
+      createdAt: string
+      studentName: string
+      skillName: string
+      guild: string | null
+      checklist: PendingChecklistRow
+    }
+  | {
+      key: string
+      kind: 'packet'
+      createdAt: string
+      studentName: string
+      skillName: string
+      guild: string | null
+      packet: PendingSkillRow
+    }
+
+const PATENT_INBOX_KIND_LABEL: Record<PatentInboxKind, string> = {
+  plan: 'Plan',
+  checklist: 'Checklist',
+  packet: 'Packet',
+}
+
+function fallbackStudentName(displayName: string | null | undefined, studentId: string) {
+  return displayName?.trim() || `Student (${studentId.slice(0, 8)}…)`
+}
+
+function isVideoUpload(url: string) {
+  return /\.(mp4|webm|mov|avi|m4v)$/i.test(url)
+}
+
 type StudentSummary = {
   id: string
   display_name: string | null
@@ -194,6 +240,154 @@ function EmpathyDisplay({ raw }: { raw: string | null | undefined }) {
   )
 }
 
+function PatentReviewPane({
+  item,
+  actingPlanId,
+  actingPlanKind,
+  actingChecklistId,
+  actingChecklistKind,
+  skillBusy,
+  onApprovePlan,
+  onReturnPlan,
+  onApproveChecklist,
+  onReturnChecklist,
+  onApprovePacket,
+  onReturnPacket,
+  isActingSkill,
+}: {
+  item: PatentInboxItem
+  actingPlanId: string | null
+  actingPlanKind: 'approve' | 'return' | null
+  actingChecklistId: string | null
+  actingChecklistKind: 'approve' | 'return' | null
+  skillBusy: Acting
+  onApprovePlan: (id: string) => void
+  onReturnPlan: (id: string) => void
+  onApproveChecklist: (id: string) => void
+  onReturnChecklist: (id: string) => void
+  onApprovePacket: (id: string) => void
+  onReturnPacket: (id: string) => void
+  isActingSkill: (id: string, action: 'approve' | 'return') => boolean
+}) {
+  const kindLabel = PATENT_INBOX_KIND_LABEL[item.kind]
+  let approveLabel = 'Approve'
+  let returnLabel = 'Return'
+  let busyApprove = false
+  let busyReturn = false
+  let onApprove = () => {}
+  let onReturn = () => {}
+
+  if (item.kind === 'plan') {
+    approveLabel = 'Approve plan'
+    busyApprove = actingPlanId === item.plan.id && actingPlanKind === 'approve'
+    busyReturn = actingPlanId === item.plan.id && actingPlanKind === 'return'
+    onApprove = () => onApprovePlan(item.plan.id)
+    onReturn = () => onReturnPlan(item.plan.id)
+  } else if (item.kind === 'checklist') {
+    approveLabel = 'Approve checklist'
+    busyApprove = actingChecklistId === item.checklist.id && actingChecklistKind === 'approve'
+    busyReturn = actingChecklistId === item.checklist.id && actingChecklistKind === 'return'
+    onApprove = () => onApproveChecklist(item.checklist.id)
+    onReturn = () => onReturnChecklist(item.checklist.id)
+  } else {
+    approveLabel = 'Approve packet'
+    busyApprove = isActingSkill(item.packet.id, 'approve')
+    busyReturn = isActingSkill(item.packet.id, 'return')
+    onApprove = () => onApprovePacket(item.packet.id)
+    onReturn = () => onReturnPacket(item.packet.id)
+  }
+  const busy = busyApprove || busyReturn || Boolean(skillBusy)
+
+  return (
+    <>
+      <header className="teacher-panel-patent-detail-head">
+        <p className="teacher-panel-student">{item.studentName}</p>
+        <p className="teacher-panel-skill">
+          <strong>{item.skillName}</strong>
+        </p>
+        <p className="muted teacher-panel-guild">
+          {kindLabel}
+          {item.guild ? (
+            <>
+              {' '}
+              · <strong>{item.guild}</strong>
+            </>
+          ) : null}
+          {item.kind === 'packet' && item.packet.tile?.wp_value != null ? (
+            <>
+              {' '}
+              · {item.packet.tile.wp_display ?? `${item.packet.tile.wp_value} WP`} and{' '}
+              {item.packet.tile.gold_display ?? `${item.packet.tile.gold_value ?? 10} gold`} on
+              approval
+            </>
+          ) : null}
+        </p>
+      </header>
+
+      <div className="teacher-panel-patent-detail-body">
+        {item.kind === 'plan' ? (
+          <div className="teacher-panel-patent">
+            <p className="teacher-panel-patent-title">What are they going to make?</p>
+            <p className="teacher-panel-patent-copy">{item.plan.patent?.field_1 || '—'}</p>
+            <EmpathyDisplay raw={item.plan.patent?.field_2 ?? null} />
+          </div>
+        ) : null}
+
+        {item.kind === 'checklist' ? (
+          item.checklist.upload_url ? (
+            <div className="teacher-panel-patent-media">
+              <p className="teacher-panel-patent-title">Submitted photo / video</p>
+              {isVideoUpload(item.checklist.upload_url) ? (
+                <video src={item.checklist.upload_url} controls />
+              ) : (
+                <img src={item.checklist.upload_url} alt="Student's uploaded work" />
+              )}
+            </div>
+          ) : (
+            <p className="muted">No photo or video uploaded yet.</p>
+          )
+        ) : null}
+
+        {item.kind === 'packet' ? (
+          item.packet.patent ? (
+            <div className="teacher-panel-patent">
+              <p className="teacher-panel-patent-title">Patent packet</p>
+              <dl className="teacher-panel-patent-dl">
+                <div>
+                  <dt>What did they make?</dt>
+                  <dd>{item.packet.patent.field_1 || '—'}</dd>
+                </div>
+              </dl>
+              <EmpathyDisplay raw={item.packet.patent.field_2} />
+              <dl className="teacher-panel-patent-dl">
+                <div>
+                  <dt>How did they make it an original work?</dt>
+                  <dd>{item.packet.patent.field_3 || '—'}</dd>
+                </div>
+                <div>
+                  <dt>What do they have to iterate?</dt>
+                  <dd>{item.packet.patent.field_4 || '—'}</dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <p className="muted">No patent packet attached to this completion.</p>
+          )
+        ) : null}
+      </div>
+
+      <div className="teacher-panel-actions teacher-panel-patent-detail-actions">
+        <button type="button" className="btn-primary" disabled={busy} onClick={onApprove}>
+          {busyApprove ? 'Approving…' : approveLabel}
+        </button>
+        <button type="button" className="btn-secondary" disabled={busy} onClick={onReturn}>
+          {busyReturn ? 'Returning…' : returnLabel}
+        </button>
+      </div>
+    </>
+  )
+}
+
 // =============================================================================
 // TeacherPanelPage — `/teacher` grading console (patents + completions + redemptions)
 // =============================================================================
@@ -247,6 +441,8 @@ export function TeacherPanelPage() {
     () => new Map(),
   )
   const [resettingCompletionId, setResettingCompletionId] = useState<string | null>(null)
+  /** Selected patent inbox row (`plan:id` / `checklist:id` / `packet:id`). */
+  const [patentInboxKey, setPatentInboxKey] = useState<string | null>(null)
 
   // ---------------------------------------------------------------------------
   // `loadPending` — parallel queries + joins (tiles, names) for all four queues
@@ -1393,8 +1589,54 @@ export function TeacherPanelPage() {
     void loadPending()
   }
 
+  const patentInbox = useMemo((): PatentInboxItem[] => {
+    const items: PatentInboxItem[] = [
+      ...planRows.map((plan) => ({
+        key: `plan:${plan.id}`,
+        kind: 'plan' as const,
+        createdAt: plan.created_at,
+        studentName: fallbackStudentName(plan.display_name, plan.student_id),
+        skillName: plan.tile?.skill_name ?? 'Plan',
+        guild: plan.tile?.guild ?? null,
+        plan,
+      })),
+      ...checklistRows.map((checklist) => ({
+        key: `checklist:${checklist.id}`,
+        kind: 'checklist' as const,
+        createdAt: checklist.created_at,
+        studentName: fallbackStudentName(checklist.display_name, checklist.student_id),
+        skillName: checklist.tile?.skill_name ?? 'Checklist',
+        guild: checklist.tile?.guild ?? null,
+        checklist,
+      })),
+      ...skillRows.map((packet) => ({
+        key: `packet:${packet.id}`,
+        kind: 'packet' as const,
+        createdAt: packet.created_at,
+        studentName: fallbackStudentName(packet.display_name, packet.student_id),
+        skillName: packet.tile?.skill_name ?? 'Unknown skill',
+        guild: packet.tile?.guild ?? null,
+        packet,
+      })),
+    ]
+    items.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    return items
+  }, [planRows, checklistRows, skillRows])
+
+  useEffect(() => {
+    if (patentInbox.length === 0) {
+      if (patentInboxKey !== null) setPatentInboxKey(null)
+      return
+    }
+    if (!patentInbox.some((item) => item.key === patentInboxKey)) {
+      setPatentInboxKey(patentInbox[0].key)
+    }
+  }, [patentInbox, patentInboxKey])
+
+  const selectedPatent = patentInbox.find((item) => item.key === patentInboxKey) ?? null
+
   // ---------------------------------------------------------------------------
-  // Render — chrome, banners, four approval panels, student inspector
+  // Render — chrome, banners, patent inbox, compact ops queues, student inspector
   // ---------------------------------------------------------------------------
   return (
     <div className="app-shell bench-chrome teacher-panel-page">
@@ -1431,228 +1673,74 @@ export function TeacherPanelPage() {
         <p className="muted">Loading pending requests…</p>
       ) : loadError ? null : (
         <>
-          {/* ========== Pending queues (plans → shop), then preview balance beneath ========== */}
-          <div className="teacher-panel-approvals-grid teacher-panel-approvals-grid--dense">
-          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-plans-heading">
-            <h2 id="teacher-panel-plans-heading" className="teacher-panel-section-title">
-              Plan approvals
-            </h2>
-            {planRows.length === 0 ? (
-              <p className="muted teacher-panel-section-empty">No pending plans.</p>
-            ) : (
-              <ul className="teacher-panel-list">
-                {planRows.map((row) => {
-                  const studentName =
-                    row.display_name?.trim() || `Student (${row.student_id.slice(0, 8)}…)`
-                  const busyApprove = actingPlanId === row.id && actingPlanKind === 'approve'
-                  const busyReturn = actingPlanId === row.id && actingPlanKind === 'return'
-                  const busy = busyApprove || busyReturn
-                  return (
-                    <li key={row.id} className="card teacher-panel-item">
-                      <div className="teacher-panel-item-main">
-                        <p className="teacher-panel-student">{studentName}</p>
-                        <p className="teacher-panel-skill">
-                          <strong>{row.tile?.skill_name ?? 'Plan'}</strong>
-                        </p>
-                        <p className="muted teacher-panel-guild">
-                          Plan approval · {row.tile?.guild ? <strong>{row.tile.guild}</strong> : null}
-                        </p>
-                        <div className="teacher-panel-patent">
-                          <p className="teacher-panel-patent-title">
-                            <strong>What are they going to make?</strong>
-                          </p>
-                          <p className="muted" style={{ margin: 0 }}>
-                            {row.patent?.field_1}
-                          </p>
-                          <EmpathyDisplay raw={row.patent?.field_2 ?? null} />
-                        </div>
-                      </div>
-                      <div className="teacher-panel-actions">
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          disabled={busy}
-                          onClick={() => void approvePlan(row.id)}
-                        >
-                          {busyApprove ? 'Approving…' : 'Approve plan'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          disabled={busy}
-                          onClick={() => void returnPlan(row.id)}
-                        >
-                          {busyReturn ? 'Returning…' : 'Return'}
-                        </button>
-                      </div>
+          {/* ========== Patent inbox + wide review, then compact duty / Kit / shop ========== */}
+          <section
+            className="teacher-panel-patent-review"
+            aria-labelledby="teacher-panel-patent-inbox-heading"
+          >
+            <div className="teacher-panel-patent-inbox">
+              <h2 id="teacher-panel-patent-inbox-heading" className="teacher-panel-section-title">
+                Patent waiting
+                {patentInbox.length > 0 ? (
+                  <span className="teacher-panel-patent-inbox-count"> {patentInbox.length}</span>
+                ) : null}
+              </h2>
+              {patentInbox.length === 0 ? (
+                <p className="muted teacher-panel-section-empty">No patent work waiting.</p>
+              ) : (
+                <ul className="teacher-panel-patent-inbox-list">
+                  {patentInbox.map((item) => (
+                    <li key={item.key}>
+                      <button
+                        type="button"
+                        className={
+                          item.key === patentInboxKey
+                            ? 'teacher-panel-patent-inbox-item is-selected'
+                            : 'teacher-panel-patent-inbox-item'
+                        }
+                        aria-current={item.key === patentInboxKey ? 'true' : undefined}
+                        onClick={() => setPatentInboxKey(item.key)}
+                      >
+                        <span className="teacher-panel-patent-inbox-kind">
+                          {PATENT_INBOX_KIND_LABEL[item.kind]}
+                        </span>
+                        <span className="teacher-panel-patent-inbox-name">{item.studentName}</span>
+                        <span className="teacher-panel-patent-inbox-tile">{item.skillName}</span>
+                      </button>
                     </li>
-                  )
-                })}
-              </ul>
-            )}
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="teacher-panel-patent-detail teacher-panel-approval-box">
+              {selectedPatent == null ? (
+                <p className="muted teacher-panel-section-empty">
+                  Select a waiting patent to read the form.
+                </p>
+              ) : (
+                <PatentReviewPane
+                  item={selectedPatent}
+                  actingPlanId={actingPlanId}
+                  actingPlanKind={actingPlanKind}
+                  actingChecklistId={actingChecklistId}
+                  actingChecklistKind={actingChecklistKind}
+                  skillBusy={
+                    selectedPatent.kind === 'packet' ? busySkill(selectedPatent.packet.id) : null
+                  }
+                  onApprovePlan={(id) => void approvePlan(id)}
+                  onReturnPlan={(id) => void returnPlan(id)}
+                  onApproveChecklist={(id) => void approveChecklist(id)}
+                  onReturnChecklist={(id) => void returnChecklist(id)}
+                  onApprovePacket={(id) => void approveSkill(id)}
+                  onReturnPacket={(id) => void returnSkill(id)}
+                  isActingSkill={(id, action) => isActing('skill', id, action)}
+                />
+              )}
+            </div>
           </section>
 
-          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-checklists-heading">
-            <h2 id="teacher-panel-checklists-heading" className="teacher-panel-section-title">
-              Checklist approvals
-            </h2>
-            {checklistRows.length === 0 ? (
-              <p className="muted teacher-panel-section-empty">No pending checklist reviews.</p>
-            ) : (
-              <ul className="teacher-panel-list">
-                {checklistRows.map((row) => {
-                  const studentName =
-                    row.display_name?.trim() || `Student (${row.student_id.slice(0, 8)}…)`
-                  const busyApprove = actingChecklistId === row.id && actingChecklistKind === 'approve'
-                  const busyReturn = actingChecklistId === row.id && actingChecklistKind === 'return'
-                  const busy = busyApprove || busyReturn
-                  const uploadUrl = row.upload_url
-                  const isVideo = uploadUrl
-                    ? /\.(mp4|webm|mov|avi|m4v)$/i.test(uploadUrl)
-                    : false
-
-                  return (
-                    <li key={row.id} className="card teacher-panel-item">
-                      <div className="teacher-panel-item-main">
-                        <p className="teacher-panel-student">{studentName}</p>
-                        <p className="teacher-panel-skill">
-                          <strong>{row.tile?.skill_name ?? 'Checklist'}</strong>
-                        </p>
-                        <p className="muted teacher-panel-guild">
-                          Checklist review · {row.tile?.guild ? <strong>{row.tile.guild}</strong> : null}
-                        </p>
-                        {uploadUrl ? (
-                          <div style={{ marginTop: '0.65rem' }}>
-                            <p style={{ margin: '0 0 0.35rem', fontSize: '0.9rem' }}>
-                              <strong>Submitted photo / video:</strong>
-                            </p>
-                            {isVideo ? (
-                              <video
-                                src={uploadUrl}
-                                controls
-                                style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', display: 'block' }}
-                              />
-                            ) : (
-                              <img
-                                src={uploadUrl}
-                                alt="Student's uploaded work"
-                                style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', objectFit: 'contain', display: 'block' }}
-                              />
-                            )}
-                          </div>
-                        ) : (
-                          <p className="muted" style={{ marginTop: '0.35rem', fontSize: '0.9rem' }}>
-                            No photo or video uploaded yet.
-                          </p>
-                        )}
-                      </div>
-                      <div className="teacher-panel-actions">
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          disabled={busy}
-                          onClick={() => void approveChecklist(row.id)}
-                        >
-                          {busyApprove ? 'Approving…' : 'Approve checklist'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          disabled={busy}
-                          onClick={() => void returnChecklist(row.id)}
-                        >
-                          {busyReturn ? 'Returning…' : 'Return'}
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-skills-heading">
-            <h2 id="teacher-panel-skills-heading" className="teacher-panel-section-title">
-              Skill completions
-            </h2>
-            {skillRows.length === 0 ? (
-              <p className="muted teacher-panel-section-empty">No pending skill completions.</p>
-            ) : (
-              <ul className="teacher-panel-list">
-                {skillRows.map((row) => {
-                  const t = row.tile
-                  const studentName =
-                    row.display_name?.trim() ||
-                    `Student (${row.student_id.slice(0, 8)}…)`
-                  const b = busySkill(row.id)
-                  const busy = Boolean(b)
-
-                  return (
-                    <li key={row.id} className="card teacher-panel-item">
-                      <div className="teacher-panel-item-main">
-                        <p className="teacher-panel-student">{studentName}</p>
-                        <p className="teacher-panel-skill">
-                          <strong>{t?.skill_name ?? 'Unknown skill'}</strong>
-                        </p>
-                        <p className="muted teacher-panel-guild">
-                          Guild: <strong>{t?.guild ?? '—'}</strong>
-                          {t?.wp_value != null ? (
-                            <>
-                              {' '}
-                              · {t.wp_display ?? `${t.wp_value} WP`} and {t.gold_display ?? `${t.gold_value ?? 10} gold`} on approval
-                            </>
-                          ) : null}
-                        </p>
-                        {row.patent ? (
-                          <div className="teacher-panel-patent">
-                            <p className="teacher-panel-patent-title">
-                              <strong>Patent packet</strong>
-                            </p>
-                            <dl className="teacher-panel-patent-dl">
-                              <div>
-                                <dt>What did they make?</dt>
-                                <dd>{row.patent.field_1}</dd>
-                              </div>
-                            </dl>
-                            <EmpathyDisplay raw={row.patent.field_2} />
-                            <dl className="teacher-panel-patent-dl">
-                              <div>
-                                <dt>How did they make it an original work?</dt>
-                                <dd>{row.patent.field_3}</dd>
-                              </div>
-                              <div>
-                                <dt>What do they have to iterate?</dt>
-                                <dd>{row.patent.field_4}</dd>
-                              </div>
-                            </dl>
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="teacher-panel-actions">
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          disabled={busy}
-                          onClick={() => void approveSkill(row.id)}
-                        >
-                          {isActing('skill', row.id, 'approve') ? 'Approving…' : 'Approve'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          disabled={busy}
-                          onClick={() => void returnSkill(row.id)}
-                        >
-                          {isActing('skill', row.id, 'return') ? 'Returning…' : 'Return'}
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-
+          <div className="teacher-panel-approvals-grid teacher-panel-approvals-grid--dense teacher-panel-approvals-grid--ops">
           <section className="teacher-panel-approval-box" aria-labelledby="teacher-panel-duties-heading">
             {/* Shop chores (e.g. Keeper's Duty): approve → +gold only via DB trigger, never WP. */}
             <h2 id="teacher-panel-duties-heading" className="teacher-panel-section-title">
