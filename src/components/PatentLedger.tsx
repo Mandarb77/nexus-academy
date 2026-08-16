@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { isTeacherPreviewBrowse, isTeacherProfile } from '../lib/teacher'
@@ -33,6 +33,7 @@ import { ledgerContentForTile, PATENT_CLOSING_QUOTE } from '../lib/patentLedgerC
 import { canAccessVoidTile1Proto } from '../lib/voidProtoAccess'
 import { fillPatentPlanFieldsFromRows, type LoadedPlanPatentRow } from '../lib/patentFormMerge'
 import { serverSuggestedPatentPhase } from '../lib/patentPhaseBootstrap'
+import { parsePatentStepParam } from '../lib/questContinue'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/patentPlanStatus'
 import { patentRowMatchesTile, patentTileIdCandidates } from '../lib/patentTileQuery'
@@ -207,6 +208,8 @@ function SignaturePad({
 export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const { user, profile, studentPreviewMode } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const urlStep = parsePatentStepParam(searchParams.get('step'))
   const studentId = user?.id ?? 'anonymous'
   const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
   const teacherView = isTeacherProfile(profile)
@@ -412,8 +415,9 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
     const maxPh: 1 | 2 | 3 = !row.id ? 1 : !checklistAppr ? 2 : 3
     const serverPh = serverSuggestedPatentPhase({ primaryStage, planStatus, checklistApproved: checklistAppr })
-    const nextPhase = Math.min(Math.max(serverPh, 1), maxPh) as 1 | 2 | 3
-    const sig = `${row.id}|${primaryStage}|${planStatus}|${checklistAppr}|${checklistSub}`
+    const requested = urlStep != null ? urlStep : serverPh
+    const nextPhase = Math.min(Math.max(requested, 1), maxPh) as 1 | 2 | 3
+    const sig = `${row.id}|${primaryStage}|${planStatus}|${checklistAppr}|${checklistSub}|${urlStep ?? ''}`
     if (phaseHydrateSigRef.current !== sig) {
       phaseHydrateSigRef.current = sig
       setPhase(nextPhase)
@@ -424,7 +428,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       }
     }
     setInitialised(true)
-  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, phaseKey])
+  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, phaseKey, urlStep])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -602,9 +606,23 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       if (plan.id && plan.status !== 'none') {
         const { error } = await supabase
           .from('patents')
-          .update({ field_1: patent.field1, field_2: empathyJson, status: 'pending', checklist_submitted: false })
+          .update({
+            field_1: patent.field1,
+            field_2: empathyJson,
+            status: 'pending',
+            checklist_submitted: false,
+            checklist_approved: false,
+          })
           .eq('id', plan.id)
         if (error) throw error
+        /* Leftover approved duplicates must not win the row picker after a resubmit. */
+        await supabase
+          .from('patents')
+          .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
+          .eq('student_id', user.id)
+          .in('tile_id', patentTileIdCandidates(tile.id))
+          .eq('status', 'approved')
+          .neq('id', plan.id)
         if (plan.status === 'returned') localStorage.setItem(field1DraftKey, patent.field1)
       } else {
         const { data, error } = await supabase
@@ -689,23 +707,53 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       }
       await persistSignature(pid)
 
-      const { data: existing } = await supabase
+      const tileIds = patentTileIdCandidates(tile.id).map((id) => String(id))
+      const { data: existingRows, error: existingErr } = await supabase
         .from('skill_completions')
         .select('id, status')
         .eq('student_id', user.id)
-        .eq('tile_id', tile.id)
-        .maybeSingle()
-      const finalStatus = bypassApprovals ? 'approved' : 'pending'
-      if (existing) {
-        const { error } = await supabase
+        .in('tile_id', tileIds)
+      if (existingErr) throw existingErr
+
+      const completions = (existingRows ?? []) as { id: string; status: string }[]
+      const returnedRow = completions.find((row) => row.status === 'returned')
+      const pendingRow = completions.find((row) => row.status === 'pending')
+      const approvedRow = completions.find((row) => row.status === 'approved')
+
+      if (approvedRow && !bypassApprovals) {
+        throw new Error('This quest is already approved.')
+      }
+
+      if (bypassApprovals) {
+        const target = approvedRow ?? pendingRow ?? returnedRow
+        if (target) {
+          const { error } = await supabase
+            .from('skill_completions')
+            .update({ status: 'approved', patent_id: pid })
+            .eq('id', target.id)
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('skill_completions')
+            .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'approved', patent_id: pid })
+          if (error) throw error
+        }
+      } else if (returnedRow) {
+        const { data: updated, error } = await supabase
           .from('skill_completions')
-          .update({ status: finalStatus, patent_id: pid, wp_awarded: null, gold_awarded: null })
-          .eq('id', (existing as { id: string }).id)
+          .update({ status: 'pending', patent_id: pid, wp_awarded: null, gold_awarded: null })
+          .eq('id', returnedRow.id)
+          .eq('status', 'returned')
+          .select('id, status')
+          .maybeSingle()
         if (error) throw error
-      } else {
+        if (updated?.status !== 'pending') {
+          throw new Error('Could not resubmit this patent. It is still waiting for Mr. Cook.')
+        }
+      } else if (!pendingRow) {
         const { error } = await supabase
           .from('skill_completions')
-          .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: finalStatus, patent_id: pid })
+          .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'pending', patent_id: pid })
         if (error) throw error
       }
       await refresh()

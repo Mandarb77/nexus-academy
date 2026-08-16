@@ -15,6 +15,8 @@ import { isPersonalGamePieceTile } from '../lib/gamePieceTile'
 import { isPopUpCardTile, POP_UP_CARD_STEPS } from '../lib/popUpCardQuest'
 import { isVoidTile1Tile, VOID_TILE1_STEPS } from '../lib/voidTile1Proto'
 import { getPatentRoute } from '../lib/patentRoutes'
+import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
+import { patentHrefWithStep, patentProgressCopy } from '../lib/questContinue'
 import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
 import { isCustomTile, resolvedTileSteps } from '../lib/customTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
@@ -37,6 +39,33 @@ function questKindIconClass(questKind: QuestKind | null | undefined): string {
   if (kind === 'stretch') return 'skill-tile-kind-icon skill-tile-kind-icon--stretch'
   if (kind === 'tier2') return 'skill-tile-kind-icon skill-tile-kind-icon--gate'
   return 'skill-tile-kind-icon skill-tile-kind-icon--required'
+}
+
+function patentContinueHref(
+  patentRoute: string,
+  completion: TileCompletionState | undefined,
+  patentProgress: PatentProgress | undefined,
+): string {
+  if (completion?.status === 'returned' || completion?.status === 'pending') {
+    const copy = patentProgressCopy({
+      source: 'packet',
+      planStatus: completion.status === 'returned' ? 'returned' : 'pending',
+      checklistSubmitted: false,
+      checklistApproved: false,
+      completionStatus: completion.status,
+    })
+    return patentHrefWithStep(patentRoute, copy.step)
+  }
+  if (patentProgress) {
+    const copy = patentProgressCopy({
+      source: 'plan',
+      planStatus: normalizePatentPlanStatus(patentProgress.planStatus),
+      checklistSubmitted: false,
+      checklistApproved: false,
+    })
+    return patentHrefWithStep(patentRoute, copy.step)
+  }
+  return patentRoute
 }
 
 function stepCount(tile: TileRow): number {
@@ -100,6 +129,10 @@ export function SkillTilesList({
           const totalSteps = stepCount(tile)
           const patentProgress = isPatentTile ? patentProgressByTileId.get(tile.id) : undefined
           const doneCount = patentProgress?.checklistState.filter(Boolean).length ?? 0
+          const patentHref =
+            isPatentTile && patentRoute
+              ? patentContinueHref(patentRoute, completion, patentProgress)
+              : patentRoute
 
           /*
            * `STICKER_QUEST_COMING_SOON` is the only tile that shows a hard lock while still
@@ -211,9 +244,27 @@ export function SkillTilesList({
                     <span className="skill-tile-badge skill-tile-badge--locked">Locked</span>
                   ) : isApproved ? (
                     <span className="skill-tile-badge skill-tile-badge--approved">Approved</span>
+                  ) : isPending && isPatentTile ? (
+                    <button
+                      type="button"
+                      className="btn-skill btn-skill--complete"
+                      disabled={!canUseDb}
+                      onClick={() => navigate(patentHref!)}
+                    >
+                      Open quest
+                    </button>
                   ) : isPending ? (
                     <button type="button" className="btn-skill btn-skill--pending" disabled aria-disabled="true">
                       Pending
+                    </button>
+                  ) : isReturned && isPatentTile ? (
+                    <button
+                      type="button"
+                      className="btn-skill btn-skill--complete"
+                      disabled={!canUseDb}
+                      onClick={() => navigate(patentHref!)}
+                    >
+                      Fix and continue
                     </button>
                   ) : isReturned ? (
                     <button type="button" className="btn-skill btn-skill--complete"
@@ -226,9 +277,14 @@ export function SkillTilesList({
                       disabled={!canUseDb}
                       onClick={() => {
                         console.log('[SkillTilesList] Opening patent application for tile:', tile.id)
-                        navigate(patentRoute!)
+                        navigate(patentHref!)
                       }}>
-                      Open patent application
+                      {patentProgress &&
+                      normalizePatentPlanStatus(patentProgress.planStatus) === 'returned'
+                        ? 'Fix and continue'
+                        : patentProgress
+                          ? 'Continue'
+                          : 'Open patent application'}
                     </button>
                   ) : (
                     <button type="button" className="btn-skill btn-skill--complete"
@@ -241,7 +297,9 @@ export function SkillTilesList({
               </div>
               {isReturned && !isComingSoon ? (
                 <p className="skill-tile-returned-hint muted">
-                  Returned by your teacher — submit again when you are ready.
+                  {isPatentTile
+                    ? 'Sent back — open the quest, make the fix, and resubmit when you are ready.'
+                    : 'Returned by your teacher — submit again when you are ready.'}
                 </p>
               ) : null}
             </li>

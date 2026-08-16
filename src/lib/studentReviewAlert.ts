@@ -9,6 +9,7 @@
 
 import { playApprovalChime } from './alertSound'
 import { areStudentApprovalAlertsEnabled } from './notificationPreferences'
+import { safeInternalHref } from './questContinue'
 
 export const STUDENT_REVIEW_ALERT_EVENT = 'nexus-student-review-alert'
 
@@ -22,6 +23,9 @@ export type StudentReviewAlert = {
   message: string
   /** Defaults to approved when omitted (older pending toasts). */
   tone?: StudentReviewAlertTone
+  /** In-app path to the quest/shop page the student should reopen (deny send-back). */
+  continueHref?: string
+  continueLabel?: string
 }
 
 const PENDING_KEY = 'nexus:pending-student-review-alert'
@@ -65,10 +69,15 @@ export function queueStudentReviewAlert(alert: StudentReviewAlert) {
     return
   }
 
+  const continueHref = safeInternalHref(alert.continueHref)
+  const continueLabel = alert.continueLabel?.trim() || undefined
   const normalized: StudentReviewAlert = {
     alertId: alert.alertId,
     message: alert.message,
     tone: alert.tone === 'denied' ? 'denied' : 'approved',
+    ...(continueHref
+      ? { continueHref, continueLabel: continueLabel || 'Continue' }
+      : {}),
   }
 
   markStudentReviewAlertsShown([normalized.alertId])
@@ -85,10 +94,15 @@ export function peekStudentReviewAlert(): StudentReviewAlert | null {
     if (!raw) return null
     const p = JSON.parse(raw) as StudentReviewAlert
     if (typeof p.alertId !== 'string' || typeof p.message !== 'string') return null
+    const continueHref = safeInternalHref(p.continueHref)
+    const continueLabel = typeof p.continueLabel === 'string' ? p.continueLabel.trim() : ''
     return {
       alertId: p.alertId,
       message: p.message,
       tone: p.tone === 'denied' ? 'denied' : 'approved',
+      ...(continueHref
+        ? { continueHref, continueLabel: continueLabel || 'Continue' }
+        : {}),
     }
   } catch {
     return null

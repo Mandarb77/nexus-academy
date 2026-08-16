@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
+import { patentTileIdCandidates } from '../lib/patentTileQuery'
 import type { TeacherSubmissionAlert } from '../lib/teacherSubmissionAlert'
 
 // =============================================================================
@@ -1070,8 +1071,7 @@ export function TeacherPanelPage() {
           .from('patents')
           .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })
           .eq('student_id', row.student_id)
-          .eq('tile_id', row.tile_id)
-          .eq('stage', 'plan')
+          .in('tile_id', patentTileIdCandidates(row.tile_id))
       : await supabase
           .from('patents')
           .update({ status: 'returned', checklist_submitted: false, checklist_approved: false })

@@ -14,6 +14,11 @@ import { useCallback, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 import {
+  continueHrefForPatentTile,
+  tileForPatentRoute,
+  type PatentContinueStep,
+} from '../lib/questContinue'
+import {
   CHICKADEE_PATENT_NOT_APPROVED,
   CHICKADEE_USAGE_NOT_NOW,
   fillChickadeeNotice,
@@ -27,6 +32,16 @@ async function tileSkillName(tileId: string): Promise<string> {
   const { data } = await supabase.from('tiles').select('skill_name').eq('id', tileId).maybeSingle()
   const name = (data?.skill_name as string | null)?.trim()
   return name || 'your quest'
+}
+
+async function continueHrefForTile(tileId: string, step: PatentContinueStep): Promise<string> {
+  const { data } = await supabase
+    .from('tiles')
+    .select('id, guild, skill_name, steps')
+    .eq('id', tileId)
+    .maybeSingle()
+  if (!data) return '/journey'
+  return continueHrefForPatentTile(tileForPatentRoute(data), step) ?? '/journey'
 }
 
 function hasOwn(obj: Record<string, unknown>, key: string): boolean {
@@ -95,10 +110,18 @@ export function StudentReviewAlertSync() {
   const patentNotApproved = fillChickadeeNotice(CHICKADEE_PATENT_NOT_APPROVED, studentName)
   const usageNotNow = fillChickadeeNotice(CHICKADEE_USAGE_NOT_NOW, studentName)
 
-  const emit = useCallback((alertId: string, message: string, tone: StudentReviewAlertTone = 'approved') => {
-    if (!shouldQueueStudentReviewAlert(alertId)) return
-    queueStudentReviewAlert({ alertId, message, tone })
-  }, [])
+  const emit = useCallback(
+    (
+      alertId: string,
+      message: string,
+      tone: StudentReviewAlertTone = 'approved',
+      extra?: { continueHref?: string; continueLabel?: string },
+    ) => {
+      if (!shouldQueueStudentReviewAlert(alertId)) return
+      queueStudentReviewAlert({ alertId, message, tone, ...extra })
+    },
+    [],
+  )
 
   useEffect(() => {
     if (!isSupabaseConfigured || !user?.id) return
@@ -137,11 +160,21 @@ export function StudentReviewAlertSync() {
           }
 
           if (planReturned) {
-            emit(`patent-return:plan:${tileId}`, patentNotApproved, 'denied')
+            void continueHrefForTile(tileId, 1).then((continueHref) => {
+              emit(`patent-return:plan:${tileId}`, patentNotApproved, 'denied', {
+                continueHref,
+                continueLabel: 'Fix and continue',
+              })
+            })
           }
 
           if (checklistReturned) {
-            emit(`patent-return:checklist:${tileId}`, patentNotApproved, 'denied')
+            void continueHrefForTile(tileId, 2).then((continueHref) => {
+              emit(`patent-return:checklist:${tileId}`, patentNotApproved, 'denied', {
+                continueHref,
+                continueLabel: 'Fix and continue',
+              })
+            })
           }
         },
       )
@@ -154,7 +187,13 @@ export function StudentReviewAlertSync() {
           if (!isStatusDenial(prev, next, 'returned')) return
           const id = next.id != null ? String(next.id) : ''
           if (!id) return
-          emit(`patent-return:skill:${id}`, patentNotApproved, 'denied')
+          const tileId = next.tile_id != null ? String(next.tile_id) : ''
+          void (tileId ? continueHrefForTile(tileId, 3) : Promise.resolve('/journey')).then((continueHref) => {
+            emit(`patent-return:skill:${id}`, patentNotApproved, 'denied', {
+              continueHref,
+              continueLabel: 'Fix and continue',
+            })
+          })
         },
       )
       .on(
@@ -171,7 +210,10 @@ export function StudentReviewAlertSync() {
             return
           }
           if (isStatusDenial(prev, next, 'returned')) {
-            emit(`redemption-return:${id}`, usageNotNow, 'denied')
+            emit(`redemption-return:${id}`, usageNotNow, 'denied', {
+              continueHref: '/inventory',
+              continueLabel: 'Open inventory',
+            })
           }
         },
       )
@@ -189,7 +231,10 @@ export function StudentReviewAlertSync() {
             return
           }
           if (isStatusDenial(prev, next, 'rejected')) {
-            emit(`shop-reject:${id}`, usageNotNow, 'denied')
+            emit(`shop-reject:${id}`, usageNotNow, 'denied', {
+              continueHref: '/shop',
+              continueLabel: 'Open Supply',
+            })
           }
         },
       )
@@ -202,7 +247,10 @@ export function StudentReviewAlertSync() {
           const id = next.id != null ? String(next.id) : ''
           if (!id) return
           if (isStatusDenial(prev, next, 'returned')) {
-            emit(`duty-return:${id}`, usageNotNow, 'denied')
+            emit(`duty-return:${id}`, usageNotNow, 'denied', {
+              continueHref: '/inventory',
+              continueLabel: 'Open inventory',
+            })
           }
         },
       )

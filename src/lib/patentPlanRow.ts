@@ -22,6 +22,8 @@
  * `approved` row and keep checkboxes disabled.
  *
  * Rules:
+ * - A `pending` row plus a `returned` row means the student resubmitted after a teacher
+ *   send-back — use the newest pending row and keep the checklist locked.
  * - Newest row is `returned` → that row is active; checklist stays locked until resubmit.
  * - Any `approved` row exists → use the **newest approved** row for UI + saves; checklist unlocks.
  * - Otherwise → newest row (typically `pending`).
@@ -37,6 +39,11 @@ export function pickStudentPlanPatentContext<
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )
   const newest = sorted[0]
+  const pendingSorted = sorted.filter((r) => normalizeStatus(r.status) === 'pending')
+  const hasReturned = sorted.some((r) => normalizeStatus(r.status) === 'returned')
+  if (pendingSorted.length > 0 && hasReturned) {
+    return { primary: pendingSorted[0], canUnlockChecklist: false }
+  }
   if (normalizeStatus(newest.status) === 'returned') {
     return { primary: newest, canUnlockChecklist: false }
   }
@@ -66,9 +73,9 @@ export type StudentPatentPrimaryResult<T> = {
 }
 
 /**
- * Load both `plan` and `packet` stage rows. Plan-stage rows drive the checklist; if the student
- * already advanced to `packet` (final submission), fall back to the newest packet row so answers
- * still hydrate after refresh.
+ * Load both `plan` and `packet` stage rows.
+ * A pending/returned plan is the live gate (including resubmit after a send-back).
+ * Otherwise an in-flight packet wins so leftover approved plan duplicates cannot hide it.
  */
 export function selectStudentPatentPrimary<
   T extends { id: string; status: unknown; created_at: string; stage?: unknown },
@@ -77,10 +84,11 @@ export function selectStudentPatentPrimary<
   const packetRows = allRows
     .filter((r) => String(r.stage ?? '').trim().toLowerCase() === 'packet')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  const planGate = pickStudentPlanPatentContext(planRows, normalizeStatus)
+  const planGateStatus = planGate.primary ? normalizeStatus(planGate.primary.status) : 'none'
 
-  if (planRows.length > 0) {
-    const { primary, canUnlockChecklist } = pickStudentPlanPatentContext(planRows, normalizeStatus)
-    return { primary, rowsForMerge: planRows, canUnlockChecklist, source: 'plan' }
+  if (planGateStatus === 'pending' || planGateStatus === 'returned') {
+    return { primary: planGate.primary, rowsForMerge: planRows, canUnlockChecklist: planGate.canUnlockChecklist, source: 'plan' }
   }
   if (packetRows.length > 0) {
     return {
@@ -89,6 +97,9 @@ export function selectStudentPatentPrimary<
       canUnlockChecklist: false,
       source: 'packet',
     }
+  }
+  if (planRows.length > 0) {
+    return { primary: planGate.primary, rowsForMerge: planRows, canUnlockChecklist: planGate.canUnlockChecklist, source: 'plan' }
   }
   return { primary: undefined, rowsForMerge: [], canUnlockChecklist: false, source: 'none' }
 }

@@ -896,6 +896,11 @@ a.btn-primary {
   color: var(--text);
 }
 
+.journey-wip-entry--fix {
+  border-color: #8a5a3a;
+  background: rgba(138, 90, 58, 0.08);
+}
+
 .journey-wip-link {
   flex-shrink: 0;
   align-self: center;
@@ -6874,6 +6879,40 @@ body:has(.bench-chrome) {
   font-size: 0.95rem;
   line-height: 1.45;
   color: var(--color-ink-secondary);
+}
+
+.student-review-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.student-review-banner__continue {
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-primary);
+  background: transparent;
+  border: 1px solid var(--color-rule-strong, #4a7c59);
+  border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.student-review-banner__continue:hover {
+  background: rgba(74, 124, 89, 0.1);
+}
+
+.student-review-banner--denied .student-review-banner__continue {
+  border-color: #8a5a3a;
+}
+
+.student-review-banner--denied .student-review-banner__continue:hover {
+  background: rgba(138, 90, 58, 0.12);
 }
 
 .student-review-banner__dismiss {

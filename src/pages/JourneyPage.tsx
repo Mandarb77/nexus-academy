@@ -4,9 +4,9 @@
  * Loads approved `skill_completions` for the signed-in student (with embedded `tiles` for
  * titles) and renders a reverse-chronological timeline. Expanding an entry lazy-loads patent
  * detail via `fetchJourneyPatentReadView` so empathy/checklist/photo evidence appear for patent
- * quests without bloating the initial query. A separate “Continue your patent quests” section
- * surfaces in-progress patent rows (plan/checklist not done) so students do not lose track of
- * drafts that are not yet `skill_completions` rows.
+ * quests without bloating the initial query. A “Continue your quests” section lists every
+ * started patent and any pending/returned simple quest so students can reopen work after a
+ * send-back or a skipped class.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -21,8 +21,13 @@ import { fetchJourneyPatentReadView, type JourneyPatentReadViewModel } from '../
 import { getPatentRoute } from '../lib/patentRoutes'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
+import {
+  buildPatentContinueCard,
+  buildSimpleContinueCard,
+  sortContinueQuests,
+  type ContinueQuestCard,
+} from '../lib/questContinue'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import type { TileRow } from '../types/tile'
 
 type TileJoin = {
   guild: string
@@ -222,59 +227,78 @@ export function JourneyPage() {
     }
   }, [expandedCompletionId, sorted, tiles, user?.id])
 
-  /** Patent quests still in progress (quest not teacher-approved yet) — same data as the patent pages, linked here. */
-  const continuePatentQuests = useMemo(() => {
-    if (!tiles.length || !patentWip.length) return []
-    const byTile = new Map<string, PatentWipRow[]>()
-    for (const row of patentWip) {
-      const tid = String(row.tile_id)
-      if (!byTile.has(tid)) byTile.set(tid, [])
-      byTile.get(tid)!.push(row)
-    }
-    const out: {
-      tile: TileRow
-      href: string
-      preview: string
-      previewClipped: boolean
-      done: number
-      total: number
-      planStatus: ReturnType<typeof normalizePatentPlanStatus>
-      source: 'plan' | 'packet'
-      checklistSubmitted: boolean
-      checklistApproved: boolean
-    }[] = []
-    for (const [tid, list] of byTile) {
-      const { primary, source } = selectStudentPatentPrimary(list, normalizePatentPlanStatus)
-      if (!primary) continue
-      if (source === 'none') continue
-      const tile = tiles.find((t) => String(t.id) === tid)
-      if (!tile) continue
-      const href = getPatentRoute(tile)
-      if (!href) continue
-      const comp = completionByTileId.get(tile.id)
-      if (comp?.status === 'approved') continue
+  /** Started quests that are not teacher-approved yet — patents and simple mark-complete tiles. */
+  const continueQuests = useMemo(() => {
+    const out: ContinueQuestCard[] = []
+    const seen = new Set<string>()
 
-      const rawCs = primary.checklist_state
-      const cs = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
-      const done = cs.filter(Boolean).length
-      const total = cs.length
-      const fullPreview = String(primary.field_1 ?? '').trim()
-      const preview = fullPreview.slice(0, 200)
-      const previewClipped = fullPreview.length > 200
-      out.push({
-        tile,
-        href,
-        preview,
-        previewClipped,
-        done,
-        total,
-        planStatus: normalizePatentPlanStatus(primary.status),
-        source,
-        checklistSubmitted: Boolean(primary.checklist_submitted),
-        checklistApproved: Boolean(primary.checklist_approved),
-      })
+    if (tiles.length && patentWip.length) {
+      const byTile = new Map<string, PatentWipRow[]>()
+      for (const row of patentWip) {
+        const tid = String(row.tile_id)
+        if (!byTile.has(tid)) byTile.set(tid, [])
+        byTile.get(tid)!.push(row)
+      }
+      for (const [tid, list] of byTile) {
+        const { primary, source } = selectStudentPatentPrimary(list, normalizePatentPlanStatus)
+        if (!primary || source === 'none') continue
+        const tile = tiles.find((t) => String(t.id) === tid)
+        if (!tile) continue
+        const comp = completionByTileId.get(tile.id)
+        if (comp?.status === 'approved') continue
+
+        const rawCs = primary.checklist_state
+        const cs = Array.isArray(rawCs) ? (rawCs as boolean[]) : []
+        const fullPreview = String(primary.field_1 ?? '').trim()
+        const preview = fullPreview.slice(0, 200)
+        const card = buildPatentContinueCard({
+          tile,
+          source,
+          planStatus: normalizePatentPlanStatus(primary.status),
+          checklistSubmitted: Boolean(primary.checklist_submitted),
+          checklistApproved: Boolean(primary.checklist_approved),
+          completionStatus: comp?.status ?? null,
+          preview,
+          previewClipped: fullPreview.length > 200,
+          checklistDone: cs.filter(Boolean).length,
+          checklistTotal: cs.length,
+        })
+        if (!card) continue
+        out.push(card)
+        seen.add(String(tile.id))
+      }
     }
-    out.sort((a, b) => a.tile.skill_name.localeCompare(b.tile.skill_name))
+
+    for (const tile of tiles) {
+      const tid = String(tile.id)
+      if (seen.has(tid)) continue
+      const comp = completionByTileId.get(tile.id)
+      if (comp?.status !== 'pending' && comp?.status !== 'returned') continue
+      const patentRoute = getPatentRoute(tile)
+      if (patentRoute) {
+        const card = buildPatentContinueCard({
+          tile,
+          source: 'packet',
+          planStatus: comp.status === 'returned' ? 'returned' : 'pending',
+          checklistSubmitted: false,
+          checklistApproved: false,
+          completionStatus: comp.status,
+          preview: '',
+          previewClipped: false,
+          checklistDone: 0,
+          checklistTotal: 0,
+        })
+        if (card) {
+          out.push(card)
+          seen.add(tid)
+        }
+        continue
+      }
+      out.push(buildSimpleContinueCard(tile, comp.status))
+      seen.add(tid)
+    }
+
+    out.sort(sortContinueQuests)
     return out
   }, [tiles, patentWip, completionByTileId])
 
@@ -296,8 +320,9 @@ export function JourneyPage() {
         <div>
           <h1 className="journey-title bench-page-title">Record</h1>
           <p className="muted journey-intro">
-            Every approved quest you have finished — a record of what you have built and earned,{' '}
-            <strong>{displayName}</strong>.
+            Quests you have started stay here until they are approved,{' '}
+            <strong>{displayName}</strong>. Open one to pick up where you left off — or to fix
+            anything sent back.
           </p>
         </div>
         <button type="button" className="btn-secondary" onClick={() => signOut()}>
@@ -311,43 +336,31 @@ export function JourneyPage() {
         </p>
       ) : null}
 
-      {!treeLoading && !patentWipLoading && continuePatentQuests.length > 0 ? (
+      {!treeLoading && !patentWipLoading && continueQuests.length > 0 ? (
         <section className="journey-wip card" aria-label="Quests to continue">
-          <h2 className="journey-wip-title">Continue your patent quests</h2>
+          <h2 className="journey-wip-title">Continue your quests</h2>
           <p className="muted journey-wip-intro">
-            Your plan answers and checklist progress are saved in your account. Open a quest anytime — even after
-            closing the browser — to pick up where you left off.
+            Your answers and checklist progress are saved. Come back any class — even after a send-back —
+            and continue from the same point.
           </p>
           <ul className="journey-wip-list">
-            {continuePatentQuests.map((q) => {
-              const statusLabel =
-                q.source === 'packet'
-                  ? 'Final submission with teacher'
-                  : q.planStatus === 'approved'
-                    ? q.checklistSubmitted && !q.checklistApproved
-                      ? 'Checklist with teacher'
-                      : q.checklistApproved
-                        ? 'Final questions'
-                        : 'Checklist in progress'
-                    : q.planStatus === 'pending'
-                      ? 'Plan with teacher'
-                      : q.planStatus === 'returned'
-                        ? 'Plan returned — update and resubmit'
-                        : 'In progress'
+            {continueQuests.map((q) => {
               return (
-                <li key={q.tile.id}>
-                  <article className="journey-wip-entry">
+                <li key={q.tileId}>
+                  <article
+                    className={`journey-wip-entry${q.kind === 'needs_fix' ? ' journey-wip-entry--fix' : ''}`}
+                  >
                     <div className="journey-wip-entry-main">
-                      <h3 className="journey-wip-entry-title">{q.tile.skill_name}</h3>
+                      <h3 className="journey-wip-entry-title">{q.title}</h3>
                       <p className="muted journey-wip-entry-meta">
-                        <span>{guildHeading(q.tile.guild)}</span>
+                        <span>{q.guildLabel}</span>
                         <span aria-hidden="true"> · </span>
-                        <span>{statusLabel}</span>
-                        {q.total > 0 ? (
+                        <span>{q.pointLabel}</span>
+                        {q.checklistTotal > 0 ? (
                           <>
                             <span aria-hidden="true"> · </span>
                             <span>
-                              Checklist {q.done}/{q.total}
+                              Checklist {q.checklistDone}/{q.checklistTotal}
                             </span>
                           </>
                         ) : null}
@@ -358,11 +371,15 @@ export function JourneyPage() {
                           {q.previewClipped ? '…' : ''}&rdquo;
                         </p>
                       ) : (
-                        <p className="muted journey-wip-preview">No plan summary yet — open the quest to add your answers.</p>
+                        <p className="muted journey-wip-preview">
+                          {q.kind === 'needs_fix'
+                            ? 'Open this quest, make the fix, and resubmit when you are ready.'
+                            : 'Open the quest to pick up where you left off.'}
+                        </p>
                       )}
                     </div>
                     <Link to={q.href} className="btn-primary journey-wip-link">
-                      Open quest
+                      {q.ctaLabel}
                     </Link>
                   </article>
                 </li>

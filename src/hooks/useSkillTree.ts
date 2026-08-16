@@ -281,13 +281,16 @@ export function useSkillTree() {
       const existing = completionByTileId.get(tile.id)
 
       if (existing?.status === 'returned') {
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('skill_completions')
           .update({ status: 'pending' })
           .eq('id', existing.completionId)
+          .eq('status', 'returned')
+          .select('id, status')
+          .maybeSingle()
         setSubmittingTileId(null)
-        if (error) {
-          console.error('skill completion resubmit:', error.message)
+        if (error || updated?.status !== 'pending') {
+          console.error('skill completion resubmit:', error?.message ?? 'row was not returned to pending')
           return false
         }
         setCompletionByTileId((prev) =>

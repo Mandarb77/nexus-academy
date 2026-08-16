@@ -3,7 +3,8 @@
  * shop, redemption, or duty. Final packet approve uses ApprovalCelebrationHost.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { StudentReviewBanner } from './StudentReviewBanner'
 import {
@@ -15,8 +16,15 @@ import {
 } from '../lib/studentReviewAlert'
 import { isTeacherProfile } from '../lib/teacher'
 
+function isQuestSendBackHref(href: string): boolean {
+  return href.startsWith('/patent-') || href.startsWith('/tree/')
+}
+
 export function StudentReviewAlertHost() {
   const { user, profile, studentPreviewMode } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const navigatedAlertIdRef = useRef<string | null>(null)
   const [toast, setToast] = useState<StudentReviewAlert | null>(() => {
     const p = peekStudentReviewAlert()
     if (p) clearStudentReviewAlertAfterDismiss(p.alertId)
@@ -49,6 +57,22 @@ export function StudentReviewAlertHost() {
     }
   }, [user?.id])
 
+  useEffect(() => {
+    if (!toast || toast.tone !== 'denied' || !toast.continueHref) {
+      if (!toast) navigatedAlertIdRef.current = null
+      return
+    }
+    if (!isQuestSendBackHref(toast.continueHref)) return
+    if (navigatedAlertIdRef.current === toast.alertId) return
+    const here = `${location.pathname}${location.search}`
+    if (here === toast.continueHref) {
+      navigatedAlertIdRef.current = toast.alertId
+      return
+    }
+    navigatedAlertIdRef.current = toast.alertId
+    navigate(toast.continueHref)
+  }, [toast, location.pathname, location.search, navigate])
+
   if (!user?.id) return null
   if (isTeacherProfile(profile) && !studentPreviewMode) return null
   if (!toast) return null
@@ -57,6 +81,8 @@ export function StudentReviewAlertHost() {
     <StudentReviewBanner
       message={toast.message}
       tone={toast.tone}
+      continueHref={toast.continueHref}
+      continueLabel={toast.continueLabel}
       onDismiss={() => {
         clearStudentReviewAlertAfterDismiss(toast.alertId)
         setToast(null)
