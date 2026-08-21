@@ -24,7 +24,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { isTeacherPreviewBrowse, isTeacherProfile } from '../lib/teacher'
+import { isTeacherProfile } from '../lib/teacher'
+import { isGuestBrowse, isReadOnlyBrowse } from '../lib/schoolEmail'
 import { EMPTY_EMPATHY, parseEmpathy, serializeEmpathy, isEmpathyValid } from '../lib/empathy'
 import type { EmpathyDraft } from '../lib/empathy'
 import type { TileRow } from '../types/tile'
@@ -211,7 +212,8 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const [searchParams] = useSearchParams()
   const urlStep = parsePatentStepParam(searchParams.get('step'))
   const studentId = user?.id ?? 'anonymous'
-  const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
+  const previewBrowse = isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)
+  const guestBrowse = isGuestBrowse(user?.email ?? profile?.email, profile)
   const teacherView = isTeacherProfile(profile)
 
   const content = useMemo(() => ledgerContentForTile(tile), [tile])
@@ -853,7 +855,9 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     { n: 3, numeral: 'iii' },
   ]
 
-  const workStatusText = previewBrowse
+  const workStatusText = guestBrowse
+    ? 'Guest view'
+    : previewBrowse
     ? 'Teacher preview'
     : !planSubmitted
     ? 'Submit the plan first'
@@ -1089,7 +1093,9 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
           {previewBrowse ? (
             <div className="status-banner" role="status" style={{ margin: '0 2rem 1rem' }}>
-              Teacher preview — all three tabs are unlocked. Fields and submissions are read-only.
+              {guestBrowse
+                ? 'Guest view — you can look through this quest. Use your @kentshill.org account to submit work.'
+                : 'Teacher preview — all three tabs are unlocked. Fields and submissions are read-only.'}
             </div>
           ) : null}
 

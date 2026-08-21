@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
+import { isReadOnlyBrowse } from '../lib/schoolEmail'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
@@ -86,7 +87,7 @@ function sortGuildKeys(guilds: string[]): string[] {
 // -----------------------------------------------------------------------------
 
 export function useSkillTree() {
-  const { user } = useAuth()
+  const { user, profile, studentPreviewMode } = useAuth()
   const [tiles, setTiles] = useState<TileRow[]>([])
   const [completionByTileId, setCompletionByTileId] = useState<
     Map<string, TileCompletionState>
@@ -277,6 +278,7 @@ export function useSkillTree() {
   const markComplete = useCallback(
     async (tile: TileRow) => {
       if (!studentId || !isSupabaseConfigured) return false
+      if (isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)) return false
       setSubmittingTileId(tile.id)
       const existing = completionByTileId.get(tile.id)
 
@@ -322,7 +324,7 @@ export function useSkillTree() {
       await refreshCompletions()
       return true
     },
-    [studentId, completionByTileId, refreshCompletions],
+    [studentId, completionByTileId, refreshCompletions, studentPreviewMode, profile, user?.email],
   )
 
   // --- Public API returned to `SkillTreePage` / guild pages ---

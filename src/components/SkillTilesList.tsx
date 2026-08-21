@@ -21,7 +21,7 @@ import { isStickerQuestLocked, isStickerTile } from '../lib/stickerTile'
 import { isCustomTile, resolvedTileSteps } from '../lib/customTile'
 import { PERSONAL_GAME_PIECE_STEPS } from '../lib/personalGamePieceSteps'
 import { STICKER_STEPS } from '../lib/stickerSteps'
-import { isTeacherPreviewBrowse } from '../lib/teacher'
+import { isReadOnlyBrowse } from '../lib/schoolEmail'
 import { tileUnlockStatus } from '../lib/tileUnlock'
 
 type Props = {
@@ -87,8 +87,8 @@ export function SkillTilesList({
   canUseDb,
 }: Props) {
   const navigate = useNavigate()
-  const { profile, studentPreviewMode } = useAuth()
-  const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
+  const { profile, studentPreviewMode, user } = useAuth()
+  const readOnlyBrowse = isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)
 
   /*
    * Pedagogical sort: anchor cohort around flagship builds first; bury “coming soon” sticker
@@ -138,9 +138,9 @@ export function SkillTilesList({
            * `STICKER_QUEST_COMING_SOON` is the only tile that shows a hard lock while still
            * existing in the DB — avoids deleting curriculum content while the room is not ready.
            */
-          const isComingSoon = !previewBrowse && isStickerQuestLocked(tile)
+          const isComingSoon = !readOnlyBrowse && isStickerQuestLocked(tile)
           const unlock = tileUnlockStatus(tile, tileBySlug, completionByTileId, {
-            unlockAll: previewBrowse,
+            unlockAll: readOnlyBrowse,
           })
           const isQuestLocked =
             unlock.locked && !isApproved && !isPending && !isReturned
@@ -268,7 +268,7 @@ export function SkillTilesList({
                     </button>
                   ) : isReturned ? (
                     <button type="button" className="btn-skill btn-skill--complete"
-                      disabled={!canUseDb || busy}
+                      disabled={!canUseDb || readOnlyBrowse}
                       onClick={() => void markComplete(tile)}>
                       {busy ? 'Saving…' : 'Submit again'}
                     </button>
@@ -288,7 +288,7 @@ export function SkillTilesList({
                     </button>
                   ) : (
                     <button type="button" className="btn-skill btn-skill--complete"
-                      disabled={!canUseDb || busy}
+                      disabled={!canUseDb || busy || readOnlyBrowse}
                       onClick={() => void markComplete(tile)}>
                       {busy ? 'Saving…' : 'Mark complete'}
                     </button>

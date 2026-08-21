@@ -17,6 +17,7 @@ import {
   suggestedPreferredFirstName,
 } from '../lib/preferredFirstName'
 import { isTeacherProfile } from '../lib/teacher'
+import { isGuestBrowse } from '../lib/schoolEmail'
 
 export function PreferredFirstNameGate() {
   const { user, profile, loading, studentPreviewMode, updatePreferredFirstName } = useAuth()
@@ -29,8 +30,10 @@ export function PreferredFirstNameGate() {
       profile &&
       !loading &&
       needsPreferredFirstName(profile) &&
-      /* Teachers only see this while previewing as a student who still lacks a name. */
-      !(isTeacherProfile(profile) && !studentPreviewMode),
+      /* Teachers only see this while previewing as a student who still lacks a name.
+       * Off-domain guests skip it — they cannot save a name, and it would block browsing. */
+      !(isTeacherProfile(profile) && !studentPreviewMode) &&
+      !isGuestBrowse(user.email ?? profile.email, profile),
   )
 
   const suggestion = useMemo(() => {

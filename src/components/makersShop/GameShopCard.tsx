@@ -31,6 +31,7 @@ type GameShopCardProps = {
   onBuy: (item: ShopCatalogItem) => void
   gold?: number
   onRequestFilament?: (item: ShopCatalogItem, grams: number, calculatedGoldCost: number) => void
+  purchasesEnabled?: boolean
 }
 
 function PurchaseButton({
@@ -45,6 +46,7 @@ function PurchaseButton({
   isSupabaseConfigured,
   catalogLoading,
   onBuy,
+  purchasesEnabled = true,
 }: Pick<
   GameShopCardProps,
   | 'layout'
@@ -58,6 +60,7 @@ function PurchaseButton({
   | 'isSupabaseConfigured'
   | 'catalogLoading'
   | 'onBuy'
+  | 'purchasesEnabled'
 >) {
   const bench = layout === 'bench'
   const limitBlocked = limitStatus?.allowed === false
@@ -72,7 +75,13 @@ function PurchaseButton({
             : `makers-shop-buy${canBuy ? ' makers-shop-buy--hot' : ''}`
         }
         disabled={
-          !isSupabaseConfigured || limitBlocked || (!catalogLocked && !canBuy) || busy || traded || catalogLoading
+          !purchasesEnabled ||
+          !isSupabaseConfigured ||
+          limitBlocked ||
+          (!catalogLocked && !canBuy) ||
+          busy ||
+          traded ||
+          catalogLoading
         }
         onClick={(event) => {
           event.stopPropagation()
@@ -214,6 +223,7 @@ function SpecialtyFilamentCalculator({
   catalogLoading,
   specialtyFilamentTypes = [],
   onRequestFilament,
+  purchasesEnabled = true,
 }: {
   item: ShopCatalogItem
   gold: number
@@ -221,12 +231,14 @@ function SpecialtyFilamentCalculator({
   catalogLoading: boolean
   specialtyFilamentTypes?: string[]
   onRequestFilament?: (item: ShopCatalogItem, grams: number, calculatedGoldCost: number) => void
+  purchasesEnabled?: boolean
 }) {
   const [gramsInput, setGramsInput] = useState('')
   const grams = Number.parseInt(gramsInput, 10)
   const validGrams = Number.isFinite(grams) && grams > 0 ? grams : 0
   const calculatedCost = validGrams > 0 ? 10 + Math.ceil(validGrams / 25) : 0
-  const canRequest = validGrams > 0 && gold >= calculatedCost && !busy && !catalogLoading
+  const canRequest =
+    purchasesEnabled && validGrams > 0 && gold >= calculatedCost && !busy && !catalogLoading
   const options = specialtyFilamentTypes.length > 0 ? specialtyFilamentTypes : specialtyFilamentOptions(item)
 
   return (
@@ -302,6 +314,7 @@ function BenchShopCard(props: GameShopCardProps) {
     onBuy,
     gold = 0,
     onRequestFilament,
+    purchasesEnabled = true,
   } = props
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
@@ -323,6 +336,7 @@ function BenchShopCard(props: GameShopCardProps) {
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
+    purchasesEnabled,
   }
 
   return (
@@ -377,6 +391,7 @@ function BenchShopCard(props: GameShopCardProps) {
           catalogLoading={catalogLoading}
           specialtyFilamentTypes={specialtyFilamentTypes}
           onRequestFilament={onRequestFilament}
+          purchasesEnabled={purchasesEnabled}
         />
       ) : null}
       {catalogLocked && !strip ? (
@@ -403,6 +418,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
+    purchasesEnabled = true,
   } = props
   const price = item.price_gold
   const variant = catalogLocked ? 'mystery' : iconVariantForItemKey(item.item_key)
@@ -446,6 +462,7 @@ function LegacyShopCard(props: GameShopCardProps) {
     isSupabaseConfigured,
     catalogLoading,
     onBuy,
+    purchasesEnabled,
   }
 
   return (

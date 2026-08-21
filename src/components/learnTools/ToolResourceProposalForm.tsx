@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { isGuestBrowse } from '../../lib/schoolEmail'
 import {
   LEARN_DESCRIPTION_MAX_CHARS,
   LEARN_TOOL_GUILDS,
@@ -15,7 +16,8 @@ type Props = {
 }
 
 export function ToolResourceProposalForm({ onSubmitted }: Props) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const guestBrowse = isGuestBrowse(user?.email ?? profile?.email, profile)
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -54,6 +56,10 @@ export function ToolResourceProposalForm({ onSubmitted }: Props) {
       setError('Sign in to submit a resource.')
       return
     }
+    if (guestBrowse) {
+      setError('Use your kentshill.org Google account to share a resource.')
+      return
+    }
 
     setSaving(true)
     const { error: insertError } = await supabase.from('learn_tool_resources').insert({
@@ -76,6 +82,14 @@ export function ToolResourceProposalForm({ onSubmitted }: Props) {
     setOpen(false)
     setSuccess(true)
     onSubmitted?.()
+  }
+
+  if (guestBrowse) {
+    return (
+      <p className="muted learn-tools-propose__guest">
+        Use your @kentshill.org Google account to share a resource.
+      </p>
+    )
   }
 
   if (!open) {

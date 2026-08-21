@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { isGuestBrowse } from '../../lib/schoolEmail'
 import {
   BEYOND_BODY_MAX_CHARS,
   BEYOND_GUILD_TAGS,
@@ -13,7 +14,8 @@ type Props = {
 }
 
 export function BeyondTileProposalForm({ onSubmitted }: Props) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const guestBrowse = isGuestBrowse(user?.email ?? profile?.email, profile)
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -66,6 +68,10 @@ export function BeyondTileProposalForm({ onSubmitted }: Props) {
       setError('Sign in to propose a possibility.')
       return
     }
+    if (guestBrowse) {
+      setError('Use your kentshill.org Google account to propose a possibility.')
+      return
+    }
 
     setSaving(true)
     const { error: insertError } = await supabase.from('beyond_tiles').insert({
@@ -89,6 +95,14 @@ export function BeyondTileProposalForm({ onSubmitted }: Props) {
     setOpen(false)
     setSuccess(true)
     onSubmitted?.()
+  }
+
+  if (guestBrowse) {
+    return (
+      <p className="muted beyond-tiles-propose__guest">
+        Use your @kentshill.org Google account to propose a possibility.
+      </p>
+    )
   }
 
   if (!open) {

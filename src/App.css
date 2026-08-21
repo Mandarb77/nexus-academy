@@ -6302,9 +6302,12 @@ body:has(.bench-chrome) {
   white-space: nowrap;
 }
 
-.bench-preview-banner__exit:hover {
-  border-color: var(--color-forge);
-  color: var(--color-ink-primary);
+.bench-preview-banner--guest {
+  border-color: var(--color-ink-secondary);
+}
+
+.bench-preview-banner--guest strong {
+  font-weight: 700;
 }
 
 .bench-chrome .student-nav-link--preview {

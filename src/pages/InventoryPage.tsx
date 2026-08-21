@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from 'react'
 import franBarrySupplyLogo from '../assets/fran-barry-supply-logo.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
+import { isGuestBrowse } from '../lib/schoolEmail'
 import { clearKitNewItem } from '../lib/kitNotification'
 import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 import { purchaseMomentForKitItem } from '../lib/shopPurchaseMoments'
@@ -73,6 +74,7 @@ function InventoryVoiceScene({ row, firstName }: { row: InventoryRow; firstName:
 
 export function InventoryPage() {
   const { user, profile, signOut } = useAuth()
+  const guestBrowse = isGuestBrowse(user?.email ?? profile?.email, profile)
   const firstName = preferredFirstNameForVoice(profile)
   const [rows, setRows] = useState<InventoryRow[]>([])
   const [pendingInventoryIds, setPendingInventoryIds] = useState<Set<string>>(
@@ -178,6 +180,10 @@ export function InventoryPage() {
 
   const requestUse = async (row: InventoryRow) => {
     if (!studentId || !isSupabaseConfigured) return
+    if (guestBrowse) {
+      setUseError('Use your kentshill.org Google account to use items.')
+      return
+    }
     setUseError(null)
     setUsingId(row.id)
     const { error } = await supabase.from('redemption_requests').insert({
@@ -199,6 +205,10 @@ export function InventoryPage() {
 
   const markDutyComplete = async (row: InventoryRow) => {
     if (!studentId || !isSupabaseConfigured) return
+    if (guestBrowse) {
+      setUseError('Use your kentshill.org Google account to submit duty work.')
+      return
+    }
     setUseError(null)
     setUsingId(row.id)
     // RPC validates unused + duty_completion and stamps gold_reward; no client INSERT.
@@ -306,7 +316,7 @@ export function InventoryPage() {
                     <button
                       type="button"
                       className="btn-primary"
-                      disabled={!isSupabaseConfigured || busy}
+                      disabled={!isSupabaseConfigured || busy || guestBrowse}
                       onClick={() => void markDutyComplete(row)}
                     >
                       {busy ? 'Sending…' : 'Mark complete'}
@@ -315,7 +325,7 @@ export function InventoryPage() {
                     <button
                       type="button"
                       className="btn-primary"
-                      disabled={!isSupabaseConfigured || busy}
+                      disabled={!isSupabaseConfigured || busy || guestBrowse}
                       onClick={() => void requestUse(row)}
                     >
                       {busy ? 'Sending…' : 'Use item'}

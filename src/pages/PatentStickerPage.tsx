@@ -13,12 +13,12 @@ import { QuestLockedGate } from '../components/QuestLockedGate'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { isStickerQuestLocked } from '../lib/stickerTile'
-import { isTeacherPreviewBrowse } from '../lib/teacher'
+import { isReadOnlyBrowse } from '../lib/schoolEmail'
 
 export function PatentStickerPage() {
   const { tileId } = useParams<{ tileId: string }>()
-  const { signOut, profile, studentPreviewMode } = useAuth()
-  const previewBrowse = isTeacherPreviewBrowse(studentPreviewMode, profile)
+  const { signOut, profile, studentPreviewMode, user } = useAuth()
+  const previewBrowse = isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)
   const { tiles, loading, refresh, completionByTileId, canUseDb, tileBySlug } = useSkillTree()
 
   // ---------------------------------------------------------------------------

@@ -26,6 +26,7 @@ type Props = {
   onDismissToast: () => void
   onBuy: (item: ShopCatalogItem) => void
   onRequestFilament: (item: ShopCatalogItem, grams: number, calculatedGoldCost: number) => void
+  purchasesEnabled?: boolean
 }
 
 function signImageForTier(tierName: string): string {
@@ -82,6 +83,7 @@ export function ShopTierBoard({
   onDismissToast,
   onBuy,
   onRequestFilament,
+  purchasesEnabled = true,
 }: Props) {
   const { tier, items } = group
   const shelfTitle = displayShelfTitle(tier.name)
@@ -133,7 +135,7 @@ export function ShopTierBoard({
                 const canAfford = price != null && gold >= price
                 const busy = buyingKey === item.item_key
                 const canBuy =
-                  !catalogLocked && price != null && canAfford && !limitBlocked
+                  purchasesEnabled && !catalogLocked && price != null && canAfford && !limitBlocked
                 // Only the item that triggered the transaction should show the confirmation.
                 const itemToast = toast?.itemKey === item.item_key ? toast : null
 
@@ -157,6 +159,7 @@ export function ShopTierBoard({
                     onBuy={onBuy}
                     gold={gold}
                     onRequestFilament={onRequestFilament}
+                    purchasesEnabled={purchasesEnabled}
                   />
                 )
               })}

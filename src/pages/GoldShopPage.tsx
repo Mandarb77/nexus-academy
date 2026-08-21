@@ -18,6 +18,7 @@ import franBarrySupplyLogo from '../assets/fran-barry-supply-logo.png'
 import { MainNav } from '../components/MainNav'
 import { ShopTierBoard } from '../components/makersShop'
 import { useAuth } from '../contexts/AuthContext'
+import { isGuestBrowse } from '../lib/schoolEmail'
 import { markKitHasNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
@@ -277,6 +278,7 @@ export function GoldShopPage() {
   const pendingMomentAction = useRef<(() => void) | null>(null)
 
   const gold = displayGold
+  const guestBrowse = isGuestBrowse(user?.email ?? profile?.email, profile)
 
   const sortedCatalog = useMemo(() => sortCatalogRows(catalog), [catalog])
   const tierGroups = useMemo(() => groupByTier(sortedCatalog), [sortedCatalog])
@@ -383,6 +385,9 @@ export function GoldShopPage() {
   )
 
   function purchaseErrorMessage(errorCode?: string, item?: ShopCatalogItem): string {
+    if (errorCode === 'school_email_required') {
+      return 'Use your kentshill.org Google account to buy items.'
+    }
     if (errorCode === 'insufficient_gold') return 'Not enough gold.'
     if (errorCode === 'unknown_item') return 'Unknown item.'
     if (errorCode === 'daily_purchase_limit' || errorCode === 'phone_time_limit') {
@@ -510,6 +515,14 @@ export function GoldShopPage() {
       showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
       return
     }
+    if (guestBrowse) {
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: 'Use your kentshill.org Google account to buy items.',
+      })
+      return
+    }
     if (gold < calculatedGoldCost) {
       showToast({ kind: 'error', itemKey: item.item_key, message: 'Not enough gold.' })
       return
@@ -544,6 +557,14 @@ export function GoldShopPage() {
   async function completeBuy(item: ShopCatalogItem) {
     if (!isSupabaseConfigured) {
       showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
+      return
+    }
+    if (guestBrowse) {
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: 'Use your kentshill.org Google account to buy items.',
+      })
       return
     }
     if (item.is_locked) {
@@ -605,6 +626,14 @@ export function GoldShopPage() {
   }
 
   function buy(item: ShopCatalogItem) {
+    if (guestBrowse) {
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: 'Use your kentshill.org Google account to buy items.',
+      })
+      return
+    }
     const status = limitStatusByItemId.get(item.id)
     if (status && !status.allowed) {
       showToast({
@@ -633,6 +662,14 @@ export function GoldShopPage() {
   }
 
   function requestFilament(item: ShopCatalogItem, grams: number, calculatedGoldCost: number) {
+    if (guestBrowse) {
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: 'Use your kentshill.org Google account to buy items.',
+      })
+      return
+    }
     if (!user?.id || !isSupabaseConfigured) {
       showToast({ kind: 'error', itemKey: item.item_key, message: 'Shop is not connected right now.' })
       return
@@ -744,6 +781,7 @@ export function GoldShopPage() {
                 onDismissToast={dismissToast}
                 onBuy={buy}
                 onRequestFilament={requestFilament}
+                purchasesEnabled={!guestBrowse}
               />
             ))}
         </div>

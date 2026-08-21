@@ -14,6 +14,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { hasNewKitItem, KIT_NEW_ITEM_EVENT } from '../lib/kitNotification'
 import { isTeacherProfile } from '../lib/teacher'
+import { GuestBrowseBanner } from './GuestBrowseBanner'
 import { StudentPreviewBanner } from './StudentPreviewBanner'
 
 type MainNavProps = {
@@ -149,6 +150,7 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
         </div>
       ) : null}
       <StudentPreviewBanner />
+      <GuestBrowseBanner />
       <nav className="student-nav" aria-label="Main navigation">
         <NavLink
           to="/"
