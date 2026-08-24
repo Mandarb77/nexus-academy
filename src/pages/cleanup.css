@@ -1,0 +1,344 @@
+/*
+ * Standalone classroom cleanup kiosk styles (laptop control + Pi display).
+ * Kept out of the main Nexus student chrome on purpose.
+ */
+
+.cleanup-control {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  box-sizing: border-box;
+}
+
+.cleanup-control__header {
+  margin-bottom: 1.75rem;
+}
+
+.cleanup-control__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.cleanup-control__title {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+}
+
+.cleanup-control__lede {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--text);
+}
+
+.cleanup-control__lede a {
+  color: var(--accent-strong);
+}
+
+.cleanup-control__banner {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.cleanup-control__banner--error,
+.cleanup-control__error {
+  color: #8b2e1f;
+}
+
+.cleanup-control__banner--error {
+  background: #fde8e4;
+}
+
+.cleanup-control__muted {
+  color: var(--text);
+}
+
+.cleanup-control__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16.5rem, 1fr));
+  gap: 1rem;
+}
+
+.cleanup-control__card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.15rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 18rem;
+}
+
+.cleanup-control__class {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.cleanup-control__count {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.cleanup-control__roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.cleanup-control__empty {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.cleanup-control__student {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  background: var(--code-bg);
+}
+
+.cleanup-control__remove {
+  font: inherit;
+  font-size: 0.78rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cleanup-control__add {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cleanup-control__input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.cleanup-control__start {
+  width: 100%;
+}
+
+.cleanup-control__start:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cleanup-control__status {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #166534;
+}
+
+.cleanup-control__error {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.cleanup-control__pi {
+  margin-top: 2rem;
+  padding: 1rem 1.1rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+}
+
+.cleanup-control__pi h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.cleanup-control__pi p {
+  margin: 0 0 0.6rem;
+}
+
+.cleanup-control__code {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  background: var(--code-bg);
+  border-radius: 8px;
+}
+
+/* ── Pi kiosk display ── */
+
+.cleanup-display {
+  position: fixed;
+  inset: 0;
+  background: #120f18;
+  color: #f4f0ea;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.cleanup-display__chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cleanup-display__eyebrow {
+  margin: 0;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+.cleanup-display__live {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+.cleanup-display__live.is-on {
+  color: #86efac;
+  opacity: 1;
+}
+
+.cleanup-display__idle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.6rem;
+}
+
+.cleanup-display__idle h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+}
+
+.cleanup-display__idle p {
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.4rem);
+  opacity: 0.7;
+}
+
+.cleanup-display__idle--roll h1 {
+  animation: cleanupPulse 0.45s ease-in-out infinite alternate;
+}
+
+.cleanup-display__board {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 1.25rem;
+}
+
+.cleanup-display__class {
+  margin: 0 0 1rem;
+  color: #fff;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+}
+
+.cleanup-display__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow: auto;
+}
+
+.cleanup-display__row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.42fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  animation: cleanupReveal 0.35s ease-out;
+}
+
+.cleanup-display__name {
+  font-size: clamp(1.35rem, 3.4vw, 2.1rem);
+  font-weight: 700;
+  color: #fff;
+}
+
+.cleanup-display__job {
+  font-size: clamp(1.15rem, 2.8vw, 1.7rem);
+  color: #e8dcc8;
+}
+
+.cleanup-display__error {
+  color: #fca5a5;
+}
+
+.cleanup-display__audio {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+
+@keyframes cleanupReveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cleanupPulse {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .cleanup-display__row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}

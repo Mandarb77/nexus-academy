@@ -7,10 +7,12 @@
  *
  * Mounted once in App.tsx so every signed-in student route is blocked until set.
  * Teachers skip the gate unless they are in student preview (then they use the
- * previewed student profile, which may already have a name).
+ * previewed student profile, which may already have a name). Cleanup kiosk
+ * routes (`/cleanup`) skip it so the Pi/laptop pages stay unblocked.
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   needsPreferredFirstName,
@@ -21,6 +23,7 @@ import { isGuestBrowse } from '../lib/schoolEmail'
 
 export function PreferredFirstNameGate() {
   const { user, profile, loading, studentPreviewMode, updatePreferredFirstName } = useAuth()
+  const { pathname } = useLocation()
   const [value, setValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +32,7 @@ export function PreferredFirstNameGate() {
     user &&
       profile &&
       !loading &&
+      !pathname.startsWith('/cleanup') &&
       needsPreferredFirstName(profile) &&
       /* Teachers only see this while previewing as a student who still lacks a name.
        * Off-domain guests skip it — they cannot save a name, and it would block browsing. */

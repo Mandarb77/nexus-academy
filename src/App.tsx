@@ -15,7 +15,7 @@
  * or the `/nexus-dev-verify.txt` sanity-check link.
  */
 
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { HomeRoute } from './components/HomeRoute'
 import { StudentOnlyRoute } from './components/StudentOnlyRoute'
@@ -42,6 +42,8 @@ import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
 import { JoinPage } from './pages/JoinPage'
+import { CleanupControlPage } from './pages/CleanupControlPage'
+import { CleanupDisplayPage } from './pages/CleanupDisplayPage'
 import { ApprovalCelebrationHost } from './components/ApprovalCelebrationHost'
 import { ApprovalCelebrationSync } from './components/ApprovalCelebrationSync'
 import { TeacherSubmissionAlertHost } from './components/TeacherSubmissionAlertHost'
@@ -51,19 +53,25 @@ import { StudentReviewAlertSync } from './components/StudentReviewAlertSync'
 import { PreferredFirstNameGate } from './components/PreferredFirstNameGate'
 import './App.css'
 
+function NexusDevRibbon() {
+  const { pathname } = useLocation()
+  if (pathname.startsWith('/cleanup')) return null
+  return (
+    <div className="nexus-app-dev-ribbon" role="note">
+      Local dev — if this bar is missing, you are not on this repo’s Vite server.{' '}
+      <a href="/nexus-dev-verify.txt" target="_blank" rel="noopener noreferrer">
+        Open /nexus-dev-verify.txt
+      </a>{' '}
+      (first line must be <code>nexus-academy-repo-ok</code>). Power Ups section pills only appear on the Power Ups tab.
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       {/* ========== Dev-only: not in production (`import.meta.env.DEV`) ========== */}
-      {import.meta.env.DEV && (
-        <div className="nexus-app-dev-ribbon" role="note">
-          Local dev — if this bar is missing, you are not on this repo’s Vite server.{' '}
-          <a href="/nexus-dev-verify.txt" target="_blank" rel="noopener noreferrer">
-            Open /nexus-dev-verify.txt
-          </a>{' '}
-          (first line must be <code>nexus-academy-repo-ok</code>). Power Ups section pills only appear on the Power Ups tab.
-        </div>
-      )}
+      {import.meta.env.DEV && <NexusDevRibbon />}
       <AuthProvider>
         {/* ========== Global: quest-approval toast + Realtime → localStorage bridge ========== */}
         <ApprovalCelebrationHost />
@@ -177,6 +185,10 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/join/:token" element={<JoinPage />} />
+
+          {/* ========== Classroom cleanup kiosk (public; Pi + laptop, not the student app) ========== */}
+          <Route path="/cleanup" element={<CleanupControlPage />} />
+          <Route path="/cleanup/display" element={<CleanupDisplayPage />} />
 
           {/* ========== Teacher — dashboard, approvals panel, utilities ========== */}
           <Route
