@@ -195,7 +195,7 @@ export function useSkillTree() {
     const { data: tileRows, error: tileErr } = await supabase
       .from('tiles')
       .select(
-        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps, checklist_footer_note, flow_in_style, record_prompts',
+        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps, checklist_footer_note, flow_in_style, record_prompts, ledger_resources',
       )
       .order('guild', { ascending: true })
       .order('sort_order', { ascending: true })
