@@ -8,16 +8,27 @@
  * `signInWithGoogle` / `signOut` from `AuthContext` and gates on `isSupabaseConfigured`.
  */
 
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { oauthRedirectErrorMessage } from '../lib/oauthRedirectError'
 
 export function LoginPage() {
   const { user, authReady, signInWithGoogle, signOut } = useAuth()
-  const [error, setError] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [error, setError] = useState<string | null>(() =>
+    oauthRedirectErrorMessage(window.location.search),
+  )
   const [busy, setBusy] = useState(false)
   const [previewSetupIncomplete, setPreviewSetupIncomplete] = useState(false)
+
+  useEffect(() => {
+    const fromUrl = oauthRedirectErrorMessage(searchParams.toString())
+    if (!fromUrl) return
+    setError(fromUrl)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const showSetupNotice = !isSupabaseConfigured || previewSetupIncomplete
   /** Allow click while session is still restoring — signInWithOAuth is safe; avoids a stuck disabled button. */
@@ -93,7 +104,11 @@ export function LoginPage() {
         >
           {busy ? 'Redirecting…' : 'Sign in with Google'}
         </button>
-        {error ? <p className="error">{error}</p> : null}
+        {error ? (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        ) : null}
       </div>
 
       {showSetupNotice ? (

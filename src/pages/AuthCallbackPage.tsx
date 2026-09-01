@@ -1,10 +1,9 @@
 /*
  * OAuth redirect handler (`/auth/callback`)
  *
- * Supabase PKCE flow lands here with tokens in the URL fragment; `supabase` client is
- * configured with `detectSessionInUrl: true`, so by the time React runs, the session is
- * usually established. This page just waits for `authReady` then navigates home — keeps
- * the URL clean and avoids flashing protected routes before `getSession` resolves.
+ * PKCE lands here with `?code=`. The Supabase client (`detectSessionInUrl`) exchanges
+ * that code during initialize; `getSession` waits for that, which is `authReady`.
+ * If GoTrue bounced here with `?error=`, keep those params so LoginPage can explain.
  */
 
 import { useEffect } from 'react'
@@ -22,11 +21,14 @@ export function AuthCallbackPage() {
       return
     }
     if (!authReady) return
-    if (user) {
-      navigate('/', { replace: true })
-    } else {
-      navigate('/', { replace: true })
+
+    const params = new URLSearchParams(window.location.search)
+    if (!user && (params.get('error') || params.get('error_code') || params.get('error_description'))) {
+      navigate(`/?${params.toString()}`, { replace: true })
+      return
     }
+
+    navigate('/', { replace: true })
   }, [user, authReady, navigate])
 
   return (

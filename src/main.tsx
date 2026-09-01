@@ -7,12 +7,16 @@
  * string exists so support staff can confirm in the browser console that the deployed
  * bundle matches the expected nav/Journey/Power Ups layout — useful when caching or
  * multiple dev servers make “which build am I on?” ambiguous.
+ *
+ * Production aliases (nexus-academy-one) bounce to the canonical host before the
+ * Supabase client starts, so Google OAuth PKCE state stays on one origin.
  */
 
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import {
+  canonicalUrlForCurrentLocation,
+  shouldRedirectToCanonicalHost,
+} from './lib/canonicalHost'
 
 /* Exposed for manual verification in dev tools (Safari/Firefox): type __NEXUS_NAV_LAYOUT_VERSION in the console. */
 declare global {
@@ -22,9 +26,8 @@ declare global {
 }
 window.__NEXUS_NAV_LAYOUT_VERSION = '2-journey-powerups'
 
-/* StrictMode double-invokes effects in development only — catches unsafe lifecycles without affecting production. */
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+if (shouldRedirectToCanonicalHost()) {
+  window.location.replace(canonicalUrlForCurrentLocation())
+} else {
+  void import('./mountApp').then(({ mountApp }) => mountApp())
+}

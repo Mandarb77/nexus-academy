@@ -83,6 +83,9 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+/** Prevents a second Google OAuth start from overwriting the PKCE verifier. */
+let googleOAuthStartLock = false
+
 async function fetchProfile(userId: string): Promise<Profile | null> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const { data, error } = await supabase
@@ -280,22 +283,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase is not configured')
     }
+    if (googleOAuthStartLock) return
+    googleOAuthStartLock = true
     const redirectTo = `${window.location.origin}/auth/callback`
     /*
      * Preview testing: Supabase must allow `https://*.vercel.app/auth/callback` or sign-in
      * returns to production Site URL and the Preview bundle (proto env vars) is skipped.
      */
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: { prompt: 'select_account' },
-      },
-    })
-    if (error) {
-      console.error('Google sign-in:', error.message)
-      throw error
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: { prompt: 'select_account' },
+        },
+      })
+      if (error) {
+        googleOAuthStartLock = false
+        console.error('Google sign-in:', error.message)
+        throw error
+      }
+    } catch (err) {
+      googleOAuthStartLock = false
+      throw err
     }
+    window.setTimeout(() => {
+      googleOAuthStartLock = false
+    }, 8000)
   }, [])
 
   const signOut = useCallback(async () => {
