@@ -31,6 +31,15 @@ export function HomeRoute() {
     )
   }
 
+  const oauthCode = new URLSearchParams(window.location.search).get('code')
+  if (!user && oauthCode) {
+    return (
+      <div className="app-shell">
+        <p className="muted">Finishing sign-in…</p>
+      </div>
+    )
+  }
+
   if (!user) {
     return <LoginPage />
   }

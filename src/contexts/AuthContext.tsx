@@ -206,7 +206,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'SIGNED_OUT') {
+        void supabase.auth.getSession().then(({ data: { session: restored } }) => {
+          if (cancelled) return
+          if (restored) {
+            setSession(restored)
+            setUser(restored.user)
+            return
+          }
+          setSession(null)
+          setUser(null)
+        })
+        return
+      }
       setSession(s)
       setUser(s?.user ?? null)
     })

@@ -4,6 +4,11 @@
  * supabase-js stores one code verifier. A second signInWithOAuth overwrites it, so
  * the first Google return cannot be exchanged. We keep the last few verifiers and
  * retry them if the live exchange fails.
+ *
+ * Auth tokens live in sessionStorage (this tab only). Classroom Chromebooks often
+ * keep extra Nexus tabs; an old tab refreshing a stale token used to wipe
+ * localStorage and bounce the new login back to Google. sessionStorage stops that.
+ * Verifier backups still go to localStorage so a second tab can finish the first click.
  */
 
 const BACKUP_KEY = 'nexus:pkce-verifier-backups'
@@ -11,6 +16,24 @@ const MAX_BACKUPS = 5
 
 function isVerifierKey(key: string): boolean {
   return key.endsWith('-code-verifier')
+}
+
+function probeStorage(store: Storage, probeKey: string): boolean {
+  try {
+    store.setItem(probeKey, '1')
+    store.removeItem(probeKey)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Tab-local store for the auth session; localStorage only if sessionStorage is blocked. */
+function primaryAuthStore(): Storage | null {
+  if (typeof window === 'undefined') return null
+  if (probeStorage(sessionStorage, 'nexus:ss-probe')) return sessionStorage
+  if (probeStorage(localStorage, 'nexus:ls-probe')) return localStorage
+  return null
 }
 
 function readBackups(): string[] {
@@ -25,8 +48,12 @@ function readBackups(): string[] {
 }
 
 function pushBackup(value: string) {
-  const next = [value, ...readBackups().filter((item) => item !== value)].slice(0, MAX_BACKUPS)
-  localStorage.setItem(BACKUP_KEY, JSON.stringify(next))
+  try {
+    const next = [value, ...readBackups().filter((item) => item !== value)].slice(0, MAX_BACKUPS)
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(next))
+  } catch {
+    /* ignore */
+  }
 }
 
 export function createPkceBackupStorage(): {
@@ -34,23 +61,17 @@ export function createPkceBackupStorage(): {
   setItem: (key: string, value: string) => void
   removeItem: (key: string) => void
 } | undefined {
-  if (typeof window === 'undefined') return undefined
-  try {
-    const probe = 'nexus:ls-probe'
-    localStorage.setItem(probe, '1')
-    localStorage.removeItem(probe)
-  } catch {
-    return undefined
-  }
+  const store = primaryAuthStore()
+  if (!store) return undefined
 
   return {
-    getItem: (key: string) => localStorage.getItem(key),
+    getItem: (key: string) => store.getItem(key),
     setItem: (key: string, value: string) => {
-      localStorage.setItem(key, value)
+      store.setItem(key, value)
       if (isVerifierKey(key) && value) pushBackup(value)
     },
     removeItem: (key: string) => {
-      localStorage.removeItem(key)
+      store.removeItem(key)
     },
   }
 }
@@ -60,9 +81,10 @@ export async function exchangeCodeWithPkceBackups(
   code: string,
   verifierStorageKey: string,
 ): Promise<{ data: { session: unknown } | null; error: { message: string } | null }> {
+  const store = primaryAuthStore()
   const current = (() => {
     try {
-      return localStorage.getItem(verifierStorageKey)
+      return store?.getItem(verifierStorageKey) ?? null
     } catch {
       return null
     }
@@ -80,8 +102,9 @@ export async function exchangeCodeWithPkceBackups(
   }
 
   for (const verifier of candidates) {
+    if (!store) break
     try {
-      localStorage.setItem(verifierStorageKey, verifier)
+      store.setItem(verifierStorageKey, verifier)
     } catch {
       continue
     }
