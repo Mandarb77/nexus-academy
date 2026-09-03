@@ -24,6 +24,8 @@ import {
 import { useNavigate } from 'react-router-dom'
 import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { beginGoogleOAuthStart, clearGoogleOAuthStart } from '../lib/pkceVerifierBackup'
+import { SCHOOL_EMAIL_DOMAIN } from '../lib/schoolEmail'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -74,7 +76,10 @@ type AuthContextValue = {
   /** Teachers can flip this to browse the app from a student's perspective. */
   studentPreviewMode: boolean
   toggleStudentPreview: () => void
-  signInWithGoogle: () => Promise<void>
+  /** True if this call started Google OAuth; false if a start is already in flight. */
+  signInWithGoogle: () => Promise<boolean>
+  /** Sign out of a personal Gmail and reopen Google so they can pick @kentshill.org. */
+  switchToSchoolGoogleAccount: () => Promise<boolean>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   /** Persist preferred first name (Fran/Barry voice + welcome). */
@@ -82,9 +87,6 @@ type AuthContextValue = {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
-
-/** Prevents a second Google OAuth start from overwriting the PKCE verifier. */
-let googleOAuthStartLock = false
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -283,8 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase is not configured')
     }
-    if (googleOAuthStartLock) return
-    googleOAuthStartLock = true
+    if (!beginGoogleOAuthStart()) return false
     const redirectTo = `${window.location.origin}/auth/callback`
     /*
      * Preview testing: Supabase must allow `https://*.vercel.app/auth/callback` or sign-in
@@ -295,22 +296,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         provider: 'google',
         options: {
           redirectTo,
-          queryParams: { prompt: 'select_account' },
+          queryParams: {
+            prompt: 'select_account',
+            hd: SCHOOL_EMAIL_DOMAIN,
+          },
         },
       })
       if (error) {
-        googleOAuthStartLock = false
+        clearGoogleOAuthStart()
         console.error('Google sign-in:', error.message)
         throw error
       }
+      return true
     } catch (err) {
-      googleOAuthStartLock = false
+      clearGoogleOAuthStart()
       throw err
     }
-    window.setTimeout(() => {
-      googleOAuthStartLock = false
-    }, 8000)
   }, [])
+
+  const switchToSchoolGoogleAccount = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase is not configured')
+    }
+    /* The just-finished (wrong-account) login still holds the start lock. */
+    clearGoogleOAuthStart()
+    return signInWithGoogle()
+  }, [signInWithGoogle])
 
   const signOut = useCallback(async () => {
     setProfile(null)
@@ -340,6 +351,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       studentPreviewMode,
       toggleStudentPreview,
       signInWithGoogle,
+      switchToSchoolGoogleAccount,
       signOut,
       refreshProfile,
       updatePreferredFirstName,
@@ -353,6 +365,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       studentPreviewMode,
       toggleStudentPreview,
       signInWithGoogle,
+      switchToSchoolGoogleAccount,
       signOut,
       refreshProfile,
       updatePreferredFirstName,

@@ -11,6 +11,7 @@
 
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { isSchoolEmail } from '../lib/schoolEmail'
 import { isTeacherProfile } from '../lib/teacher'
 import { LoginPage } from '../pages/LoginPage'
 import { StudentHomePage } from '../pages/StudentHomePage'
@@ -36,9 +37,10 @@ export function HomeRoute() {
 
   /*
    * After OAuth, `profiles` can trail the session by a beat; show a distinct message so
-   * students do not confuse “still loading” with “Google failed”.
+   * students do not confuse “still loading” with “Google failed”. Skip that wait when the
+   * Google account is already the wrong domain — SchoolAccountGate should appear immediately.
    */
-  if (loading) {
+  if (loading && (isSchoolEmail(user.email) || isTeacherProfile(profile))) {
     return (
       <div className="app-shell">
         <p className="muted">Loading your profile…</p>

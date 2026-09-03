@@ -9,6 +9,7 @@
  *     and `StudentReviewAlertHost` + `StudentReviewAlertSync` (plan/checklist/final/shop/redemption approve + deny)
  *   - Teachers: `TeacherSubmissionAlertHost` + `TeacherSubmissionAlertSync` (pending review banner + chime; toggle on Teacher panel)
  *   - Students: `PreferredFirstNameGate` (one-time name for Fran voice; blocks student UI until set)
+   - Students: `SchoolAccountGate` (personal Gmail → prompt to switch to @kentshill.org)
  * See docs/developer-handoff-recent-work.md for bench chrome vs patent ledger split.
  * The dev-only ribbon (`import.meta.env.DEV`) is
  * intentionally absent in production builds so students never see local-debug hints
@@ -51,6 +52,7 @@ import { TeacherSubmissionAlertSync } from './components/TeacherSubmissionAlertS
 import { StudentReviewAlertHost } from './components/StudentReviewAlertHost'
 import { StudentReviewAlertSync } from './components/StudentReviewAlertSync'
 import { PreferredFirstNameGate } from './components/PreferredFirstNameGate'
+import { SchoolAccountGate } from './components/SchoolAccountGate'
 import './App.css'
 
 function NexusDevRibbon() {
@@ -81,6 +83,7 @@ export default function App() {
         <TeacherSubmissionAlertHost />
         <TeacherSubmissionAlertSync />
         <PreferredFirstNameGate />
+        <SchoolAccountGate />
         <Routes>
           {/* ========== Public / entry ========== */}
           <Route path="/" element={<HomeRoute />} />

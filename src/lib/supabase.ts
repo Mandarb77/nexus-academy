@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { createPkceBackupStorage } from './pkceVerifierBackup'
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? ''
@@ -47,6 +48,8 @@ const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
 const PLACEHOLDER_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
+const pkceStorage = createPkceBackupStorage()
+
 export const supabase = createClient(
   isSupabaseConfigured ? url : PLACEHOLDER_URL,
   isSupabaseConfigured ? anonKey : PLACEHOLDER_ANON_KEY,
@@ -54,6 +57,9 @@ export const supabase = createClient(
     auth: {
       detectSessionInUrl: true,
       flowType: 'pkce',
+      ...(pkceStorage ? { storage: pkceStorage } : {}),
     },
   },
 )
+
+export const supabaseUrl = isSupabaseConfigured ? url : PLACEHOLDER_URL

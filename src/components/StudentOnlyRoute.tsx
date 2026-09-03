@@ -12,6 +12,7 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isTeacherProfile } from '../lib/teacher'
+import { isSchoolEmail } from '../lib/schoolEmail'
 
 export function StudentOnlyRoute({ children }: { children: ReactNode }) {
   const { user, profile, authReady, loading, studentPreviewMode } = useAuth()
@@ -28,7 +29,7 @@ export function StudentOnlyRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/" replace />
   }
 
-  if (loading) {
+  if (loading && (isSchoolEmail(user.email) || isTeacherProfile(profile))) {
     return (
       <div className="app-shell">
         <p className="muted">Loading your profile…</p>

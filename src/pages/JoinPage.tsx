@@ -7,10 +7,11 @@
  * from claiming teacher invites accidentally because the RPC validates the token payload.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { clearGoogleOAuthStart } from '../lib/pkceVerifierBackup'
 
 const PENDING_TOKEN_KEY = 'nexus:pending-invite-token'
 
@@ -22,6 +23,11 @@ export function JoinPage() {
   const [status, setStatus] = useState<'idle' | 'claiming' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const startingRef = useRef(false)
+
+  useEffect(() => {
+    clearGoogleOAuthStart()
+  }, [])
 
   /*
    * PKCE strips query params on return — without persisting the invite segment, teachers
@@ -76,10 +82,17 @@ export function JoinPage() {
   }, [authReady, loading, user, navigate])
 
   const handleSignIn = async () => {
+    if (startingRef.current || busy) return
+    startingRef.current = true
     setBusy(true)
     try {
-      await signInWithGoogle()
+      const started = await signInWithGoogle()
+      if (!started) {
+        startingRef.current = false
+        setBusy(false)
+      }
     } catch {
+      startingRef.current = false
       setBusy(false)
     }
   }
