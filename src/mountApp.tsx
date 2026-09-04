@@ -1,11 +1,7 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 
 export function mountApp() {
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
+  /* StrictMode double-mounts auth effects and can refresh the same Google token twice. */
+  createRoot(document.getElementById('root')!).render(<App />)
 }

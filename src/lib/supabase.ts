@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { serialAuthLock } from './authLock'
 import { createPkceBackupStorage } from './pkceVerifierBackup'
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
@@ -57,6 +58,7 @@ export const supabase = createClient(
     auth: {
       detectSessionInUrl: true,
       flowType: 'pkce',
+      lock: serialAuthLock,
       ...(pkceStorage ? { storage: pkceStorage } : {}),
     },
   },

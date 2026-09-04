@@ -18,6 +18,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -127,6 +128,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false)
   const [profileReady, setProfileReady] = useState(false)
   const [studentPreviewMode, setStudentPreviewMode] = useState(false)
+  const userSignedOutRef = useRef(false)
+  const lastGoodSessionRef = useRef<Session | null>(null)
+  const signedInAtRef = useRef(0)
+  const lastRestoreAtRef = useRef(0)
 
   const toggleStudentPreview = useCallback(() => {
     setStudentPreviewMode((prev) => !prev)
@@ -207,19 +212,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, s) => {
+      if (s?.user) {
+        lastGoodSessionRef.current = s
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+          signedInAtRef.current = Date.now()
+        }
+      }
+
       if (event === 'SIGNED_OUT') {
-        void supabase.auth.getSession().then(({ data: { session: restored } }) => {
-          if (cancelled) return
-          if (restored) {
-            setSession(restored)
-            setUser(restored.user)
-            return
-          }
+        if (userSignedOutRef.current) {
+          lastGoodSessionRef.current = null
           setSession(null)
           setUser(null)
-        })
+          return
+        }
+        const held = lastGoodSessionRef.current
+        const signedInRecently = Date.now() - signedInAtRef.current < 120_000
+        if (held?.access_token && held.refresh_token && signedInRecently) {
+          setSession(held)
+          setUser(held.user)
+          if (Date.now() - lastRestoreAtRef.current > 5_000) {
+            lastRestoreAtRef.current = Date.now()
+            void supabase.auth.setSession({
+              access_token: held.access_token,
+              refresh_token: held.refresh_token,
+            })
+          }
+          return
+        }
+        setSession(null)
+        setUser(null)
         return
       }
+
       setSession(s)
       setUser(s?.user ?? null)
     })
@@ -337,6 +362,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [signInWithGoogle])
 
   const signOut = useCallback(async () => {
+    userSignedOutRef.current = true
+    lastGoodSessionRef.current = null
     setProfile(null)
     if (!isSupabaseConfigured) {
       setSession(null)
