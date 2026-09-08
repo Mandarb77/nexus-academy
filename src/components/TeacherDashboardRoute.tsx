@@ -29,7 +29,7 @@ export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/" state={{ from: location }} replace />
   }
 
-  if (loading) {
+  if (loading && !isTeacherProfile(profile)) {
     return (
       <div className="app-shell">
         <p className="muted">Opening teacher tools…</p>
@@ -38,6 +38,13 @@ export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
   }
 
   if (!isTeacherProfile(profile)) {
+    if (!profile) {
+      return (
+        <div className="app-shell">
+          <p className="muted">Opening teacher tools…</p>
+        </div>
+      )
+    }
     return <Navigate to="/" replace />
   }
 

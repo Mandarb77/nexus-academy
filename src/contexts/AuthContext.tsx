@@ -26,6 +26,8 @@ import { useNavigate } from 'react-router-dom'
 import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { startGoogleOAuth } from '../lib/googleSignIn'
+import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/profileCache'
+import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -88,20 +90,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function stubProfileFromUser(user: User): Profile {
-  return {
-    id: user.id,
-    email: user.email ?? null,
-    display_name: displayNameFromUser(user),
-    preferred_first_name: null,
-    wp: 0,
-    gold: 0,
-    role: 'student',
-    portfolio_quote: null,
-  }
+type ProfileFetch = { kind: 'ok'; profile: Profile } | { kind: 'missing' } | { kind: 'timeout' }
+
+function isAbortError(error: { name?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return error.name === 'AbortError' || /abort|timeout|504|deadline/i.test(error.message ?? '')
 }
 
-async function fetchProfile(userId: string): Promise<Profile | null> {
+async function fetchProfile(userId: string): Promise<ProfileFetch> {
+  let timedOut = false
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController()
     const abortTimer = window.setTimeout(() => controller.abort(), 5_000)
@@ -116,23 +113,31 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
       if (data) {
         const p = data as Profile
         return {
-          ...p,
-          preferred_first_name: p.preferred_first_name?.trim() || null,
-          role: p.role === 'teacher' ? 'teacher' : 'student',
+          kind: 'ok',
+          profile: {
+            ...p,
+            preferred_first_name: p.preferred_first_name?.trim() || null,
+            role: p.role === 'teacher' ? 'teacher' : 'student',
+          },
         }
       }
-      if (error && error.name !== 'AbortError' && !/abort/i.test(error.message)) {
+      if (isAbortError(error)) {
+        timedOut = true
+      } else if (error) {
         console.error('profiles fetch:', error.message)
-        return null
+        timedOut = true
+      } else {
+        return { kind: 'missing' }
       }
     } catch (err) {
+      timedOut = true
       console.error('profiles fetch:', err)
     } finally {
       window.clearTimeout(abortTimer)
     }
     await new Promise((r) => setTimeout(r, 300 * (attempt + 1)))
   }
-  return null
+  return timedOut ? { kind: 'timeout' } : { kind: 'missing' }
 }
 
 // -----------------------------------------------------------------------------
@@ -141,15 +146,17 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
-  const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [session, setSession] = useState<Session | null>(() => readSessionBackup())
+  const [user, setUser] = useState<User | null>(() => readSessionBackup()?.user ?? null)
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const uid = readSessionBackup()?.user?.id
+    return uid ? readCachedProfile(uid) : null
+  })
   const [authReady, setAuthReady] = useState(false)
   const [profileReady, setProfileReady] = useState(false)
   const [studentPreviewMode, setStudentPreviewMode] = useState(false)
   const userSignedOutRef = useRef(false)
-  const lastGoodSessionRef = useRef<Session | null>(null)
-  const signedInAtRef = useRef(0)
+  const lastGoodSessionRef = useRef<Session | null>(readSessionBackup())
   const lastRestoreAtRef = useRef(0)
 
   const toggleStudentPreview = useCallback(() => {
@@ -162,12 +169,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null)
       return
     }
-    let p = await fetchProfile(uid)
-    if (!p) {
+    let p: Profile | null = null
+    const result = await fetchProfile(uid)
+    if (result.kind === 'ok') p = result.profile
+    else if (result.kind === 'missing') {
       await ensureProfileIfMissing(user)
-      p = await fetchProfile(uid)
+      const again = await fetchProfile(uid)
+      if (again.kind === 'ok') p = again.profile
     }
-    setProfile(p)
+    const next = profileForUi(uid, p)
+    if (next) setProfile(next)
   }, [user])
 
   const updatePreferredFirstName = useCallback(
@@ -190,7 +201,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('preferred_first_name update:', error.message)
         return { error: error.message }
       }
-      setProfile((prev) => (prev ? { ...prev, preferred_first_name: cleaned } : prev))
+      setProfile((prev) => {
+        if (!prev) return prev
+        const next = { ...prev, preferred_first_name: cleaned }
+        writeCachedProfile(next)
+        return next
+      })
       return { error: null }
     },
     [user?.id],
@@ -218,8 +234,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ data: { session: s } }) => {
         if (cancelled) return
         window.clearTimeout(sessionTimeout)
-        setSession(s)
-        setUser(s?.user ?? null)
+        if (s?.user) {
+          lastGoodSessionRef.current = s
+          writeSessionBackup(s)
+          setSession(s)
+          setUser(s.user)
+        } else {
+          const held = lastGoodSessionRef.current ?? readSessionBackup()
+          if (held?.user) {
+            lastGoodSessionRef.current = held
+            setSession(held)
+            setUser(held.user)
+          } else {
+            setSession(null)
+            setUser(null)
+          }
+        }
         setAuthReady(true)
       })
       .catch((err) => {
@@ -231,26 +261,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, s) => {
-      if (s?.user) {
-        lastGoodSessionRef.current = s
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-          signedInAtRef.current = Date.now()
-        }
-      }
-
-      if (event === 'SIGNED_OUT') {
+      if (!s?.user) {
         if (userSignedOutRef.current) {
           lastGoodSessionRef.current = null
+          clearSessionBackup()
           setSession(null)
           setUser(null)
           return
         }
-        const held = lastGoodSessionRef.current
-        const signedInRecently = Date.now() - signedInAtRef.current < 120_000
-        if (held?.access_token && held.refresh_token && signedInRecently) {
+        /* A 504 on token refresh looks like sign-out. Keep this tab signed in unless they clicked Sign out. */
+        const held = lastGoodSessionRef.current ?? readSessionBackup()
+        if (held?.access_token && held.refresh_token) {
+          lastGoodSessionRef.current = held
+          writeSessionBackup(held)
           setSession(held)
           setUser(held.user)
-          if (Date.now() - lastRestoreAtRef.current > 5_000) {
+          if (event === 'SIGNED_OUT' && Date.now() - lastRestoreAtRef.current > 5_000) {
             lastRestoreAtRef.current = Date.now()
             void supabase.auth.setSession({
               access_token: held.access_token,
@@ -264,8 +290,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
+      lastGoodSessionRef.current = s
+      writeSessionBackup(s)
       setSession(s)
-      setUser(s?.user ?? null)
+      setUser(s.user)
     })
 
     return () => {
@@ -287,23 +315,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const currentUser = user
     let cancelled = false
-    setProfileReady(false)
+    const cached = readCachedProfile(currentUser.id)
+    if (cached) setProfile(cached)
+    setProfileReady(Boolean(cached))
     const unblock = window.setTimeout(() => {
       if (cancelled) return
-      setProfile((prev) => prev ?? stubProfileFromUser(currentUser))
+      const cached = readCachedProfile(currentUser.id)
+      setProfile((prev) => prev ?? cached)
       setProfileReady(true)
     }, 8_000)
     ;(async () => {
-      let p = await fetchProfile(currentUser.id)
+      const result = await fetchProfile(currentUser.id)
       if (cancelled) return
-      if (!p) {
+      let fetched: Profile | null = null
+      if (result.kind === 'ok') {
+        fetched = result.profile
+      } else if (result.kind === 'missing') {
         await ensureProfileIfMissing(currentUser)
         if (cancelled) return
-        p = await fetchProfile(currentUser.id)
+        const again = await fetchProfile(currentUser.id)
+        if (again.kind === 'ok') fetched = again.profile
       }
       if (cancelled) return
       window.clearTimeout(unblock)
-      setProfile(p ?? stubProfileFromUser(currentUser))
+      const next = profileForUi(currentUser.id, fetched)
+      if (next) setProfile(next)
       setProfileReady(true)
     })()
     return () => {
@@ -357,6 +393,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     userSignedOutRef.current = true
     lastGoodSessionRef.current = null
+    clearSessionBackup()
     setProfile(null)
     if (!isSupabaseConfigured) {
       setSession(null)

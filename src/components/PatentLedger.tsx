@@ -564,12 +564,6 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     if (previewBrowse) return
     if (!pid || (checklistSubmitted && !checklistApproved)) return
     writeChecklistDraft(checklistDraftKey, pid, nextArr)
-    if (checklistSaveTimerRef.current) window.clearTimeout(checklistSaveTimerRef.current)
-    checklistSaveTimerRef.current = window.setTimeout(() => {
-      void supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid).then(({ error }) => {
-        if (error) console.error('[PatentLedger] checklist save:', error.message)
-      })
-    }, 10_000)
   }
 
   const saveFieldToDb = (
@@ -598,11 +592,6 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       pendingFieldPatchRef.current = {}
       if (Object.keys(patch).length > 0) {
         void supabase.from('patents').update(patch).eq('id', pid)
-      }
-      if (checklistSaveTimerRef.current) {
-        window.clearTimeout(checklistSaveTimerRef.current)
-        checklistSaveTimerRef.current = null
-        void supabase.from('patents').update({ checklist_state: checksRef.current }).eq('id', pid)
       }
     }
     const onVis = () => {

@@ -1,25 +1,13 @@
 /*
  * Serialize GoTrue token *refresh* without blocking Google sign-in.
  *
- * What went wrong in class: supabase-js uses acquireTimeout 0 for some auth
- * calls. Our lock then threw immediately if getSession was already hung, so
- * Sign in with Google became a no-op and the UI said “Google did not open.”
- * Hung REST/Auth 504s also held the lock until the network died, so retries
- * queued behind the same dead request.
+ * Do not fail the in-flight auth call. A 3s reject on getSession made a 504
+ * refresh look like “signed out,” which kicked teachers to login and then a
+ * student stub hid the dashboard.
  *
- * Rules:
- * - Never fail-closed on contention. Wait a beat, then run anyway.
- * - Never hold the queue for more than MAX_HOLD_MS even if fn() is still
- *   talking to the network.
+ * Steal: if the lock is held, wait briefly then let the next caller run anyway.
+ * The previous fn() may still be talking to the network.
  */
-
-class AuthLockTimeoutError extends Error {
-  readonly isAcquireTimeout = true
-  constructor(message: string) {
-    super(message)
-    this.name = 'AuthLockTimeoutError'
-  }
-}
 
 let chain: Promise<unknown> = Promise.resolve()
 
@@ -41,6 +29,12 @@ export async function serialAuthLock<R>(
   const waitMs = acquireTimeout === 0 ? STEAL_MS : Math.max(acquireTimeout, STEAL_MS)
   let acquireTimer: ReturnType<typeof setTimeout> | undefined
   let holdTimer: ReturnType<typeof setTimeout> | undefined
+  let released = false
+  const releaseOnce = () => {
+    if (released) return
+    released = true
+    release()
+  }
 
   try {
     await Promise.race([
@@ -50,17 +44,21 @@ export async function serialAuthLock<R>(
       }),
     ])
     if (acquireTimer) clearTimeout(acquireTimer)
-    return await Promise.race([
-      fn(),
-      new Promise<R>((_, reject) => {
-        holdTimer = setTimeout(() => {
-          reject(new AuthLockTimeoutError(`Auth lock hold timed out after ${MAX_HOLD_MS}ms`))
-        }, MAX_HOLD_MS)
+    const work = fn()
+    const raced = await Promise.race([
+      work.then((value) => ({ done: true as const, value })),
+      new Promise<{ done: false }>((resolve) => {
+        holdTimer = setTimeout(() => resolve({ done: false }), MAX_HOLD_MS)
       }),
     ])
+    if (!raced.done) {
+      releaseOnce()
+      return await work
+    }
+    return raced.value
   } finally {
     if (acquireTimer) clearTimeout(acquireTimer)
     if (holdTimer) clearTimeout(holdTimer)
-    release()
+    releaseOnce()
   }
 }
