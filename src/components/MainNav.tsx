@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { hasNewKitItem, KIT_NEW_ITEM_EVENT } from '../lib/kitNotification'
+import { writeStudentPreviewFlag } from '../lib/studentPreview'
 import { isTeacherProfile } from '../lib/teacher'
 import { GuestBrowseBanner } from './GuestBrowseBanner'
 import { StudentPreviewBanner } from './StudentPreviewBanner'
@@ -112,8 +113,9 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
             type="button"
             className="student-nav-link student-nav-link--preview"
             onClick={() => {
-              /* Preview uses same Google session; flip flag then land on `/` so student route guards apply. */
-              toggleStudentPreview()
+              /* Write the flag before navigate so HomeRoute does not bounce to /dashboard. */
+              writeStudentPreviewFlag(true)
+              if (!studentPreviewMode) toggleStudentPreview()
               navigate('/', { replace: true })
             }}
           >

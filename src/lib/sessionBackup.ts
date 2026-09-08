@@ -1,9 +1,10 @@
 /*
- * GoTrue session copy that SIGNED_OUT cannot wipe.
+ * GoTrue session copy that SIGNED_OUT cannot wipe, **this tab only**.
  *
- * Auth tokens live in sessionStorage. A 504 on refresh fires SIGNED_OUT and
- * clears that store. After a hard refresh the in-memory restore is gone and
- * the teacher looks logged out even though Google never revoked them.
+ * A 504 on refresh fires SIGNED_OUT and clears supabase-js sessionStorage.
+ * We keep our own copy in sessionStorage (not localStorage) so a hard refresh
+ * in this tab can restore, but the next student on a shared Chromebook does
+ * not inherit a teacher session and lose Workshop.
  */
 
 import type { Session, User } from '@supabase/supabase-js'
@@ -19,9 +20,18 @@ type SessionBackup = {
   token_type?: string
 }
 
-export function readSessionBackup(): Session | null {
+function purgeLegacyLocalBackup(): void {
   try {
-    const raw = localStorage.getItem(KEY)
+    localStorage.removeItem(KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+export function readSessionBackup(): Session | null {
+  purgeLegacyLocalBackup()
+  try {
+    const raw = sessionStorage.getItem(KEY)
     if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return null
@@ -42,6 +52,7 @@ export function readSessionBackup(): Session | null {
 
 export function writeSessionBackup(session: Session | null): void {
   if (!session?.access_token || !session.refresh_token || !session.user) return
+  purgeLegacyLocalBackup()
   try {
     const payload: SessionBackup = {
       access_token: session.access_token,
@@ -51,15 +62,16 @@ export function writeSessionBackup(session: Session | null): void {
       expires_in: session.expires_in,
       token_type: session.token_type,
     }
-    localStorage.setItem(KEY, JSON.stringify(payload))
+    sessionStorage.setItem(KEY, JSON.stringify(payload))
   } catch {
     /* quota / private mode */
   }
 }
 
 export function clearSessionBackup(): void {
+  purgeLegacyLocalBackup()
   try {
-    localStorage.removeItem(KEY)
+    sessionStorage.removeItem(KEY)
   } catch {
     /* ignore */
   }

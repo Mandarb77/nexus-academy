@@ -10,12 +10,14 @@
 
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { readStudentPreviewFlag } from '../lib/studentPreview'
 import { isTeacherProfile } from '../lib/teacher'
 import { LoginPage } from '../pages/LoginPage'
 import { StudentHomePage } from '../pages/StudentHomePage'
 
 export function HomeRoute() {
   const { user, profile, studentPreviewMode } = useAuth()
+  const previewAsStudent = studentPreviewMode || readStudentPreviewFlag()
 
   const oauthCode = new URLSearchParams(window.location.search).get('code')
   if (!user && oauthCode) {
@@ -34,7 +36,7 @@ export function HomeRoute() {
    * Teachers in student preview intentionally stay on the learner hub (`StudentHomePage`);
    * only non-preview teachers are redirected to staff dashboard so day-one bookmarks stay `/`.
    */
-  if (isTeacherProfile(profile) && !studentPreviewMode) {
+  if (isTeacherProfile(profile) && !previewAsStudent) {
     return <Navigate to="/dashboard" replace />
   }
 

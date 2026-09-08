@@ -28,6 +28,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { startGoogleOAuth } from '../lib/googleSignIn'
 import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/profileCache'
 import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
+import { readStudentPreviewFlag, writeStudentPreviewFlag } from '../lib/studentPreview'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -154,13 +155,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
   const [authReady, setAuthReady] = useState(false)
   const [profileReady, setProfileReady] = useState(false)
-  const [studentPreviewMode, setStudentPreviewMode] = useState(false)
+  const [studentPreviewMode, setStudentPreviewMode] = useState(() => readStudentPreviewFlag())
   const userSignedOutRef = useRef(false)
   const lastGoodSessionRef = useRef<Session | null>(readSessionBackup())
   const lastRestoreAtRef = useRef(0)
 
   const toggleStudentPreview = useCallback(() => {
-    setStudentPreviewMode((prev) => !prev)
+    setStudentPreviewMode((prev) => {
+      const next = !prev
+      writeStudentPreviewFlag(next)
+      return next
+    })
   }, [])
 
   const refreshProfile = useCallback(async () => {
@@ -394,6 +399,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userSignedOutRef.current = true
     lastGoodSessionRef.current = null
     clearSessionBackup()
+    writeStudentPreviewFlag(false)
+    setStudentPreviewMode(false)
     setProfile(null)
     if (!isSupabaseConfigured) {
       setSession(null)

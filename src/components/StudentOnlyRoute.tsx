@@ -10,6 +10,7 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { readStudentPreviewFlag } from '../lib/studentPreview'
 import { isTeacherProfile } from '../lib/teacher'
 
 export function StudentOnlyRoute({ children }: { children: ReactNode }) {
@@ -31,7 +32,7 @@ export function StudentOnlyRoute({ children }: { children: ReactNode }) {
    * Preview-on: same Google identity as the teacher, but `studentPreviewMode` flips guards so
    * `/tree`, `/shop`, etc. render for classroom demos and support tickets.
    */
-  if (isTeacherProfile(profile) && !studentPreviewMode) {
+  if (isTeacherProfile(profile) && !studentPreviewMode && !readStudentPreviewFlag()) {
     return <Navigate to="/dashboard" replace />
   }
 

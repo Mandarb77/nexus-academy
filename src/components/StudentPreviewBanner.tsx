@@ -9,6 +9,7 @@
 
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { writeStudentPreviewFlag } from '../lib/studentPreview'
 import { isTeacherProfile } from '../lib/teacher'
 
 export function StudentPreviewBanner() {
@@ -18,7 +19,8 @@ export function StudentPreviewBanner() {
   if (!isTeacherProfile(profile) || !studentPreviewMode) return null
 
   const exitPreview = () => {
-    toggleStudentPreview()
+    writeStudentPreviewFlag(false)
+    if (studentPreviewMode) toggleStudentPreview()
     /* Replace so the student stack is not preserved in history — reduces accidental “back” into preview. */
     navigate('/dashboard', { replace: true })
   }
