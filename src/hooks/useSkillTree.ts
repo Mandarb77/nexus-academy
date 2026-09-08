@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
 import { isReadOnlyBrowse } from '../lib/schoolEmail'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { withWriteTimeout } from '../lib/writeTimeout'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import { isPatentGateUpdate, notePatentGateRow } from '../lib/patentRealtimeGates'
@@ -308,49 +309,57 @@ export function useSkillTree() {
       if (!studentId || !isSupabaseConfigured) return false
       if (isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)) return false
       setSubmittingTileId(tile.id)
-      const existing = completionByTileId.get(tile.id)
+      try {
+        const existing = completionByTileId.get(tile.id)
 
-      if (existing?.status === 'returned') {
-        const { data: updated, error } = await supabase
-          .from('skill_completions')
-          .update({ status: 'pending' })
-          .eq('id', existing.completionId)
-          .eq('status', 'returned')
-          .select('id, status')
-          .maybeSingle()
-        setSubmittingTileId(null)
-        if (error || updated?.status !== 'pending') {
-          console.error('skill completion resubmit:', error?.message ?? 'row was not returned to pending')
-          return false
-        }
-        setCompletionByTileId((prev) =>
-          new Map(prev).set(tile.id, {
-            status: 'pending',
-            completionId: existing.completionId,
-          }),
-        )
-        return true
-      }
-
-      const skill_key = tile.id
-      const { error } = await supabase.from('skill_completions').insert({
-        student_id: studentId,
-        tile_id: tile.id,
-        skill_key,
-        status: 'pending',
-      })
-      setSubmittingTileId(null)
-      if (error) {
-        /* Unique violation: completion already exists (double tap / race) — refresh map instead of showing a hard error. */
-        if (error.code === '23505') {
-          await refreshCompletions()
+        if (existing?.status === 'returned') {
+          const { data: updated, error } = await withWriteTimeout(
+            supabase
+              .from('skill_completions')
+              .update({ status: 'pending' })
+              .eq('id', existing.completionId)
+              .eq('status', 'returned')
+              .select('id, status')
+              .maybeSingle(),
+          )
+          if (error || updated?.status !== 'pending') {
+            console.error('skill completion resubmit:', error?.message ?? 'row was not returned to pending')
+            return false
+          }
+          setCompletionByTileId((prev) =>
+            new Map(prev).set(tile.id, {
+              status: 'pending',
+              completionId: existing.completionId,
+            }),
+          )
           return true
         }
-        console.error('skill completion insert:', error.message)
+
+        const skill_key = tile.id
+        const { error } = await withWriteTimeout(
+          supabase.from('skill_completions').insert({
+            student_id: studentId,
+            tile_id: tile.id,
+            skill_key,
+            status: 'pending',
+          }),
+        )
+        if (error) {
+          if (error.code === '23505') {
+            await refreshCompletions()
+            return true
+          }
+          console.error('skill completion insert:', error.message)
+          return false
+        }
+        await refreshCompletions()
+        return true
+      } catch (e) {
+        console.error('skill completion:', e instanceof Error ? e.message : e)
         return false
+      } finally {
+        setSubmittingTileId(null)
       }
-      await refreshCompletions()
-      return true
     },
     [studentId, completionByTileId, refreshCompletions, studentPreviewMode, profile, user?.email],
   )

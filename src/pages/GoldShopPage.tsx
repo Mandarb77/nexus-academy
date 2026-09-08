@@ -21,6 +21,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { isGuestBrowse } from '../lib/schoolEmail'
 import { markKitHasNewItem } from '../lib/kitNotification'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { withWriteTimeout } from '../lib/writeTimeout'
 import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 import { lockedShopRequestMoment, purchaseMomentForItem } from '../lib/shopPurchaseMoments'
 import type { ShopCatalogItem, ShopLimitStatus, ShopTierEmbed } from '../types/shopCatalog'
@@ -529,29 +530,40 @@ export function GoldShopPage() {
     }
     setToast(null)
     setBuyingKey(item.item_key)
-    const { data, error } = await supabase.rpc('request_shop_item', {
-      p_item_key: item.item_key,
-      p_requested_grams: requestedGrams,
-      p_calculated_gold_cost: calculatedGoldCost,
-      p_notes: notes,
-    })
-    setBuyingKey(null)
-    if (error) {
-      showToast({ kind: 'error', itemKey: item.item_key, message: error.message })
-      return
+    try {
+      const { data, error } = await withWriteTimeout(
+        supabase.rpc('request_shop_item', {
+          p_item_key: item.item_key,
+          p_requested_grams: requestedGrams,
+          p_calculated_gold_cost: calculatedGoldCost,
+          p_notes: notes,
+        }),
+      )
+      if (error) {
+        showToast({ kind: 'error', itemKey: item.item_key, message: error.message })
+        return
+      }
+      const result = data as RpcResult
+      if (!result?.ok) {
+        showToast({ kind: 'error', itemKey: item.item_key, message: result?.message || purchaseErrorMessage(result?.error, item) })
+        void refreshLimitStatuses()
+        return
+      }
+      showToast({
+        kind: 'success',
+        itemKey: item.item_key,
+        message: `${result.item_name ?? item.name} request sent to Fran`,
+        detail: `${result.calculated_gold_cost ?? calculatedGoldCost} gold if approved`,
+      })
+    } catch (e: unknown) {
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: e instanceof Error ? e.message : 'Could not send that request. Try again.',
+      })
+    } finally {
+      setBuyingKey(null)
     }
-    const result = data as RpcResult
-    if (!result?.ok) {
-      showToast({ kind: 'error', itemKey: item.item_key, message: result?.message || purchaseErrorMessage(result?.error, item) })
-      void refreshLimitStatuses()
-      return
-    }
-    showToast({
-      kind: 'success',
-      itemKey: item.item_key,
-      message: `${result.item_name ?? item.name} request sent to Fran`,
-      detail: `${result.calculated_gold_cost ?? calculatedGoldCost} gold if approved`,
-    })
   }
 
   async function completeBuy(item: ShopCatalogItem) {
@@ -590,39 +602,49 @@ export function GoldShopPage() {
     }
     setToast(null)
     setBuyingKey(item.item_key)
-    const { data, error } = await supabase.rpc('buy_shop_item', {
-      p_item_key: item.item_key,
-    })
-    setBuyingKey(null)
-    if (error) {
-      showToast({ kind: 'error', itemKey: item.item_key, message: error.message })
-      return
-    }
-    const result = data as RpcResult
-    if (!result?.ok) {
-      showToast({ kind: 'error', itemKey: item.item_key, message: result?.message || purchaseErrorMessage(result?.error, item) })
+    try {
+      const { data, error } = await withWriteTimeout(
+        supabase.rpc('buy_shop_item', {
+          p_item_key: item.item_key,
+        }),
+      )
+      if (error) {
+        showToast({ kind: 'error', itemKey: item.item_key, message: error.message })
+        return
+      }
+      const result = data as RpcResult
+      if (!result?.ok) {
+        showToast({ kind: 'error', itemKey: item.item_key, message: result?.message || purchaseErrorMessage(result?.error, item) })
+        void refreshLimitStatuses()
+        return
+      }
+      if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
+      setTradedKey(item.item_key)
+      tradedTimer.current = window.setTimeout(() => {
+        setTradedKey(null)
+        tradedTimer.current = null
+      }, 1500)
+      const newGold = typeof result.new_gold === 'number' ? result.new_gold : Math.max(0, gold - item.price_gold)
+      setDisplayGold(newGold)
+      pulseGold()
+      markKitHasNewItem()
+      showToast({
+        kind: 'success',
+        itemKey: item.item_key,
+        message: `${item.name} added to your Kit`,
+        detail: `${item.price_gold} gold spent · ${newGold} gold left`,
+      })
+      await refreshProfile()
       void refreshLimitStatuses()
-      return
+    } catch (e: unknown) {
+      showToast({
+        kind: 'error',
+        itemKey: item.item_key,
+        message: e instanceof Error ? e.message : 'Could not complete that purchase. Try again.',
+      })
+    } finally {
+      setBuyingKey(null)
     }
-    if (tradedTimer.current != null) window.clearTimeout(tradedTimer.current)
-    setTradedKey(item.item_key)
-    tradedTimer.current = window.setTimeout(() => {
-      setTradedKey(null)
-      tradedTimer.current = null
-    }, 1500)
-    const newGold = typeof result.new_gold === 'number' ? result.new_gold : Math.max(0, gold - item.price_gold)
-    setDisplayGold(newGold)
-    pulseGold()
-    markKitHasNewItem()
-    // This inline toast carries the three trust-building facts: what changed, cost, and new balance.
-    showToast({
-      kind: 'success',
-      itemKey: item.item_key,
-      message: `${item.name} added to your Kit`,
-      detail: `${item.price_gold} gold spent · ${newGold} gold left`,
-    })
-    await refreshProfile()
-    void refreshLimitStatuses()
   }
 
   function buy(item: ShopCatalogItem) {

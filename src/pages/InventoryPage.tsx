@@ -9,7 +9,7 @@
  * Duty items (fulfillment_kind = duty_completion) use Mark complete → gold-only teacher queue.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import franBarrySupplyLogo from '../assets/fran-barry-supply-logo.png'
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
@@ -18,6 +18,7 @@ import { clearKitNewItem } from '../lib/kitNotification'
 import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 import { purchaseMomentForKitItem } from '../lib/shopPurchaseMoments'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { withWriteTimeout } from '../lib/writeTimeout'
 import type { InventoryRow } from '../types/inventory'
 
 function shopItemEmbed(row: InventoryRow) {
@@ -84,8 +85,10 @@ export function InventoryPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [useError, setUseError] = useState<string | null>(null)
   const [usingId, setUsingId] = useState<string | null>(null)
+  const hasRowsRef = useRef(false)
 
   const studentId = user?.id
+  hasRowsRef.current = rows.length > 0
 
   const load = useCallback(async () => {
     if (!studentId || !isSupabaseConfigured) {
@@ -95,7 +98,7 @@ export function InventoryPage() {
       setLoading(false)
       return
     }
-    setLoading(true)
+    if (!hasRowsRef.current) setLoading(true)
     setLoadError(null)
 
     const [invRes, redRes, dutyRes] = await Promise.all([
@@ -186,21 +189,28 @@ export function InventoryPage() {
     }
     setUseError(null)
     setUsingId(row.id)
-    const { error } = await supabase.from('redemption_requests').insert({
-      student_id: studentId,
-      inventory_id: row.id,
-      item_name: row.item_name,
-    })
-    setUsingId(null)
-    if (error) {
-      if (error.code === '23505') {
-        setUseError('A request for this item is already pending.')
-      } else {
-        setUseError(error.message)
+    try {
+      const { error } = await withWriteTimeout(
+        supabase.from('redemption_requests').insert({
+          student_id: studentId,
+          inventory_id: row.id,
+          item_name: row.item_name,
+        }),
+      )
+      if (error) {
+        if (error.code === '23505') {
+          setUseError('A request for this item is already pending.')
+        } else {
+          setUseError(error.message)
+        }
+        return
       }
-      return
+      void load()
+    } catch (e: unknown) {
+      setUseError(e instanceof Error ? e.message : 'Could not send that request. Try again.')
+    } finally {
+      setUsingId(null)
     }
-    void load()
   }
 
   const markDutyComplete = async (row: InventoryRow) => {
@@ -211,29 +221,35 @@ export function InventoryPage() {
     }
     setUseError(null)
     setUsingId(row.id)
-    // RPC validates unused + duty_completion and stamps gold_reward; no client INSERT.
-    const { data, error } = await supabase.rpc('submit_shop_duty_completion', {
-      p_inventory_id: row.id,
-    })
-    setUsingId(null)
-    if (error) {
-      setUseError(error.message)
-      return
-    }
-    const res = data as { ok?: boolean; error?: string } | null
-    if (!res?.ok) {
-      if (res?.error === 'already_pending') {
-        setUseError('This duty is already waiting for teacher approval.')
-      } else if (res?.error === 'already_used') {
-        setUseError('This item is already used.')
-      } else if (res?.error === 'not_duty_item') {
-        setUseError('This item is not a duty completion.')
-      } else {
-        setUseError(res?.error ?? 'Could not submit duty completion.')
+    try {
+      const { data, error } = await withWriteTimeout(
+        supabase.rpc('submit_shop_duty_completion', {
+          p_inventory_id: row.id,
+        }),
+      )
+      if (error) {
+        setUseError(error.message)
+        return
       }
-      return
+      const res = data as { ok?: boolean; error?: string } | null
+      if (!res?.ok) {
+        if (res?.error === 'already_pending') {
+          setUseError('This duty is already waiting for teacher approval.')
+        } else if (res?.error === 'already_used') {
+          setUseError('This item is already used.')
+        } else if (res?.error === 'not_duty_item') {
+          setUseError('This item is not a duty completion.')
+        } else {
+          setUseError(res?.error ?? 'Could not submit duty completion.')
+        }
+        return
+      }
+      void load()
+    } catch (e: unknown) {
+      setUseError(e instanceof Error ? e.message : 'Could not send that request. Try again.')
+    } finally {
+      setUsingId(null)
     }
-    void load()
   }
 
   return (
@@ -272,7 +288,7 @@ export function InventoryPage() {
         </p>
       ) : null}
 
-      {loading ? (
+      {loading && rows.length === 0 ? (
         <p className="muted">Loading inventory…</p>
       ) : loadError ? null : rows.length === 0 ? (
         <p className="muted" role="status">

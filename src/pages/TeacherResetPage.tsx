@@ -50,6 +50,14 @@ type SemesterPreviewRow = {
 /** Must match the prompt text teachers are told to type; changed from a weaker phrase on request. */
 const STUDENT_DELETE_CONFIRMATION = 'Husky'
 
+/** Shown on every destructive confirm so class-hour resets are not a surprise. */
+const DURING_CLASS_RESET_PREFIX =
+  'Do not run this while students are in class on any laptops — their saves and shop buys can freeze until this finishes.\n\n'
+
+function confirmReset(detail: string): boolean {
+  return window.confirm(`${DURING_CLASS_RESET_PREFIX}${detail}`)
+}
+
 async function edgeFunctionErrorMessage(error: unknown): Promise<string> {
   if (error && typeof error === 'object' && 'context' in error) {
     const context = (error as { context?: unknown }).context
@@ -100,7 +108,7 @@ function SemesterGoldResetSection({
         return `${name}: ${r.gold_before} → ${r.gold_after} gold`
       })
       .join('\n')
-    const ok = window.confirm(
+    const ok = confirmReset(
       `Start new semester?\n\nWP is unchanged. Every student's gold becomes floor(half of current gold):\n\n${lines}\n\nThis cannot be undone.`,
     )
     if (!ok) return
@@ -128,7 +136,7 @@ function SemesterGoldResetSection({
       </h2>
       <p className="muted teacher-panel-reset-hint">
         Workshop Points carry over. Gold resets to half (rounded down) for every student. Run once at a
-        semester boundary.
+        semester boundary — not during a live class period.
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.75rem' }}>
         <button
@@ -276,7 +284,7 @@ export function TeacherResetPage() {
   const fullReset = async () => {
     if (!isSupabaseConfigured || busy) return
     setMessage(null)
-    const ok = window.confirm(
+    const ok = confirmReset(
       'This will reset all student WP, gold, and completions. This cannot be undone. Are you sure?',
     )
     if (!ok) return
@@ -373,7 +381,7 @@ export function TeacherResetPage() {
     if (!isSupabaseConfigured || busy || !studentId) return
     setMessage(null)
     const name = selectedStudent?.display_name?.trim() || `Student (${studentId.slice(0, 8)}…)`
-    const ok = window.confirm(
+    const ok = confirmReset(
       `This will reset WP, gold, and all related data for ${name}. This cannot be undone. Are you sure?`,
     )
     if (!ok) return
@@ -493,7 +501,7 @@ export function TeacherResetPage() {
           : studentResetType === 'patents'
             ? 'Patent progress (all patent tiles)'
             : 'Redemption Requests'
-    const ok = window.confirm(
+    const ok = confirmReset(
       `This will delete ${label} for ${name}. This cannot be undone. Are you sure?`,
     )
     if (!ok) return
@@ -627,7 +635,7 @@ export function TeacherResetPage() {
     const tileName = `${selectedTile.guild} — ${selectedTile.skill_name}`
     const wp = row.wp_awarded ?? 0
     const gold = row.gold_awarded ?? 0
-    const ok = window.confirm(
+    const ok = confirmReset(
       `This will remove the completion for ${name} on “${tileName}” and deduct ${wp} WP and ${gold} gold. This cannot be undone. Confirm?`,
     )
     if (!ok) return
@@ -697,7 +705,8 @@ export function TeacherResetPage() {
           <div>
             <h1 className="teacher-panel-title bench-page-title">Teacher reset</h1>
             <p className="muted teacher-panel-subtitle">
-              Destructive tools for clearing student progress and shop data.
+              Destructive tools for clearing student progress and shop data. Wait until class is
+              dismissed — these operations can stall every laptop that is still saving work.
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={() => signOut()}>

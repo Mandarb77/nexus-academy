@@ -8,6 +8,7 @@
  */
 
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import type { QuestKind, TileRow } from '../types/tile'
 import type { TileCompletionState, PatentProgress } from '../hooks/useSkillTree'
@@ -89,6 +90,13 @@ export function SkillTilesList({
   const navigate = useNavigate()
   const { profile, studentPreviewMode, user } = useAuth()
   const readOnlyBrowse = isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)
+  const [completeError, setCompleteError] = useState<string | null>(null)
+
+  const onMarkComplete = async (tile: TileRow) => {
+    setCompleteError(null)
+    const ok = await markComplete(tile)
+    if (!ok) setCompleteError('Could not submit that quest. Check the network and try again.')
+  }
 
   /*
    * Pedagogical sort: anchor cohort around flagship builds first; bury “coming soon” sticker
@@ -114,6 +122,11 @@ export function SkillTilesList({
 
   return (
     <>
+      {completeError ? (
+        <p className="error" role="alert">
+          {completeError}
+        </p>
+      ) : null}
       <ul className="skill-tile-list">
         {sortedTiles.map((tile) => {
           const goldAward = tile.gold_value ?? 10
@@ -269,7 +282,7 @@ export function SkillTilesList({
                   ) : isReturned ? (
                     <button type="button" className="btn-skill btn-skill--complete"
                       disabled={!canUseDb || readOnlyBrowse}
-                      onClick={() => void markComplete(tile)}>
+                      onClick={() => void onMarkComplete(tile)}>
                       {busy ? 'Saving…' : 'Submit again'}
                     </button>
                   ) : isPatentTile ? (
@@ -289,7 +302,7 @@ export function SkillTilesList({
                   ) : (
                     <button type="button" className="btn-skill btn-skill--complete"
                       disabled={!canUseDb || busy || readOnlyBrowse}
-                      onClick={() => void markComplete(tile)}>
+                      onClick={() => void onMarkComplete(tile)}>
                       {busy ? 'Saving…' : 'Mark complete'}
                     </button>
                   )}
