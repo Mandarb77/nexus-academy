@@ -89,29 +89,49 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-async function fetchProfile(userId: string): Promise<Profile | null> {
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(PROFILE_COLUMNS)
-      .eq('id', userId)
-      .maybeSingle()
+function stubProfileFromUser(user: User): Profile {
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    display_name: displayNameFromUser(user),
+    preferred_first_name: null,
+    wp: 0,
+    gold: 0,
+    role: 'student',
+    portfolio_quote: null,
+  }
+}
 
-    if (data) {
-      const p = data as Profile
-      return {
-        ...p,
-        preferred_first_name: p.preferred_first_name?.trim() || null,
-        /* Defensive normalize: DB could theoretically hold unexpected strings; routing only cares about teacher vs not. */
-        role: p.role === 'teacher' ? 'teacher' : 'student',
+async function fetchProfile(userId: string): Promise<Profile | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController()
+    const abortTimer = window.setTimeout(() => controller.abort(), 5_000)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(PROFILE_COLUMNS)
+        .eq('id', userId)
+        .abortSignal(controller.signal)
+        .maybeSingle()
+
+      if (data) {
+        const p = data as Profile
+        return {
+          ...p,
+          preferred_first_name: p.preferred_first_name?.trim() || null,
+          role: p.role === 'teacher' ? 'teacher' : 'student',
+        }
       }
+      if (error && error.name !== 'AbortError' && !/abort/i.test(error.message)) {
+        console.error('profiles fetch:', error.message)
+        return null
+      }
+    } catch (err) {
+      console.error('profiles fetch:', err)
+    } finally {
+      window.clearTimeout(abortTimer)
     }
-    if (error) {
-      console.error('profiles fetch:', error.message)
-      return null
-    }
-    /* Backoff gives Supabase triggers / RLS a moment to finish creating the profile row after OAuth. */
-    await new Promise((r) => setTimeout(r, 350 * (attempt + 1)))
+    await new Promise((r) => setTimeout(r, 300 * (attempt + 1)))
   }
   return null
 }
@@ -269,6 +289,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const currentUser = user
     let cancelled = false
     setProfileReady(false)
+    const unblock = window.setTimeout(() => {
+      if (cancelled) return
+      setProfile((prev) => prev ?? stubProfileFromUser(currentUser))
+      setProfileReady(true)
+    }, 8_000)
     ;(async () => {
       let p = await fetchProfile(currentUser.id)
       if (cancelled) return
@@ -278,11 +303,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         p = await fetchProfile(currentUser.id)
       }
       if (cancelled) return
-      setProfile(p)
+      window.clearTimeout(unblock)
+      setProfile(p ?? stubProfileFromUser(currentUser))
       setProfileReady(true)
     })()
     return () => {
       cancelled = true
+      window.clearTimeout(unblock)
     }
   }, [authReady, user?.id])
 
