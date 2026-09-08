@@ -1,35 +1,28 @@
 /*
  * OAuth redirect handler (`/auth/callback`)
  *
- * PKCE lands here with `?code=`. The Supabase client (`detectSessionInUrl`) exchanges
- * that code during initialize. If a second click overwrote the verifier, we retry the
- * leftover backups so the first Google return can still complete.
+ * PKCE lands here with `?code=`. Exchange happens only on this page
+ * (`detectSessionInUrl` is off on the client). Do not wait for `getSession` /
+ * `authReady` first — a hung restore would sit on “Finishing sign-in…” until the
+ * code expired.
  */
 
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase, supabaseUrl } from '../lib/supabase'
 import { exchangeCodeWithPkceBackups, pkceVerifierStorageKey } from '../lib/pkceVerifierBackup'
 
 export function AuthCallbackPage() {
   const navigate = useNavigate()
-  const { user, authReady } = useAuth()
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
       navigate('/', { replace: true })
       return
     }
-    if (!authReady) return
 
     let cancelled = false
     void (async () => {
-      if (user) {
-        navigate('/', { replace: true })
-        return
-      }
-
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
       if (code) {
@@ -63,7 +56,7 @@ export function AuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [user, authReady, navigate])
+  }, [navigate])
 
   return (
     <div className="app-shell">

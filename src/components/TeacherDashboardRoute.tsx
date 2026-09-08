@@ -32,7 +32,7 @@ export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="app-shell">
-        <p className="muted">Loading your profile…</p>
+        <p className="muted">Opening teacher tools…</p>
       </div>
     )
   }

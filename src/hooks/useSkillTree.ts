@@ -8,13 +8,14 @@
  * loads patent footer + flow connector fields when present (migrations 034+, 056+).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
 import { isReadOnlyBrowse } from '../lib/schoolEmail'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
+import { isPatentGateUpdate, notePatentGateRow } from '../lib/patentRealtimeGates'
 import { buildTileBySlug } from '../lib/tileUnlock'
 import type { TileChip, TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
@@ -137,7 +138,7 @@ export function useSkillTree() {
     }
     const { data, error } = await supabase
       .from('patents')
-      .select('id, tile_id, status, checklist_state, created_at')
+      .select('id, tile_id, status, checklist_state, checklist_submitted, checklist_approved, upload_url, created_at')
       .eq('student_id', studentId)
       .eq('stage', 'plan')
       .order('created_at', { ascending: false })
@@ -146,6 +147,17 @@ export function useSkillTree() {
       console.error('patents progress:', error.message)
       return
     }
+    for (const raw of data ?? []) {
+      notePatentGateRow({
+        id: raw.id,
+        status: raw.status,
+        stage: 'plan',
+        checklist_submitted: raw.checklist_submitted,
+        checklist_approved: raw.checklist_approved,
+        upload_url: raw.upload_url,
+      } as Record<string, unknown>)
+    }
+
     const byTile = new Map<
       string,
       { id: string; tile_id: string; status: string; checklist_state: unknown; created_at: string }[]
@@ -177,6 +189,8 @@ export function useSkillTree() {
   }, [studentId])
 
   // --- One-shot refresh: all tiles + completions + patent rows (used on mount + after actions) ---
+  const tilesLenRef = useRef(0)
+
   const refreshAll = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setTiles([])
@@ -185,7 +199,8 @@ export function useSkillTree() {
       setLoading(false)
       return
     }
-    setLoading(true)
+    /* Never flip loading once tiles exist — patent pages unmount the form and look stuck. */
+    if (tilesLenRef.current === 0) setLoading(true)
 
     /*
      * Includes `checklist_footer_note` + `flow_in_style` (migrations 034+, 056+).
@@ -211,6 +226,14 @@ export function useSkillTree() {
     await Promise.all([refreshCompletions(), refreshPatentProgress()])
     setLoading(false)
   }, [refreshCompletions, refreshPatentProgress])
+
+  const refreshLive = useCallback(async () => {
+    await Promise.all([refreshCompletions(), refreshPatentProgress()])
+  }, [refreshCompletions, refreshPatentProgress])
+
+  useEffect(() => {
+    tilesLenRef.current = tiles.length
+  }, [tiles.length])
 
   // --- Initial + dependency-driven load ---
   useEffect(() => {
@@ -243,7 +266,12 @@ export function useSkillTree() {
           table: 'patents',
           filter: `student_id=eq.${studentId}`,
         },
-        () => {
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const prev = (payload.old ?? {}) as Record<string, unknown>
+            const next = (payload.new ?? {}) as Record<string, unknown>
+            if (!isPatentGateUpdate(prev, next)) return
+          }
           void refreshPatentProgress()
         },
       )
@@ -338,7 +366,7 @@ export function useSkillTree() {
     loading,
     submittingTileId,
     markComplete,
-    refresh: refreshAll,
+    refresh: refreshLive,
     canUseDb: isSupabaseConfigured && Boolean(studentId),
     tileBySlug,
   }

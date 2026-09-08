@@ -1,10 +1,8 @@
 /*
- * Coalesce teacher pending-queue reads.
+ * Coalesce teacher pending-queue reads behind one registered refresher set.
  *
- * Every student checkbox writes `patents`, which used to trigger a full teacher
- * snapshot (six REST queries) on every Realtime UPDATE. During class that
- * stampedes PostgREST until Auth PKCE also 504s and nobody can log in.
- * At most one flush per window; all registered refreshers run together.
+ * Register in useEffect and unregister on cleanup so leaving `/teacher` cannot
+ * keep setState + REST alive. Schedule does not add listeners.
  */
 
 const WINDOW_MS = 15_000
@@ -38,19 +36,37 @@ async function flush() {
 
 function armTimer() {
   if (timer) return
-  const wait = Math.max(WINDOW_MS, WINDOW_MS - (Date.now() - lastRun))
+  const wait = Math.max(0, WINDOW_MS - (Date.now() - lastRun))
   timer = setTimeout(() => {
     timer = null
     void flush()
   }, wait)
 }
 
-export function scheduleTeacherPendingRefresh(fn: () => Promise<void>): void {
+export function registerTeacherPendingRefresh(fn: () => Promise<void>): () => void {
   listeners.add(fn)
+  return () => {
+    listeners.delete(fn)
+  }
+}
+
+export function scheduleTeacherPendingRefresh(): void {
+  if (listeners.size === 0) return
   const wait = Math.max(0, WINDOW_MS - (Date.now() - lastRun))
   if (wait === 0 && !inFlight) {
     void flush()
     return
   }
   armTimer()
+}
+
+/** True when a queue row entered or left `pending` — ignore award-column UPDATEs. */
+export function isPendingQueueTransition(
+  prev: Record<string, unknown>,
+  next: Record<string, unknown>,
+): boolean {
+  const before = prev.status
+  const after = next.status
+  if (before === after) return false
+  return before === 'pending' || after === 'pending'
 }

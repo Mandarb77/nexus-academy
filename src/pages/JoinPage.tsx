@@ -11,23 +11,18 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { clearGoogleOAuthStart } from '../lib/pkceVerifierBackup'
 
 const PENDING_TOKEN_KEY = 'nexus:pending-invite-token'
 
 export function JoinPage() {
   const { token } = useParams<{ token: string }>()
-  const { user, authReady, loading, signInWithGoogle } = useAuth()
+  const { user, authReady, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
 
   const [status, setStatus] = useState<'idle' | 'claiming' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const startingRef = useRef(false)
-
-  useEffect(() => {
-    clearGoogleOAuthStart()
-  }, [])
 
   /*
    * PKCE strips query params on return — without persisting the invite segment, teachers
@@ -45,7 +40,7 @@ export function JoinPage() {
    * because we clear `PENDING_TOKEN_KEY` immediately to avoid double-claim loops on StrictMode.
    */
   useEffect(() => {
-    if (!authReady || loading || !user) return
+    if (!authReady || !user) return
     const pendingToken = sessionStorage.getItem(PENDING_TOKEN_KEY)
     if (!pendingToken || !isSupabaseConfigured) return
 
@@ -79,7 +74,7 @@ export function JoinPage() {
         setErrorMsg(e instanceof Error ? e.message : 'Unexpected error.')
       }
     })()
-  }, [authReady, loading, user, navigate])
+  }, [authReady, user, navigate])
 
   const handleSignIn = async () => {
     if (startingRef.current || busy) return
@@ -123,8 +118,6 @@ export function JoinPage() {
             <p style={{ fontSize: '2.5rem', margin: '0 0 0.5rem' }}>⏳</p>
             <p className="muted">Activating your teacher account…</p>
           </>
-        ) : !authReady || loading ? (
-          <p className="muted">Loading…</p>
         ) : !user ? (
           <>
             <p style={{ fontSize: '2rem', margin: '0 0 0.75rem' }}>🏫</p>
@@ -140,7 +133,7 @@ export function JoinPage() {
               onClick={() => void handleSignIn()}
               style={{ width: '100%' }}
             >
-              {busy ? 'Redirecting…' : 'Sign in with Google'}
+              {busy ? 'Opening Google…' : 'Sign in with Google'}
             </button>
           </>
         ) : (

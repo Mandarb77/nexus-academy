@@ -38,6 +38,12 @@ import { parsePatentStepParam } from '../lib/questContinue'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/patentPlanStatus'
 import { patentRowMatchesTile, patentTileIdCandidates } from '../lib/patentTileQuery'
+import { isPatentGateUpdate, notePatentGateRow } from '../lib/patentRealtimeGates'
+import {
+  mergeChecklistFromDraft,
+  readChecklistDraft,
+  writeChecklistDraft,
+} from '../lib/patentChecklistDraft'
 import { skillTreeGuildModifier, guildHeading } from '../lib/guildTree'
 import { fileForPatentStorage } from '../lib/patentFileUpload'
 import {
@@ -226,6 +232,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
+  const checklistDraftKey = `nexus:tile-patent-checks:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
   const [initialised, setInitialised] = useState(false)
@@ -256,6 +263,13 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const phaseHydrateSigRef = useRef<string>('')
   const hydrateGenRef = useRef(0)
   const uploadInFlightRef = useRef(false)
+  const checklistSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fieldSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingFieldPatchRef = useRef<Record<string, string>>({})
+  const planIdRef = useRef('')
+  const checksRef = useRef(checks)
+  const signatureSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  checksRef.current = checks
 
   const makerName = useMemo(() => {
     const fromProfile = profile?.display_name?.trim()
@@ -357,6 +371,8 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     const primaryStage = String(row.stage ?? '').trim().toLowerCase() === 'packet' ? 'packet' : 'plan'
     const planStatus = normalizePatentPlanStatus(row.status ?? 'none')
     setPlan({ id: row.id, status: planStatus })
+    planIdRef.current = row.id
+    notePatentGateRow(row as Record<string, unknown>)
     setPlanCreatedAt(row.created_at ?? null)
 
     const rawSubmitted = Boolean(row.checklist_submitted)
@@ -384,7 +400,19 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       ...rawCsArr.slice(0, steps.length),
       ...Array(Math.max(0, steps.length - rawCsArr.length)).fill(false),
     ]
-    setChecks(primaryStage === 'packet' ? Array(steps.length).fill(true) : csFromDb)
+    let nextChecks = primaryStage === 'packet' ? Array(steps.length).fill(true) : csFromDb
+    if (primaryStage !== 'packet') {
+      try {
+        nextChecks = mergeChecklistFromDraft(
+          csFromDb,
+          readChecklistDraft(localStorage.getItem(checklistDraftKey)),
+          row.id,
+        )
+      } catch {
+        /* ignore */
+      }
+    }
+    setChecks(nextChecks)
     if (!uploadInFlightRef.current) {
       setUploadUrl(row.upload_url ?? null)
     }
@@ -439,7 +467,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       }
     }
     setInitialised(true)
-  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, phaseKey, urlStep])
+  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, checklistDraftKey, phaseKey, urlStep])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -460,6 +488,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
           const next = payload.new as Record<string, unknown>
           if (!patentRowMatchesTile(tile.id, next.tile_id)) return
           if (uploadInFlightRef.current) return
+          if (!isPatentGateUpdate(prev, next)) return
           void loadFromDatabase()
           if (prev.status !== 'approved' && next.status === 'approved')
             showBanner('Plan approved — the Work tab is now open.', 'success')
@@ -482,6 +511,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     return () => {
       void supabase.removeChannel(channel)
       if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+      if (checklistSaveTimerRef.current) window.clearTimeout(checklistSaveTimerRef.current)
     }
   }, [user?.id, tile.id, loadFromDatabase, refresh])
 
@@ -518,23 +548,72 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   }
 
   // --- Persistence helpers ---
-  const saveChecklistToDb = async (nextArr: boolean[], pid: string) => {
-    if (previewBrowse) return
-    if (!pid || (checklistSubmitted && !checklistApproved)) return
-    const { error } = await supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid)
-    if (error) console.error('[PatentLedger] checklist save:', error.message)
+  const flushFieldPatch = async (pid: string) => {
+    if (fieldSaveTimerRef.current) {
+      window.clearTimeout(fieldSaveTimerRef.current)
+      fieldSaveTimerRef.current = null
+    }
+    const patch = pendingFieldPatchRef.current
+    pendingFieldPatchRef.current = {}
+    if (!pid || Object.keys(patch).length === 0) return
+    const { error } = await supabase.from('patents').update(patch).eq('id', pid)
+    if (error) console.error('[PatentLedger] field save:', error.message)
   }
 
-  const saveFieldToDb = async (
+  const saveChecklistToDb = (nextArr: boolean[], pid: string) => {
+    if (previewBrowse) return
+    if (!pid || (checklistSubmitted && !checklistApproved)) return
+    writeChecklistDraft(checklistDraftKey, pid, nextArr)
+    if (checklistSaveTimerRef.current) window.clearTimeout(checklistSaveTimerRef.current)
+    checklistSaveTimerRef.current = window.setTimeout(() => {
+      void supabase.from('patents').update({ checklist_state: nextArr }).eq('id', pid).then(({ error }) => {
+        if (error) console.error('[PatentLedger] checklist save:', error.message)
+      })
+    }, 10_000)
+  }
+
+  const saveFieldToDb = (
     fieldName: 'field_2' | 'field_3' | 'field_4' | 'field_6',
     value: string,
     pid: string,
   ) => {
     if (previewBrowse) return
     if (!pid) return
-    const { error } = await supabase.from('patents').update({ [fieldName]: value }).eq('id', pid)
-    if (error) console.error(`[PatentLedger] ${fieldName} save:`, error.message)
+    pendingFieldPatchRef.current[fieldName] = value
+    if (fieldSaveTimerRef.current) window.clearTimeout(fieldSaveTimerRef.current)
+    fieldSaveTimerRef.current = window.setTimeout(() => {
+      void flushFieldPatch(pid)
+    }, 1_600)
   }
+
+  useEffect(() => {
+    const flushAll = () => {
+      const pid = planIdRef.current
+      if (!pid) return
+      if (fieldSaveTimerRef.current) {
+        window.clearTimeout(fieldSaveTimerRef.current)
+        fieldSaveTimerRef.current = null
+      }
+      const patch = pendingFieldPatchRef.current
+      pendingFieldPatchRef.current = {}
+      if (Object.keys(patch).length > 0) {
+        void supabase.from('patents').update(patch).eq('id', pid)
+      }
+      if (checklistSaveTimerRef.current) {
+        window.clearTimeout(checklistSaveTimerRef.current)
+        checklistSaveTimerRef.current = null
+        void supabase.from('patents').update({ checklist_state: checksRef.current }).eq('id', pid)
+      }
+    }
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') flushAll()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      document.removeEventListener('visibilitychange', onVis)
+      flushAll()
+    }
+  }, [])
 
   const handleFileUpload = async (file: File) => {
     if (previewBrowse || !user?.id || !plan.id) return
@@ -589,10 +668,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   }
 
   /* Best-effort signature persist: needs migration 043. dataURL → PNG → storage → column. */
-  const persistSignature = async (pid: string): Promise<void> => {
-    if (!user?.id || !signatureDraft) return
+  const persistSignature = async (pid: string, dataUrl?: string | null): Promise<void> => {
+    const payload = dataUrl ?? signatureDraft
+    if (!user?.id || !payload) return
     try {
-      const blob = await (await fetch(signatureDraft)).blob()
+      const blob = await (await fetch(payload)).blob()
       const path = `${user.id}/${pid}/signature.png`
       const { error: upErr } = await supabase.storage.from('patent-uploads').upload(path, blob, { upsert: true, contentType: 'image/png' })
       if (upErr) throw upErr
@@ -620,6 +700,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     setSubmittingStep1(true)
     const empathyJson = serializeEmpathy(empathy)
     try {
+      if (plan.id) await flushFieldPatch(plan.id)
       if (plan.id && plan.status !== 'none') {
         const { error } = await supabase
           .from('patents')
@@ -641,6 +722,8 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
           .eq('status', 'approved')
           .neq('id', plan.id)
         if (plan.status === 'returned') localStorage.setItem(field1DraftKey, patent.field1)
+        setPlan({ id: plan.id, status: 'pending' })
+        planIdRef.current = plan.id
       } else {
         const { data, error } = await supabase
           .from('patents')
@@ -650,10 +733,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
         if (error) throw error
         localStorage.setItem(field1DraftKey, patent.field1)
         setPlan({ id: (data as { id: string }).id, status: 'pending' })
+        planIdRef.current = (data as { id: string }).id
       }
-      await loadFromDatabase()
-      await loadEntryNumber()
       goPhase(2)
+      void loadFromDatabase()
+      void loadEntryNumber()
     } catch (e: unknown) {
       setPlanSubmitError(e instanceof Error ? e.message : 'Save failed.')
     } finally {
@@ -669,16 +753,24 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     }
     setSubmittingChecklist(true)
     try {
-      const { error } = await supabase.from('patents').update({ checklist_submitted: true }).eq('id', plan.id)
+      if (checklistSaveTimerRef.current) {
+        window.clearTimeout(checklistSaveTimerRef.current)
+        checklistSaveTimerRef.current = null
+      }
+      await flushFieldPatch(plan.id)
+      const { error } = await supabase
+        .from('patents')
+        .update({ checklist_state: checks, checklist_submitted: true })
+        .eq('id', plan.id)
       if (error) throw error
       setChecklistSubmitted(true)
       showBanner(
         bypassApprovals ? 'Checklist done — proceeding to the Record.' : 'Checklist submitted. The Record opens once your teacher approves.',
         'success',
       )
-      await loadFromDatabase()
     } catch (e: unknown) {
       console.error('[PatentLedger] submit checklist:', e)
+      setChecklistSubmitted(false)
       setUploadError(e instanceof Error ? e.message : 'Could not submit the checklist. Try again.')
     } finally {
       setSubmittingChecklist(false)
@@ -707,26 +799,27 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     }
     setSubmittingPatent(true)
     try {
+      await flushFieldPatch(pid)
+      if (signatureSaveTimerRef.current) {
+        window.clearTimeout(signatureSaveTimerRef.current)
+        signatureSaveTimerRef.current = null
+      }
+      if (signatureDraft) await persistSignature(pid, signatureDraft)
       const { error: updErr } = await supabase
         .from('patents')
         .update({ stage: 'packet', field_2: serializeEmpathy(empathy), field_3: patent.field3, field_4: patent.field4 })
         .eq('id', pid)
       if (updErr) throw updErr
 
-      /* Best-effort row vii (field_5) — tolerate missing column before migration 043. */
-      if (patent.field5.trim()) {
-        const { error: f5Err } = await supabase.from('patents').update({ field_5: patent.field5 }).eq('id', pid)
-        if (f5Err) console.warn('[PatentLedger] field_5 skipped (apply migration 043):', f5Err.message)
+      const extraFields: Record<string, string> = {}
+      if (patent.field5.trim()) extraFields.field_5 = patent.field5
+      if (patent.field6.trim()) extraFields.field_6 = patent.field6
+      if (patent.field7.trim()) extraFields.field_7 = patent.field7
+      if (Object.keys(extraFields).length > 0) {
+        const { error: extraErr } = await supabase.from('patents').update(extraFields).eq('id', pid)
+        if (extraErr) console.warn('[PatentLedger] extra record fields skipped:', extraErr.message)
       }
-      if (patent.field6.trim()) {
-        const { error: f6Err } = await supabase.from('patents').update({ field_6: patent.field6 }).eq('id', pid)
-        if (f6Err) console.warn('[PatentLedger] field_6 skipped (apply migration 046):', f6Err.message)
-      }
-      if (patent.field7.trim()) {
-        const { error: f7Err } = await supabase.from('patents').update({ field_7: patent.field7 }).eq('id', pid)
-        if (f7Err) console.warn('[PatentLedger] field_7 skipped (apply migration 072):', f7Err.message)
-      }
-      await persistSignature(pid)
+      /* Signature is persisted from the pad, not on the submit click. */
 
       const tileIds = patentTileIdCandidates(tile.id).map((id) => String(id))
       const { data: existingRows, error: existingErr } = await supabase
@@ -777,7 +870,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
           .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'pending', patent_id: pid })
         if (error) throw error
       }
-      await refresh()
+      void refresh()
       showBanner(bypassApprovals ? 'Entry complete.' : 'Final entry submitted — awaiting teacher approval.', 'success')
       window.setTimeout(() => navigate(backRoute), 1500)
     } catch (e: unknown) {
@@ -1495,7 +1588,15 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                 <SignaturePad
                   value={signatureDraft ?? signatureUrl}
                   disabled={readOnly}
-                  onChange={(v) => setSignatureDraft(v)}
+                  onChange={(v) => {
+                    setSignatureDraft(v)
+                    if (!plan.id) return
+                    if (signatureSaveTimerRef.current) window.clearTimeout(signatureSaveTimerRef.current)
+                    if (!v) return
+                    signatureSaveTimerRef.current = window.setTimeout(() => {
+                      void persistSignature(plan.id, v)
+                    }, 2_000)
+                  }}
                 />
               </div>
               <div className="sc">

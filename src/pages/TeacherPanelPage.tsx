@@ -29,7 +29,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
-import { scheduleTeacherPendingRefresh } from '../lib/teacherPendingRefresh'
+import { isPendingQueueTransition, registerTeacherPendingRefresh, scheduleTeacherPendingRefresh } from '../lib/teacherPendingRefresh'
 import { patentTileIdCandidates } from '../lib/patentTileQuery'
 import type { TeacherSubmissionAlert } from '../lib/teacherSubmissionAlert'
 
@@ -459,7 +459,6 @@ export function TeacherPanelPage() {
       setLoading(false)
       return
     }
-    setLoading(true)
     setLoadError(null)
 
     const [compRes, dutyRes, redRes, shopReqRes, planRes, checklistRes] = await Promise.all([
@@ -818,7 +817,15 @@ export function TeacherPanelPage() {
   // Mount — populate all four pending queues once Supabase is ready
   // ---------------------------------------------------------------------------
   useEffect(() => {
+    const unreg = registerTeacherPendingRefresh(loadPending)
     void loadPending()
+    const poll = window.setInterval(() => {
+      scheduleTeacherPendingRefresh()
+    }, 30_000)
+    return () => {
+      unreg()
+      window.clearInterval(poll)
+    }
   }, [loadPending])
 
   // ---------------------------------------------------------------------------
@@ -832,52 +839,67 @@ export function TeacherPanelPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'patents' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'patents' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        () => { scheduleTeacherPendingRefresh() },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'skill_completions' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        () => { scheduleTeacherPendingRefresh() },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'skill_completions' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        (payload) => {
+          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
+            return
+          }
+          scheduleTeacherPendingRefresh()
+        },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'shop_duty_completions' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        () => { scheduleTeacherPendingRefresh() },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'shop_duty_completions' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        (payload) => {
+          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
+            return
+          }
+          scheduleTeacherPendingRefresh()
+        },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'redemption_requests' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        () => { scheduleTeacherPendingRefresh() },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'redemption_requests' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        (payload) => {
+          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
+            return
+          }
+          scheduleTeacherPendingRefresh()
+        },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'shop_purchase_requests' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        () => { scheduleTeacherPendingRefresh() },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'shop_purchase_requests' },
-        () => { scheduleTeacherPendingRefresh(loadPending) },
+        (payload) => {
+          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
+            return
+          }
+          scheduleTeacherPendingRefresh()
+        },
       )
       .subscribe()
     return () => { void supabase.removeChannel(channel) }

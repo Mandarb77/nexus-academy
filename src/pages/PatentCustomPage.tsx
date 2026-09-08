@@ -68,7 +68,7 @@ export function PatentCustomPage() {
           <p className="muted" role="alert">Connect Supabase in <code className="inline-code">.env</code> to use this page.</p>
         ) : null}
 
-        {loading ? (
+        {loading && tiles.length === 0 ? (
           <p className="muted">Loading…</p>
         ) : !tile ? (
           <p className="error" role="alert">Quest tile not found. <Link to="/tree">← Back to skill tree</Link></p>

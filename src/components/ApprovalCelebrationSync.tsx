@@ -36,13 +36,10 @@ export function ApprovalCelebrationSync() {
     if (roleIsTeacher && !studentPreviewMode) return
 
     const uid = user.id
-    const retryTimers: number[] = []
 
-    /** Award trigger writes profiles after the completion UPDATE — pull twice so WP/gold catch up. */
+    /* WP/gold also arrive on the profiles Realtime channel in AuthContext — one pull is enough. */
     const refreshBalanceSoon = () => {
       void refreshProfile()
-      retryTimers.push(window.setTimeout(() => void refreshProfile(), 400))
-      retryTimers.push(window.setTimeout(() => void refreshProfile(), 1200))
     }
 
     const emit = (completionId: string, wp: number, gold: number) => {
@@ -113,7 +110,6 @@ export function ApprovalCelebrationSync() {
       })
 
     return () => {
-      for (const t of retryTimers) window.clearTimeout(t)
       void supabase.removeChannel(channel)
     }
   }, [user?.id, roleIsTeacher, studentPreviewMode, refreshProfile])

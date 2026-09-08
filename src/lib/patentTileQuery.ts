@@ -13,13 +13,19 @@
 
 export function patentTileIdCandidates(tileId: unknown): (string | number)[] {
   const out: (string | number)[] = []
+  const seen = new Set<string>()
+  const add = (value: string | number) => {
+    const key = String(value)
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push(value)
+  }
   if (tileId === null || tileId === undefined) return out
-  out.push(tileId as string | number)
-  const s = String(tileId)
-  out.push(s)
+  add(tileId as string | number)
+  add(String(tileId))
   const n = Number(tileId)
-  if (!Number.isNaN(n) && Number.isFinite(n)) out.push(n)
-  return Array.from(new Set(out))
+  if (!Number.isNaN(n) && Number.isFinite(n)) add(n)
+  return out
 }
 
 /** True if a `patents.tile_id` from Postgres matches the app tile id (string vs number). */

@@ -92,7 +92,7 @@ export function GuildSkillTreePage() {
         </p>
       ) : null}
 
-      {loading ? (
+      {loading && !guildKey ? (
         <p className="muted">Loading skills…</p>
       ) : !guildKey ? (
         <p className="muted" role="status">

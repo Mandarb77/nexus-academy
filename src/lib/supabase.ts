@@ -51,17 +51,47 @@ const PLACEHOLDER_ANON_KEY =
 
 const pkceStorage = createPkceBackupStorage()
 
-export const supabase = createClient(
-  isSupabaseConfigured ? url : PLACEHOLDER_URL,
-  isSupabaseConfigured ? anonKey : PLACEHOLDER_ANON_KEY,
-  {
-    auth: {
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-      lock: serialAuthLock,
-      ...(pkceStorage ? { storage: pkceStorage } : {}),
-    },
-  },
-)
+const clientUrl = isSupabaseConfigured ? url : PLACEHOLDER_URL
+const clientKey = isSupabaseConfigured ? anonKey : PLACEHOLDER_ANON_KEY
 
-export const supabaseUrl = isSupabaseConfigured ? url : PLACEHOLDER_URL
+/**
+ * App client: session restore + REST + Realtime.
+ * `detectSessionInUrl` is off — only `/auth/callback` exchanges the PKCE code,
+ * so initialize and the callback cannot burn the same code twice.
+ */
+export const supabase = createClient(clientUrl, clientKey, {
+  auth: {
+    detectSessionInUrl: false,
+    flowType: 'pkce',
+    lock: serialAuthLock,
+    ...(pkceStorage ? { storage: pkceStorage } : {}),
+  },
+})
+
+/**
+ * Login-only client, created on first Sign in click so boot does not run a second
+ * getSession. No-op lock + no token refresh: hung restore on `supabase` cannot
+ * block Google, and we do not share navigator.locks with the app client.
+ */
+async function oauthNoOpLock<R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
+  return await fn()
+}
+
+let oauthClient: ReturnType<typeof createClient> | null = null
+
+export function getSupabaseOAuth() {
+  if (!oauthClient) {
+    oauthClient = createClient(clientUrl, clientKey, {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        flowType: 'pkce',
+        lock: oauthNoOpLock,
+        ...(pkceStorage ? { storage: pkceStorage } : {}),
+      },
+    })
+  }
+  return oauthClient
+}
+
+export const supabaseUrl = clientUrl

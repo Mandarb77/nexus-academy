@@ -25,8 +25,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { clearGoogleOAuthStart } from '../lib/pkceVerifierBackup'
-import { SCHOOL_EMAIL_DOMAIN } from '../lib/schoolEmail'
+import { startGoogleOAuth } from '../lib/googleSignIn'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -212,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthReady(true)
     }
     /* Failsafe: never leave the app stuck on “Checking session…” if getSession hangs on a bad network. */
-    const sessionTimeout = window.setTimeout(forceAuthReady, 12_000)
+    const sessionTimeout = window.setTimeout(forceAuthReady, 5_000)
 
     supabase.auth
       .getSession()
@@ -347,50 +346,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // --- Actions: Google OAuth + sign out (navigate to /login) ---
   const signInWithGoogle = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      throw new Error('Supabase is not configured')
-    }
-    clearGoogleOAuthStart()
-    const redirectTo = `${window.location.origin}/auth/callback`
-    try {
-      const { data, error } = await Promise.race([
-        supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo,
-            skipBrowserRedirect: true,
-            queryParams: {
-              prompt: 'select_account',
-              hd: SCHOOL_EMAIL_DOMAIN,
-            },
-          },
-        }),
-        new Promise<never>((_, reject) => {
-          window.setTimeout(() => reject(new Error('Google sign-in timed out.')), 4_000)
-        }),
-      ])
-      if (error) {
-        console.error('Google sign-in:', error.message)
-        throw error
-      }
-      const url = data?.url
-      if (!url) {
-        throw new Error('Google did not return a sign-in link.')
-      }
-      window.location.assign(url)
-      return true
-    } catch (err) {
-      clearGoogleOAuthStart()
-      throw err
-    }
+    await startGoogleOAuth()
+    return true
   }, [])
 
   const switchToSchoolGoogleAccount = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      throw new Error('Supabase is not configured')
-    }
-    /* The just-finished (wrong-account) login still holds the start lock. */
-    clearGoogleOAuthStart()
     return signInWithGoogle()
   }, [signInWithGoogle])
 

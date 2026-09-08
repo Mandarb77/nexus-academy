@@ -2,22 +2,21 @@
  * Google sign-in screen (`/login`) and “already signed in” explainer
  *
  * Shown when logged-out users hit `/login` directly; `HomeRoute` normally sends everyone
- * through `/` instead. Keeps the OAuth button enabled while `authReady` is false so the
- * control never deadlocks on slow `getSession`. When a session already exists, explains
+ * through `/` instead. The Google button stays clickable even while a previous attempt
+ * is still opening (do not disable it for “busy”). When a session already exists, explains
  * why the Google CTA disappeared (students often think the site broke). Wires
  * `signInWithGoogle` / `signOut` from `AuthContext` and gates on `isSupabaseConfigured`.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { oauthRedirectErrorMessage } from '../lib/oauthRedirectError'
-import { clearGoogleOAuthStart } from '../lib/pkceVerifierBackup'
 import { isGuestBrowse } from '../lib/schoolEmail'
 
 export function LoginPage() {
-  const { user, profile, authReady, signInWithGoogle, signOut, switchToSchoolGoogleAccount } =
+  const { user, profile, signInWithGoogle, signOut, switchToSchoolGoogleAccount } =
     useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(() =>
@@ -25,14 +24,6 @@ export function LoginPage() {
   )
   const [busy, setBusy] = useState(false)
   const [previewSetupIncomplete, setPreviewSetupIncomplete] = useState(false)
-  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    clearGoogleOAuthStart()
-    return () => {
-      if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
-    }
-  }, [])
 
   useEffect(() => {
     const fromUrl = oauthRedirectErrorMessage(searchParams.toString())
@@ -63,7 +54,7 @@ export function LoginPage() {
    * If we auto-redirect when a session exists, users land on home and never see why
    * the Google button is "missing" (it only shows when signed out). Show this screen instead.
    */
-  if (authReady && user) {
+  if (user) {
     const guest = isGuestBrowse(user.email ?? profile?.email, profile)
     return (
       <div className="app-shell bench-chrome auth-panel">
@@ -119,25 +110,18 @@ export function LoginPage() {
   }
 
   async function handleGoogle() {
-    clearGoogleOAuthStart()
     setError(null)
     setBusy(true)
-    if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
-    watchdogRef.current = window.setTimeout(() => {
-      setBusy(false)
-      setError('Google did not open. Click Sign in with Google once more.')
-    }, 4_000)
     try {
-      const started = await signInWithGoogle()
-      if (!started) {
-        if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
-        setBusy(false)
-        setError('Could not start Google. Click Sign in with Google once more.')
-      }
-    } catch {
-      if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
+      await signInWithGoogle()
+    } catch (err) {
       setBusy(false)
-      setError('Could not start Google. Click Sign in with Google once more.')
+      const message = err instanceof Error ? err.message : ''
+      setError(
+        message.includes('timed out')
+          ? 'Google took too long to open. Click Sign in with Google once more.'
+          : 'Could not start Google. Click Sign in with Google once more.',
+      )
     }
   }
 
@@ -152,15 +136,10 @@ export function LoginPage() {
       </header>
 
       <div className="card login-actions">
-        {!authReady ? (
-          <p className="muted session-hint" aria-live="polite">
-            Checking session…
-          </p>
-        ) : null}
         <button
           type="button"
           className="btn-google"
-          onClick={handleGoogle}
+          onClick={() => void handleGoogle()}
           disabled={!canUseGoogle}
           aria-label="Sign in with Google"
         >

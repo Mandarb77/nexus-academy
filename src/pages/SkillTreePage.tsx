@@ -85,7 +85,7 @@ export function SkillTreePage() {
         </p>
       ) : null}
 
-      {loading ? (
+      {loading && guildKeys.length === 0 ? (
         <p className="muted">Loading skills…</p>
       ) : guildKeys.length === 0 ? (
         <p className="muted" role="status">

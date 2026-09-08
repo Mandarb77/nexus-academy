@@ -27,6 +27,7 @@ import {
   type StudentReviewAlertTone,
 } from '../lib/studentReviewAlert'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { isPatentGateUpdate } from '../lib/patentRealtimeGates'
 
 async function tileSkillName(tileId: string): Promise<string> {
   const { data } = await supabase.from('tiles').select('skill_name').eq('id', tileId).maybeSingle()
@@ -139,6 +140,7 @@ export function StudentReviewAlertSync() {
           const next = (payload.new ?? {}) as Record<string, unknown>
           const patentId = next.id != null ? String(next.id) : ''
           if (!patentId) return
+          if (!isPatentGateUpdate(prev, next)) return
 
           const planApproved = isPlanApproval(prev, next)
           const checklistApproved = isChecklistApproval(prev, next)

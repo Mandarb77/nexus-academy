@@ -1,9 +1,16 @@
 /*
- * Serialize GoTrue token refresh in this tab.
+ * Serialize GoTrue token *refresh* without blocking Google sign-in.
  *
- * School Chromebooks can miss `navigator.locks` (or steal the lock). Then
- * getSession + auto-refresh + React StrictMode all refresh the same token at
- * once, GoTrue revokes it, and the student sees Workshop for a second then login.
+ * What went wrong in class: supabase-js uses acquireTimeout 0 for some auth
+ * calls. Our lock then threw immediately if getSession was already hung, so
+ * Sign in with Google became a no-op and the UI said “Google did not open.”
+ * Hung REST/Auth 504s also held the lock until the network died, so retries
+ * queued behind the same dead request.
+ *
+ * Rules:
+ * - Never fail-closed on contention. Wait a beat, then run anyway.
+ * - Never hold the queue for more than MAX_HOLD_MS even if fn() is still
+ *   talking to the network.
  */
 
 class AuthLockTimeoutError extends Error {
@@ -15,19 +22,15 @@ class AuthLockTimeoutError extends Error {
 }
 
 let chain: Promise<unknown> = Promise.resolve()
-let held = false
 
-const MAX_HOLD_MS = 8_000
+const STEAL_MS = 2_000
+const MAX_HOLD_MS = 3_000
 
 export async function serialAuthLock<R>(
   _name: string,
   acquireTimeout: number,
   fn: () => Promise<R>,
 ): Promise<R> {
-  if (acquireTimeout === 0 && held) {
-    throw new AuthLockTimeoutError('Auth lock is already held')
-  }
-
   let release!: () => void
   const gate = new Promise<void>((resolve) => {
     release = resolve
@@ -35,24 +38,18 @@ export async function serialAuthLock<R>(
   const previous = chain
   chain = previous.then(() => gate)
 
-  const timeoutMs = acquireTimeout > 0 ? acquireTimeout : 0
+  const waitMs = acquireTimeout === 0 ? STEAL_MS : Math.max(acquireTimeout, STEAL_MS)
   let acquireTimer: ReturnType<typeof setTimeout> | undefined
   let holdTimer: ReturnType<typeof setTimeout> | undefined
+
   try {
-    if (timeoutMs > 0) {
-      await Promise.race([
-        previous,
-        new Promise<void>((_, reject) => {
-          acquireTimer = setTimeout(() => {
-            reject(new AuthLockTimeoutError(`Auth lock timed out after ${timeoutMs}ms`))
-          }, timeoutMs)
-        }),
-      ])
-    } else {
-      await previous
-    }
+    await Promise.race([
+      previous,
+      new Promise<void>((resolve) => {
+        acquireTimer = setTimeout(resolve, waitMs)
+      }),
+    ])
     if (acquireTimer) clearTimeout(acquireTimer)
-    held = true
     return await Promise.race([
       fn(),
       new Promise<R>((_, reject) => {
@@ -64,7 +61,6 @@ export async function serialAuthLock<R>(
   } finally {
     if (acquireTimer) clearTimeout(acquireTimer)
     if (holdTimer) clearTimeout(holdTimer)
-    held = false
     release()
   }
 }

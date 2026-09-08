@@ -70,7 +70,7 @@ export function PatentGamePiecePage() {
           </p>
         ) : null}
 
-        {loading ? (
+        {loading && tiles.length === 0 ? (
           <p className="muted">Loading…</p>
         ) : !tile ? (
           <p className="error" role="alert">

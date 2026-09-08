@@ -16,7 +16,8 @@
  * or the `/nexus-dev-verify.txt` sanity-check link.
  */
 
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { HomeRoute } from './components/HomeRoute'
 import { StudentOnlyRoute } from './components/StudentOnlyRoute'
@@ -69,11 +70,25 @@ function NexusDevRibbon() {
   )
 }
 
+function PkceCodeHandoff() {
+  const { pathname, search } = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (pathname === '/auth/callback') return
+    if (!new URLSearchParams(search).get('code')) return
+    navigate(`/auth/callback${search}`, { replace: true })
+  }, [pathname, search, navigate])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       {/* ========== Dev-only: not in production (`import.meta.env.DEV`) ========== */}
       {import.meta.env.DEV && <NexusDevRibbon />}
+      <PkceCodeHandoff />
       <AuthProvider>
         {/* ========== Global: quest-approval toast + Realtime → localStorage bridge ========== */}
         <ApprovalCelebrationHost />
