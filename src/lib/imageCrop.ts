@@ -5,14 +5,40 @@
  * center-crops to the requested aspect ratio (e.g. 4:3 for patent photos) and caps edge
  * length so a 12MP phone photo does not hammer Storage bandwidth. JPEG quality 0.92 is
  * a balance between artifacting and upload time for classroom Wi‑Fi.
+ *
+ * Phone HEIC / Live Photos can hang `createImageBitmap` forever on Chromebooks. We
+ * time out so the upload can still send the original file instead of spinning on
+ * “Uploading…”.
  */
+
+const BITMAP_TIMEOUT_MS = 8000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(label)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (err: unknown) => {
+        clearTimeout(timer)
+        reject(err)
+      },
+    )
+  })
+}
 
 export async function cropFileToAspectRatio(
   file: File,
   aspectWidthOverHeight: number,
   maxEdgePx = 1600,
 ): Promise<Blob> {
-  const bitmap = await createImageBitmap(file)
+  const bitmap = await withTimeout(
+    createImageBitmap(file),
+    BITMAP_TIMEOUT_MS,
+    'Photo took too long to process. Try a regular camera JPEG, or a smaller picture.',
+  )
   try {
     const w = bitmap.width
     const h = bitmap.height

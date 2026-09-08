@@ -254,6 +254,8 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const [banner, setBanner] = useState<{ text: string; tone: 'success' | 'returned' } | null>(null)
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const phaseHydrateSigRef = useRef<string>('')
+  const hydrateGenRef = useRef(0)
+  const uploadInFlightRef = useRef(false)
 
   const makerName = useMemo(() => {
     const fromProfile = profile?.display_name?.trim()
@@ -305,6 +307,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       return
     }
     const tileCandidates = patentTileIdCandidates(tile.id)
+    const hydrateGen = ++hydrateGenRef.current
     const { data, error } = await supabase
       .from('patents')
       .select(
@@ -321,10 +324,12 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       setInitialised(true)
       return
     }
+    if (hydrateGen !== hydrateGenRef.current) return
 
     const allRows = (data ?? []) as LoadedPlanPatentRow[]
     const { primary: row } = selectStudentPatentPrimary(allRows, normalizePatentPlanStatus)
 
+    if (hydrateGen !== hydrateGenRef.current) return
     if (!row) {
       phaseHydrateSigRef.current = ''
       setPhase(1)
@@ -335,7 +340,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       }
       setPlan({ id: '', status: 'none' })
       setChecks(Array(steps.length).fill(false))
-      setUploadUrl(null)
+      if (!uploadInFlightRef.current) setUploadUrl(null)
       setDeliveryUrl(null)
       setChecklistSubmitted(false)
       setChecklistApproved(false)
@@ -348,6 +353,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       return
     }
 
+    if (hydrateGen !== hydrateGenRef.current) return
     const primaryStage = String(row.stage ?? '').trim().toLowerCase() === 'packet' ? 'packet' : 'plan'
     const planStatus = normalizePatentPlanStatus(row.status ?? 'none')
     setPlan({ id: row.id, status: planStatus })
@@ -379,7 +385,9 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       ...Array(Math.max(0, steps.length - rawCsArr.length)).fill(false),
     ]
     setChecks(primaryStage === 'packet' ? Array(steps.length).fill(true) : csFromDb)
-    setUploadUrl(row.upload_url ?? null)
+    if (!uploadInFlightRef.current) {
+      setUploadUrl(row.upload_url ?? null)
+    }
 
     const draftField1 = planStatus !== 'approved' ? localStorage.getItem(field1DraftKey) : null
     const draftEmpathy = planStatus !== 'approved' ? localStorage.getItem(empathyDraftKey) : null
@@ -402,6 +410,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       .select('field_5, field_6, field_7, maker_signature_url, delivery_url')
       .eq('id', row.id)
       .maybeSingle()
+    if (hydrateGen !== hydrateGenRef.current) return
     if (!extraErr && extra) {
       const ex = extra as {
         field_5: string | null
@@ -450,6 +459,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
           const prev = payload.old as Record<string, unknown>
           const next = payload.new as Record<string, unknown>
           if (!patentRowMatchesTile(tile.id, next.tile_id)) return
+          if (uploadInFlightRef.current) return
           void loadFromDatabase()
           if (prev.status !== 'approved' && next.status === 'approved')
             showBanner('Plan approved — the Work tab is now open.', 'success')
@@ -528,11 +538,14 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
   const handleFileUpload = async (file: File) => {
     if (previewBrowse || !user?.id || !plan.id) return
+    uploadInFlightRef.current = true
     setUploading(true)
     setUploadError(null)
     try {
       const uploadFile = await fileForPatentStorage(file)
-      const ext = uploadFile.type.startsWith('image/') ? 'jpg' : (file.name.split('.').pop()?.toLowerCase() ?? 'bin')
+      const ext = uploadFile.type.startsWith('image/')
+        ? 'jpg'
+        : (uploadFile.name.split('.').pop()?.toLowerCase() || file.name.split('.').pop()?.toLowerCase() || 'bin')
       const path = `${user.id}/${plan.id}/submission.${ext}`
       const { error: upErr } = await supabase.storage.from('patent-uploads').upload(path, uploadFile, { upsert: true })
       if (upErr) throw upErr
@@ -540,10 +553,12 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       const publicUrl = urlData.publicUrl
       const { error: dbErr } = await supabase.from('patents').update({ upload_url: publicUrl }).eq('id', plan.id)
       if (dbErr) throw dbErr
+      hydrateGenRef.current += 1
       setUploadUrl(publicUrl)
     } catch (e: unknown) {
-      setUploadError(e instanceof Error ? e.message : 'Upload failed.')
+      setUploadError(e instanceof Error ? e.message : 'Upload failed. Try a JPEG or PNG photo.')
     } finally {
+      uploadInFlightRef.current = false
       setUploading(false)
     }
   }
@@ -648,7 +663,10 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
   const onSubmitChecklist = async () => {
     if (previewBrowse || !plan.id || !allDone || checklistSubmitted) return
-    if (uploadRequired && !uploadUrl) return
+    if (uploadRequired && !uploadUrl) {
+      setUploadError('Add a photo or short video of the finished work before submitting.')
+      return
+    }
     setSubmittingChecklist(true)
     try {
       const { error } = await supabase.from('patents').update({ checklist_submitted: true }).eq('id', plan.id)
@@ -661,6 +679,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       await loadFromDatabase()
     } catch (e: unknown) {
       console.error('[PatentLedger] submit checklist:', e)
+      setUploadError(e instanceof Error ? e.message : 'Could not submit the checklist. Try again.')
     } finally {
       setSubmittingChecklist(false)
     }
@@ -1337,6 +1356,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                   />
                 </label>
                 {uploadError ? <div className="status-banner returned" role="alert">{uploadError}</div> : null}
+                {canStartChecklist && !checklistSubmitted && !uploadUrl ? (
+                  <div className="gate-note">
+                    <span>📷</span> Submit stays locked until you attach a photo or short video of the finished plate.
+                  </div>
+                ) : null}
               </>
             ) : null}
 
