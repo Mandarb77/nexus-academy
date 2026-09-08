@@ -126,17 +126,24 @@ export function LoginPage() {
     startingRef.current = true
     setError(null)
     setBusy(true)
+    const watchdog = window.setTimeout(() => {
+      startingRef.current = false
+      setBusy(false)
+      setError('Google did not open. Click Sign in with Google once more.')
+    }, 8_000)
     try {
       const started = await signInWithGoogle()
       if (!started) {
+        window.clearTimeout(watchdog)
         startingRef.current = false
         setBusy(false)
         setError('Sign-in already started. Finish picking your account — do not click Google again.')
       }
     } catch {
+      window.clearTimeout(watchdog)
       startingRef.current = false
       setBusy(false)
-      setError('Could not start Google sign-in. Check Supabase and redirect URLs.')
+      setError('Could not start Google sign-in. Click once more.')
     }
   }
 

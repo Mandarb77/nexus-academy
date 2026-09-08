@@ -357,16 +357,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * returns to production Site URL and the Preview bundle (proto env vars) is skipped.
      */
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            prompt: 'select_account',
-            hd: SCHOOL_EMAIL_DOMAIN,
+      const { error } = await Promise.race([
+        supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo,
+            queryParams: {
+              prompt: 'select_account',
+              hd: SCHOOL_EMAIL_DOMAIN,
+            },
           },
-        },
-      })
+        }),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('Google sign-in timed out. Try once more.')), 8_000)
+        }),
+      ])
       if (error) {
         clearGoogleOAuthStart()
         console.error('Google sign-in:', error.message)

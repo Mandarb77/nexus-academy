@@ -17,6 +17,8 @@ class AuthLockTimeoutError extends Error {
 let chain: Promise<unknown> = Promise.resolve()
 let held = false
 
+const MAX_HOLD_MS = 8_000
+
 export async function serialAuthLock<R>(
   _name: string,
   acquireTimeout: number,
@@ -34,13 +36,14 @@ export async function serialAuthLock<R>(
   chain = previous.then(() => gate)
 
   const timeoutMs = acquireTimeout > 0 ? acquireTimeout : 0
-  let timer: ReturnType<typeof setTimeout> | undefined
+  let acquireTimer: ReturnType<typeof setTimeout> | undefined
+  let holdTimer: ReturnType<typeof setTimeout> | undefined
   try {
     if (timeoutMs > 0) {
       await Promise.race([
         previous,
         new Promise<void>((_, reject) => {
-          timer = setTimeout(() => {
+          acquireTimer = setTimeout(() => {
             reject(new AuthLockTimeoutError(`Auth lock timed out after ${timeoutMs}ms`))
           }, timeoutMs)
         }),
@@ -48,11 +51,19 @@ export async function serialAuthLock<R>(
     } else {
       await previous
     }
-    if (timer) clearTimeout(timer)
+    if (acquireTimer) clearTimeout(acquireTimer)
     held = true
-    return await fn()
+    return await Promise.race([
+      fn(),
+      new Promise<R>((_, reject) => {
+        holdTimer = setTimeout(() => {
+          reject(new AuthLockTimeoutError(`Auth lock hold timed out after ${MAX_HOLD_MS}ms`))
+        }, MAX_HOLD_MS)
+      }),
+    ])
   } finally {
-    if (timer) clearTimeout(timer)
+    if (acquireTimer) clearTimeout(acquireTimer)
+    if (holdTimer) clearTimeout(holdTimer)
     held = false
     release()
   }

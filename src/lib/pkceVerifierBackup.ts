@@ -120,7 +120,7 @@ export function pkceVerifierStorageKey(supabaseUrl: string): string {
 }
 
 const START_LOCK_KEY = 'nexus:oauth-start-lock'
-const START_LOCK_MS = 45_000
+const START_LOCK_MS = 12_000
 
 let memoryLockUntil = 0
 
