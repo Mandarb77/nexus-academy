@@ -25,10 +25,13 @@ export function LoginPage() {
   )
   const [busy, setBusy] = useState(false)
   const [previewSetupIncomplete, setPreviewSetupIncomplete] = useState(false)
-  const startingRef = useRef(false)
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     clearGoogleOAuthStart()
+    return () => {
+      if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -39,24 +42,18 @@ export function LoginPage() {
   }, [searchParams, setSearchParams])
 
   const showSetupNotice = !isSupabaseConfigured || previewSetupIncomplete
-  /** Allow click while session is still restoring — signInWithOAuth is safe; avoids a stuck disabled button. */
-  const canUseGoogle =
-    isSupabaseConfigured && !previewSetupIncomplete && !busy
+  const canUseGoogle = isSupabaseConfigured && !previewSetupIncomplete
 
   async function handleSwitchToSchool() {
-    if (startingRef.current || busy) return
-    startingRef.current = true
     setError(null)
     setBusy(true)
     try {
       const started = await switchToSchoolGoogleAccount()
       if (!started) {
-        startingRef.current = false
         setBusy(false)
         setError('Google sign-in is already open. Pick your @kentshill.org account in that window.')
       }
     } catch {
-      startingRef.current = false
       setBusy(false)
       setError('Could not restart Google sign-in. Sign out and try again.')
     }
@@ -122,28 +119,25 @@ export function LoginPage() {
   }
 
   async function handleGoogle() {
-    if (startingRef.current || busy) return
-    startingRef.current = true
+    clearGoogleOAuthStart()
     setError(null)
     setBusy(true)
-    const watchdog = window.setTimeout(() => {
-      startingRef.current = false
+    if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
+    watchdogRef.current = window.setTimeout(() => {
       setBusy(false)
       setError('Google did not open. Click Sign in with Google once more.')
-    }, 8_000)
+    }, 4_000)
     try {
       const started = await signInWithGoogle()
       if (!started) {
-        window.clearTimeout(watchdog)
-        startingRef.current = false
+        if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
         setBusy(false)
-        setError('Sign-in already started. Finish picking your account — do not click Google again.')
+        setError('Could not start Google. Click Sign in with Google once more.')
       }
     } catch {
-      window.clearTimeout(watchdog)
-      startingRef.current = false
+      if (watchdogRef.current) window.clearTimeout(watchdogRef.current)
       setBusy(false)
-      setError('Could not start Google sign-in. Click once more.')
+      setError('Could not start Google. Click Sign in with Google once more.')
     }
   }
 
@@ -170,7 +164,7 @@ export function LoginPage() {
           disabled={!canUseGoogle}
           aria-label="Sign in with Google"
         >
-          {busy ? 'Redirecting…' : 'Sign in with Google'}
+          {busy ? 'Opening Google…' : 'Sign in with Google'}
         </button>
         <p className="muted login-school-hint">
           On the next screen, pick your school account (<strong>@kentshill.org</strong>).

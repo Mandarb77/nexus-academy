@@ -25,7 +25,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { beginGoogleOAuthStart, clearGoogleOAuthStart } from '../lib/pkceVerifierBackup'
+import { clearGoogleOAuthStart } from '../lib/pkceVerifierBackup'
 import { SCHOOL_EMAIL_DOMAIN } from '../lib/schoolEmail'
 import type { Profile } from '../types/profile'
 
@@ -350,18 +350,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase is not configured')
     }
-    if (!beginGoogleOAuthStart()) return false
+    clearGoogleOAuthStart()
     const redirectTo = `${window.location.origin}/auth/callback`
-    /*
-     * Preview testing: Supabase must allow `https://*.vercel.app/auth/callback` or sign-in
-     * returns to production Site URL and the Preview bundle (proto env vars) is skipped.
-     */
     try {
-      const { error } = await Promise.race([
+      const { data, error } = await Promise.race([
         supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
             redirectTo,
+            skipBrowserRedirect: true,
             queryParams: {
               prompt: 'select_account',
               hd: SCHOOL_EMAIL_DOMAIN,
@@ -369,14 +366,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         }),
         new Promise<never>((_, reject) => {
-          window.setTimeout(() => reject(new Error('Google sign-in timed out. Try once more.')), 8_000)
+          window.setTimeout(() => reject(new Error('Google sign-in timed out.')), 4_000)
         }),
       ])
       if (error) {
-        clearGoogleOAuthStart()
         console.error('Google sign-in:', error.message)
         throw error
       }
+      const url = data?.url
+      if (!url) {
+        throw new Error('Google did not return a sign-in link.')
+      }
+      window.location.assign(url)
       return true
     } catch (err) {
       clearGoogleOAuthStart()
