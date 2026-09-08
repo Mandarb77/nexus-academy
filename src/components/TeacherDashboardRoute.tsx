@@ -29,16 +29,17 @@ export function TeacherDashboardRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/" state={{ from: location }} replace />
   }
 
+  /* Bounce only a known student. A hung profiles fetch used to send the teacher Pi off `/teacher`. */
+  if (profile?.role === 'student') {
+    return <Navigate to="/" replace />
+  }
+
   if (loading && !isTeacherProfile(profile)) {
     return (
       <div className="app-shell">
         <p className="muted">Opening teacher tools…</p>
       </div>
     )
-  }
-
-  if (!isTeacherProfile(profile)) {
-    return <Navigate to="/" replace />
   }
 
   /*

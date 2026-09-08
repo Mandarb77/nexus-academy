@@ -5,7 +5,7 @@
  * keep setState + REST alive. Schedule does not add listeners.
  */
 
-const WINDOW_MS = 15_000
+const WINDOW_MS = 4_000
 
 const listeners = new Set<() => Promise<void>>()
 let lastRun = 0

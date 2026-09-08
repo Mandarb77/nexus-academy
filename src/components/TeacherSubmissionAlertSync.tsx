@@ -8,6 +8,7 @@
 import { useCallback, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { isPatentGateUpdate } from '../lib/patentRealtimeGates'
 import { fetchTeacherPendingSnapshot } from '../lib/fetchTeacherPendingSnapshot'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
 import {
@@ -46,6 +47,12 @@ export function TeacherSubmissionAlertSync() {
     const channel = supabase
       .channel(`teacher-submission-alert-${user.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'patents' }, () => {
+        scheduleTeacherPendingRefresh()
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'patents' }, (payload) => {
+        if (!isPatentGateUpdate((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
+          return
+        }
         scheduleTeacherPendingRefresh()
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'skill_completions' }, () => {

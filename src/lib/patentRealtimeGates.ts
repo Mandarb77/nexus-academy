@@ -53,6 +53,15 @@ export function isPatentGateUpdate(
       ? (lastById.get(id) ?? null)
       : null
   if (id && nextSnap) lastById.set(id, nextSnap)
-  if (!nextSnap || !prevSnap) return false
+  if (!nextSnap) return false
+  if (!prevSnap) {
+    /* No baseline (kiosk never hydrated this row): still catch a real submit, not checkbox ticks. */
+    return (
+      nextSnap.status === 'pending' ||
+      nextSnap.status === 'returned' ||
+      nextSnap.checklist_submitted === true ||
+      nextSnap.checklist_approved === true
+    )
+  }
   return GATE_KEYS.some((key) => prevSnap[key] !== nextSnap[key])
 }

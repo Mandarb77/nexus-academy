@@ -28,6 +28,7 @@ import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAle
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
+import { isPatentGateUpdate } from '../lib/patentRealtimeGates'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
 import { isPendingQueueTransition, registerTeacherPendingRefresh, scheduleTeacherPendingRefresh } from '../lib/teacherPendingRefresh'
 import { patentTileIdCandidates } from '../lib/patentTileQuery'
@@ -840,6 +841,16 @@ export function TeacherPanelPage() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'patents' },
         () => { scheduleTeacherPendingRefresh() },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'patents' },
+        (payload) => {
+          if (!isPatentGateUpdate((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
+            return
+          }
+          scheduleTeacherPendingRefresh()
+        },
       )
       .on(
         'postgres_changes',
