@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
+import { scheduleTeacherPendingRefresh } from '../lib/teacherPendingRefresh'
 import { patentTileIdCandidates } from '../lib/patentTileQuery'
 import type { TeacherSubmissionAlert } from '../lib/teacherSubmissionAlert'
 
@@ -831,52 +832,52 @@ export function TeacherPanelPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'patents' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'patents' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'skill_completions' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'skill_completions' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'shop_duty_completions' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'shop_duty_completions' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'redemption_requests' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'redemption_requests' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'shop_purchase_requests' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'shop_purchase_requests' },
-        () => { void loadPending() },
+        () => { scheduleTeacherPendingRefresh(loadPending) },
       )
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
