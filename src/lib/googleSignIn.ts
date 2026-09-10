@@ -6,7 +6,6 @@
  * exchange the code, but it does not take the auth lock.
  */
 
-import { SCHOOL_EMAIL_DOMAIN } from './schoolEmail'
 import { getSupabaseOAuth, isSupabaseConfigured, supabaseUrl } from './supabase'
 
 const AUTHORIZE_MS = 12_000
@@ -25,7 +24,6 @@ export async function startGoogleOAuth(): Promise<void> {
         skipBrowserRedirect: true,
         queryParams: {
           prompt: 'select_account',
-          hd: SCHOOL_EMAIL_DOMAIN,
         },
       },
     }),
