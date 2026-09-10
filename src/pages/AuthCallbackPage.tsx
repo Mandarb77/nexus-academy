@@ -1,16 +1,16 @@
 /*
  * OAuth redirect handler (`/auth/callback`)
  *
- * PKCE lands here with `?code=`. Exchange happens only on this page
- * (`detectSessionInUrl` is off on the client). Do not wait for `getSession` /
- * `authReady` first — a hung restore would sit on “Finishing sign-in…” until the
- * code expired.
+ * PKCE lands here with `?code=`. Exchange on the login client (no auth lock) so a
+ * hung getSession cannot sit on “Finishing sign-in…” until the code expires.
  */
 
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { isSupabaseConfigured, supabase, supabaseUrl } from '../lib/supabase'
+import { isSupabaseConfigured, getSupabaseOAuth, supabaseUrl } from '../lib/supabase'
 import { exchangeCodeWithPkceBackups, pkceVerifierStorageKey } from '../lib/pkceVerifierBackup'
+
+const EXCHANGE_MS = 12_000
 
 export function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -22,29 +22,42 @@ export function AuthCallbackPage() {
     }
 
     let cancelled = false
+    const failHome = (code: string, message: string) => {
+      if (cancelled) return
+      navigate(
+        `/?error=invalid_request&error_code=${encodeURIComponent(code)}&error_description=${encodeURIComponent(message)}`,
+        { replace: true },
+      )
+    }
+
+    const watchdog = window.setTimeout(() => {
+      failHome('oauth_timeout', 'Sign-in stalled. Click Google once more.')
+    }, EXCHANGE_MS)
+
     void (async () => {
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
       if (code) {
         const { data, error } = await exchangeCodeWithPkceBackups(
-          (authCode) => supabase.auth.exchangeCodeForSession(authCode),
+          (authCode) => getSupabaseOAuth().auth.exchangeCodeForSession(authCode),
           code,
           pkceVerifierStorageKey(supabaseUrl),
         )
+        window.clearTimeout(watchdog)
         if (cancelled) return
         if (data?.session) {
           navigate('/', { replace: true })
           return
         }
         if (error) {
-          navigate(
-            `/?error=invalid_request&error_code=bad_oauth_state&error_description=${encodeURIComponent(error.message)}`,
-            { replace: true },
-          )
+          failHome('bad_oauth_state', error.message)
           return
         }
+      } else {
+        window.clearTimeout(watchdog)
       }
 
+      if (cancelled) return
       if (params.get('error') || params.get('error_code') || params.get('error_description')) {
         navigate(`/?${params.toString()}`, { replace: true })
         return
@@ -55,6 +68,7 @@ export function AuthCallbackPage() {
 
     return () => {
       cancelled = true
+      window.clearTimeout(watchdog)
     }
   }, [navigate])
 

@@ -1,5 +1,11 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "source": "/auth/v1/:path*",
+      "destination": "https://ezjjehppuefzzromlbrk.supabase.co/auth/v1/:path*"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "alias": [
     "nexus-academy-one.vercel.app",
     "mandarb77-nexus-academy.vercel.app"

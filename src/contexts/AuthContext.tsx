@@ -392,8 +392,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const switchToSchoolGoogleAccount = useCallback(async () => {
-    return signInWithGoogle()
-  }, [signInWithGoogle])
+    await startGoogleOAuth({ pickAccount: true })
+    return true
+  }, [])
 
   const signOut = useCallback(async () => {
     userSignedOutRef.current = true

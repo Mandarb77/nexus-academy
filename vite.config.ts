@@ -1,12 +1,19 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, '')
+  const supabaseUrl = (env.VITE_SUPABASE_URL ?? 'https://ezjjehppuefzzromlbrk.supabase.co').replace(
+    /\/$/,
+    '',
+  )
+
+  return {
   /** Load `.env` from the project root (same folder as this file). */
   envDir: __dirname,
   plugins: [
@@ -49,5 +56,12 @@ export default defineConfig({
     headers: {
       'Cache-Control': 'no-store',
     },
+    proxy: {
+      '/auth/v1': {
+        target: supabaseUrl,
+        changeOrigin: true,
+      },
+    },
   },
+  }
 })

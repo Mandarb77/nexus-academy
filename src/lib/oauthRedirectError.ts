@@ -12,6 +12,13 @@ export function oauthRedirectErrorMessage(search: string): string | null {
   if (!code && !error && !description) return null
 
   if (
+    code === 'oauth_timeout' ||
+    /stalled/i.test(description)
+  ) {
+    return 'Google sign-in stalled. Click Sign in with Google once more and stay on this tab.'
+  }
+
+  if (
     code === 'bad_oauth_state' ||
     /oauth state/i.test(description) ||
     /state not found/i.test(description)
