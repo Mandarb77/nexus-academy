@@ -65,13 +65,36 @@ export function createPkceBackupStorage(): {
   if (!store) return undefined
 
   return {
-    getItem: (key: string) => store.getItem(key),
+    getItem: (key: string) => {
+      const fromPrimary = store.getItem(key)
+      if (fromPrimary) return fromPrimary
+      if (!isVerifierKey(key) || store === localStorage) return null
+      try {
+        return localStorage.getItem(key)
+      } catch {
+        return null
+      }
+    },
     setItem: (key: string, value: string) => {
       store.setItem(key, value)
-      if (isVerifierKey(key) && value) pushBackup(value)
+      if (isVerifierKey(key) && value) {
+        pushBackup(value)
+        try {
+          if (store !== localStorage) localStorage.setItem(key, value)
+        } catch {
+          /* ignore */
+        }
+      }
     },
     removeItem: (key: string) => {
       store.removeItem(key)
+      if (isVerifierKey(key)) {
+        try {
+          localStorage.removeItem(key)
+        } catch {
+          /* ignore */
+        }
+      }
     },
   }
 }

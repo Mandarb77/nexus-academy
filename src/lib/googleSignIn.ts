@@ -4,11 +4,12 @@
  * The main supabase client serializes getSession/refresh behind a lock. Login
  * must not wait on that. This client shares PKCE storage so the callback can
  * exchange the code, but it does not take the auth lock.
+ *
+ * Let supabase-js navigate. skipBrowserRedirect left people sitting on the
+ * /auth/v1/authorize URL, which looks like a broken supabase.co page.
  */
 
-import { getSupabaseOAuth, isSupabaseConfigured, supabaseUrl } from './supabase'
-
-const AUTHORIZE_MS = 12_000
+import { getSupabaseOAuth, isSupabaseConfigured } from './supabase'
 
 export async function startGoogleOAuth(): Promise<void> {
   if (!isSupabaseConfigured) {
@@ -16,33 +17,15 @@ export async function startGoogleOAuth(): Promise<void> {
   }
 
   const redirectTo = `${window.location.origin}/auth/callback`
-  const { data, error } = await Promise.race([
-    getSupabaseOAuth().auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        skipBrowserRedirect: true,
-        queryParams: {
-          prompt: 'select_account',
-        },
+  const { error } = await getSupabaseOAuth().auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      queryParams: {
+        prompt: 'select_account',
       },
-    }),
-    new Promise<never>((_, reject) => {
-      window.setTimeout(
-        () => reject(new Error('Google sign-in timed out.')),
-        AUTHORIZE_MS,
-      )
-    }),
-  ])
+    },
+  })
 
   if (error) throw error
-  const url = data?.url
-  if (!url) throw new Error('Google did not return a sign-in link.')
-
-  /* Keep PKCE on this origin; Site URL mismatches are handled by canonical host bounce. */
-  if (!url.startsWith(supabaseUrl) && !url.includes('accounts.google.com')) {
-    throw new Error('Unexpected sign-in URL.')
-  }
-
-  window.location.assign(url)
 }

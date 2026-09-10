@@ -146,7 +146,9 @@ export function LoginPage() {
           {busy ? 'Opening Google…' : 'Sign in with Google'}
         </button>
         <p className="muted login-school-hint">
-          On the next screen, pick your school account (<strong>@kentshill.org</strong>).
+          Google will open next — that is the login, not an error. Pick your{' '}
+          <strong>@kentshill.org</strong> account, then you come back here. Do not paste or
+          reopen the supabase.co link.
         </p>
         {error ? (
           <p className="error" role="alert">
