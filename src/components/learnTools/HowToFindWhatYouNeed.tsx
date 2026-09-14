@@ -70,6 +70,18 @@ export function HowToFindWhatYouNeed() {
           </li>
         </ol>
       </article>
+
+      <article className="learn-tools-find-guide__card" aria-labelledby="learn-tools-filename-heading">
+        <h3 id="learn-tools-filename-heading" className="learn-tools-find-guide__title">
+          How to name your files
+        </h3>
+        <p className="learn-tools-find-guide__lead">Every guild. Same format.</p>
+        <ul className="learn-tools-find-guide__examples">
+          <li>FirstName_LastInitial_Item_Date_Version</li>
+          <li>Maya_R_MakersMark_2026-09-14_v1</li>
+          <li>Jordan_K_Nameplate_2026-09-14_v2</li>
+        </ul>
+      </article>
     </div>
   )
 }

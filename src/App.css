@@ -4323,6 +4323,8 @@ body:has(.bench-chrome) {
 
 .learn-tools-find-guide {
   margin-bottom: 1.35rem;
+  display: grid;
+  gap: 0.85rem;
 }
 
 .learn-tools-find-guide__card {
