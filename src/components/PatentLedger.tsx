@@ -215,7 +215,7 @@ function SignaturePad({
 export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const { user, profile, studentPreviewMode } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const urlStep = parsePatentStepParam(searchParams.get('step'))
   const studentId = user?.id ?? 'anonymous'
   const previewBrowse = isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)
@@ -370,6 +370,8 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     if (hydrateGen !== hydrateGenRef.current) return
     const primaryStage = String(row.stage ?? '').trim().toLowerCase() === 'packet' ? 'packet' : 'plan'
     const planStatus = normalizePatentPlanStatus(row.status ?? 'none')
+    const canOpenWork =
+      planStatus === 'approved' || (bypassApprovals && planStatus === 'pending')
     setPlan({ id: row.id, status: planStatus })
     planIdRef.current = row.id
     notePatentGateRow(row as Record<string, unknown>)
@@ -452,9 +454,16 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       setDeliveryUrl(ex.delivery_url ?? null)
     }
 
-    const maxPh: 1 | 2 | 3 = !row.id ? 1 : !checklistAppr ? 2 : 3
+    const maxPh: 1 | 2 | 3 = !row.id
+      ? 1
+      : !canOpenWork
+        ? 1
+        : !checklistAppr && !(bypassApprovals && checklistSub)
+          ? 2
+          : 3
     const serverPh = serverSuggestedPatentPhase({ primaryStage, planStatus, checklistApproved: checklistAppr })
-    const requested = urlStep != null ? urlStep : serverPh
+    /* Stale `?step=1` from opening the plan must not pin kids after the teacher unlocks Work/Record. */
+    const requested = urlStep != null && urlStep >= serverPh ? urlStep : serverPh
     const nextPhase = Math.min(Math.max(requested, 1), maxPh) as 1 | 2 | 3
     const sig = `${row.id}|${primaryStage}|${planStatus}|${checklistAppr}|${checklistSub}|${urlStep ?? ''}`
     if (phaseHydrateSigRef.current !== sig) {
@@ -465,9 +474,19 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       } catch {
         /* ignore */
       }
+      if (urlStep !== nextPhase) {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev)
+            next.set('step', String(nextPhase))
+            return next
+          },
+          { replace: true },
+        )
+      }
     }
     setInitialised(true)
-  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, checklistDraftKey, phaseKey, urlStep])
+  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, checklistDraftKey, phaseKey, urlStep, bypassApprovals, setSearchParams])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -490,10 +509,10 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
           if (uploadInFlightRef.current) return
           if (!isPatentGateUpdate(prev, next)) return
           void loadFromDatabase()
-          if (prev.status !== 'approved' && next.status === 'approved')
-            showBanner('Plan approved — the Work tab is now open.', 'success')
-          else if (!prev.checklist_approved && next.checklist_approved)
-            showBanner('Checklist approved — the Record tab is now open.', 'success')
+          if (next.stage === 'plan' && next.status === 'approved' && prev.status !== 'approved')
+            showBanner('Plan approved — opening the Work tab.', 'success')
+          else if (next.checklist_approved === true && prev.checklist_approved !== true)
+            showBanner('Checklist approved — opening the Record tab.', 'success')
           /* Plan/checklist/packet returns: chickadee overlay is the messenger (StudentReviewAlertSync). */
         },
       )
@@ -527,13 +546,25 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const maxPhase = useMemo((): 1 | 2 | 3 => {
     if (previewBrowse) return 3
     if (!planSubmitted) return 1
+    if (!planApprovedForChecklist) return 1
     if (!checklistApproved && !(bypassApprovals && checklistSubmitted)) return 2
     return 3
-  }, [previewBrowse, planSubmitted, checklistApproved, bypassApprovals, checklistSubmitted])
+  }, [previewBrowse, planSubmitted, planApprovedForChecklist, checklistApproved, bypassApprovals, checklistSubmitted])
+
+  const prevMaxPhaseRef = useRef<1 | 2 | 3>(1)
+  useEffect(() => {
+    prevMaxPhaseRef.current = 1
+  }, [tile.id])
 
   useEffect(() => {
     if (!initialised) return
-    setPhase((p) => (p > maxPhase ? maxPhase : p))
+    const prevMax = prevMaxPhaseRef.current
+    prevMaxPhaseRef.current = maxPhase
+    setPhase((p) => {
+      if (p > maxPhase) return maxPhase
+      if (maxPhase > prevMax) return maxPhase
+      return p
+    })
   }, [initialised, maxPhase])
 
   const goPhase = (p: 1 | 2 | 3) => {
@@ -545,6 +576,14 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     } catch {
       /* ignore */
     }
+    setSearchParams(
+      (prev) => {
+        const nextParams = new URLSearchParams(prev)
+        nextParams.set('step', String(next))
+        return nextParams
+      },
+      { replace: true },
+    )
   }
 
   // --- Persistence helpers ---
