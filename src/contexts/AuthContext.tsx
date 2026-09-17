@@ -29,6 +29,7 @@ import { startGoogleOAuth } from '../lib/googleSignIn'
 import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/profileCache'
 import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
 import { readStudentPreviewFlag, writeStudentPreviewFlag } from '../lib/studentPreview'
+import { writeIdleLogoutNotice } from '../lib/idleSession'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -83,7 +84,8 @@ type AuthContextValue = {
   signInWithGoogle: () => Promise<boolean>
   /** Sign out of a personal Gmail and reopen Google so they can pick @kentshill.org. */
   switchToSchoolGoogleAccount: () => Promise<boolean>
-  signOut: () => Promise<void>
+  /** Idle student laptop uses local scope so other devices stay signed in. */
+  signOut: (opts?: { idle?: boolean }) => Promise<void>
   refreshProfile: () => Promise<void>
   /** Persist preferred first name (Fran/Barry voice + welcome). */
   updatePreferredFirstName: (name: string) => Promise<{ error: string | null }>
@@ -374,22 +376,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true
   }, [])
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (opts?: { idle?: boolean }) => {
     userSignedOutRef.current = true
     lastGoodSessionRef.current = null
     clearSessionBackup()
     writeStudentPreviewFlag(false)
     setStudentPreviewMode(false)
     setProfile(null)
+    if (opts?.idle) writeIdleLogoutNotice()
     if (!isSupabaseConfigured) {
       setSession(null)
       setUser(null)
       navigate('/login', { replace: true })
       return
     }
-    const { error } = await supabase.auth.signOut({ scope: 'global' })
+    const scope = opts?.idle ? 'local' : 'global'
+    const { error } = await supabase.auth.signOut({ scope })
     if (error) {
-      console.error('Sign out (global):', error.message)
+      console.error(`Sign out (${scope}):`, error.message)
       const { error: localErr } = await supabase.auth.signOut({ scope: 'local' })
       if (localErr) console.error('Sign out (local):', localErr.message)
     }

@@ -13,6 +13,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { oauthRedirectErrorMessage } from '../lib/oauthRedirectError'
+import { takeIdleLogoutNotice } from '../lib/idleSession'
 import { isGuestBrowse } from '../lib/schoolEmail'
 
 export function LoginPage() {
@@ -22,6 +23,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(() =>
     oauthRedirectErrorMessage(window.location.search),
   )
+  const [idleLogout] = useState(() => takeIdleLogoutNotice())
   const [busy, setBusy] = useState(false)
   const [previewSetupIncomplete, setPreviewSetupIncomplete] = useState(false)
 
@@ -149,6 +151,12 @@ export function LoginPage() {
           Click once and wait. Next you should see <strong>Google</strong> — pick{' '}
           <strong>@kentshill.org</strong>. Stay in this tab.
         </p>
+        {idleLogout ? (
+          <p className="muted login-school-hint" role="status">
+            Signed out after 75 minutes idle so this laptop would stop talking to the class
+            database. Sign in again when you are back.
+          </p>
+        ) : null}
         {error ? (
           <p className="error" role="alert">
             {error}

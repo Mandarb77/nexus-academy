@@ -52,6 +52,7 @@ import { TeacherSubmissionAlertHost } from './components/TeacherSubmissionAlertH
 import { TeacherSubmissionAlertSync } from './components/TeacherSubmissionAlertSync'
 import { StudentReviewAlertHost } from './components/StudentReviewAlertHost'
 import { StudentReviewAlertSync } from './components/StudentReviewAlertSync'
+import { StudentIdleSession } from './components/StudentIdleSession'
 import { PreferredFirstNameGate } from './components/PreferredFirstNameGate'
 import { SchoolAccountGate } from './components/SchoolAccountGate'
 import './App.css'
@@ -97,6 +98,7 @@ export default function App() {
         <StudentReviewAlertSync />
         <TeacherSubmissionAlertHost />
         <TeacherSubmissionAlertSync />
+        <StudentIdleSession />
         <PreferredFirstNameGate />
         <SchoolAccountGate />
         <Routes>

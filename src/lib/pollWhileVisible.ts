@@ -1,10 +1,12 @@
 /*
- * Interval that skips work when the tab is hidden (Chromebooks left on a page
+ * Interval that skips work when the tab is hidden (any laptop left on a page
  * overnight). Optional jitter spreads class-hour polls so they do not hit the
  * database in one wave.
  *
  * Students do not interval-poll. Teacher pending is the only hot path.
  */
+
+import { isStudentNetworkQuiet } from './idleSession'
 
 /** Approvals Pi / laptop: kids just submitted. */
 export const TEACHER_PENDING_POLL_MS = 8_000
@@ -52,6 +54,7 @@ export function refreshWhenTabAwake(fn: () => void, minMs: number): () => void {
   let last = Date.now()
   const run = () => {
     if (document.hidden) return
+    if (isStudentNetworkQuiet()) return
     const now = Date.now()
     if (now - last < minMs) return
     last = now
