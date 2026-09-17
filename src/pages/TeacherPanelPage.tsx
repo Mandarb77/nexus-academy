@@ -301,6 +301,38 @@ function PatentReviewPane({
     onReturn = () => onReturnPacket(item.packet.id)
   }
   const busy = busyApprove || busyReturn || Boolean(skillBusy)
+  const [planCopy, setPlanCopy] = useState<{ field_1: string; field_2: string } | null>(
+    item.kind === 'plan' ? item.plan.patent : null,
+  )
+
+  useEffect(() => {
+    if (item.kind !== 'plan') {
+      setPlanCopy(null)
+      return
+    }
+    const existing = item.plan.patent
+    if (existing && (existing.field_1 || existing.field_2)) {
+      setPlanCopy(existing)
+      return
+    }
+    const patentId = item.plan.id
+    let cancelled = false
+    void supabase
+      .from('patents')
+      .select('field_1, field_2')
+      .eq('id', patentId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        setPlanCopy({
+          field_1: (data.field_1 as string) ?? '',
+          field_2: (data.field_2 as string) ?? '',
+        })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [item])
 
   return (
     <>
@@ -332,8 +364,8 @@ function PatentReviewPane({
         {item.kind === 'plan' ? (
           <div className="teacher-panel-patent">
             <p className="teacher-panel-patent-title">What are they going to make?</p>
-            <p className="teacher-panel-patent-copy">{item.plan.patent?.field_1 || '—'}</p>
-            <EmpathyDisplay raw={item.plan.patent?.field_2 ?? null} />
+            <p className="teacher-panel-patent-copy">{planCopy?.field_1 || '—'}</p>
+            <EmpathyDisplay raw={planCopy?.field_2 ?? null} />
           </div>
         ) : null}
 
@@ -487,7 +519,7 @@ export function TeacherPanelPage() {
         .order('created_at', { ascending: true }),
       supabase
         .from('patents')
-        .select('id, student_id, tile_id, field_1, field_2, created_at, stage, status')
+        .select('id, student_id, tile_id, created_at, stage, status')
         .eq('stage', 'plan')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
@@ -501,62 +533,45 @@ export function TeacherPanelPage() {
         .order('created_at', { ascending: true }),
     ])
 
+    const queueErrors: string[] = []
     if (compRes.error) {
       console.error('teacher panel skill completions:', compRes.error.message)
-      setSkillRows([])
-      setDutyRows([])
-      setRedemptionRows([])
-      setLoadError(supabaseErrorText(compRes.error.message))
-      setLoading(false)
-      return
+      queueErrors.push(supabaseErrorText(compRes.error.message))
     }
     if (dutyRes.error) {
       console.error('teacher panel duty completions:', dutyRes.error.message)
-      setDutyRows([])
-      setLoadError(supabaseErrorText(dutyRes.error.message))
-      setLoading(false)
-      return
+      queueErrors.push(supabaseErrorText(dutyRes.error.message))
     }
     if (redRes.error) {
       console.error('teacher panel redemptions:', redRes.error.message)
-      setSkillRows([])
-      setDutyRows([])
-      setRedemptionRows([])
-      setLoadError(supabaseErrorText(redRes.error.message))
-      setLoading(false)
-      return
+      queueErrors.push(supabaseErrorText(redRes.error.message))
     }
     if (shopReqRes.error) {
       console.error('teacher panel shop purchase requests:', shopReqRes.error.message)
-      setShopRequestRows([])
-      setLoadError(supabaseErrorText(shopReqRes.error.message))
-      setLoading(false)
-      return
+      queueErrors.push(supabaseErrorText(shopReqRes.error.message))
     }
     if (planRes.error) {
       console.error('teacher panel plan approvals:', planRes.error.message)
-      setSkillRows([])
-      setDutyRows([])
-      setRedemptionRows([])
-      setPlanRows([])
-      setLoadError(supabaseErrorText(planRes.error.message))
-      setLoading(false)
-      return
+      queueErrors.push(`patents: ${supabaseErrorText(planRes.error.message)}`)
     }
     if (checklistRes.error) {
       console.error('teacher panel checklist approvals:', checklistRes.error.message)
-      setChecklistRows([])
-      setLoadError(supabaseErrorText(checklistRes.error.message))
-      setLoading(false)
-      return
+      queueErrors.push(`patents: ${supabaseErrorText(checklistRes.error.message)}`)
     }
 
-    const completions = compRes.data ?? []
-    const duties = dutyRes.data ?? []
-    const redemptions = redRes.data ?? []
-    const shopRequests = shopReqRes.data ?? []
-    const plans = planRes.data ?? []
-    const checklists = checklistRes.data ?? []
+    const completions = compRes.error ? [] : (compRes.data ?? [])
+    const duties = dutyRes.error ? [] : (dutyRes.data ?? [])
+    const redemptions = redRes.error ? [] : (redRes.data ?? [])
+    const shopRequests = shopReqRes.error ? [] : (shopReqRes.data ?? [])
+    const plans = planRes.error ? [] : (planRes.data ?? [])
+    const checklists = checklistRes.error ? [] : (checklistRes.data ?? [])
+    const queuesOk =
+      !compRes.error &&
+      !dutyRes.error &&
+      !redRes.error &&
+      !shopReqRes.error &&
+      !planRes.error &&
+      !checklistRes.error
 
     const studentIds = [
       ...new Set([
@@ -577,14 +592,10 @@ export function TeacherPanelPage() {
         .in('id', studentIds)
       if (pErr) {
         console.error('profiles for teacher panel:', pErr.message)
-        setSkillRows([])
-        setRedemptionRows([])
-        setLoadError(supabaseErrorText(pErr.message))
-        setLoading(false)
-        return
-      }
-      for (const p of profs ?? []) {
-        nameById.set(p.id as string, (p.display_name as string | null) ?? null)
+      } else {
+        for (const p of profs ?? []) {
+          nameById.set(p.id as string, (p.display_name as string | null) ?? null)
+        }
       }
     }
 
@@ -597,19 +608,15 @@ export function TeacherPanelPage() {
         .in('id', tileIds)
       if (tErr) {
         console.error('tiles for teacher panel:', tErr.message)
-        setSkillRows([])
-        setRedemptionRows([])
-        setLoadError(supabaseErrorText(tErr.message))
-        setLoading(false)
-        return
-      }
-      for (const t of tileRows ?? []) {
-        tileById.set(t.id as string, {
-          guild: t.guild as string,
-          skill_name: t.skill_name as string,
-          wp_value: (t.wp_value as number) ?? 10,
-          gold_value: (t.gold_value as number) ?? 10,
-        })
+      } else {
+        for (const t of tileRows ?? []) {
+          tileById.set(t.id as string, {
+            guild: t.guild as string,
+            skill_name: t.skill_name as string,
+            wp_value: (t.wp_value as number) ?? 10,
+            gold_value: (t.gold_value as number) ?? 10,
+          })
+        }
       }
     }
 
@@ -625,18 +632,13 @@ export function TeacherPanelPage() {
         .in('id', planTileIds)
       if (ptErr) {
         console.error('tiles for plan approvals:', ptErr.message)
-        setSkillRows([])
-        setRedemptionRows([])
-        setPlanRows([])
-        setLoadError(supabaseErrorText(ptErr.message))
-        setLoading(false)
-        return
-      }
-      for (const t of tiles ?? []) {
-        planTileById.set(t.id as string, {
-          guild: t.guild as string,
-          skill_name: t.skill_name as string,
-        })
+      } else {
+        for (const t of tiles ?? []) {
+          planTileById.set(t.id as string, {
+            guild: t.guild as string,
+            skill_name: t.skill_name as string,
+          })
+        }
       }
     }
 
@@ -655,163 +657,173 @@ export function TeacherPanelPage() {
         .in('id', patentIds)
       if (patErr) {
         console.error('patents for teacher panel:', patErr.message)
-        setSkillRows([])
-        setRedemptionRows([])
-        setLoadError(supabaseErrorText(patErr.message))
-        setLoading(false)
-        return
-      }
-      for (const p of pats ?? []) {
-        patentById.set(p.id as string, {
-          id: p.id as string,
-          field_1: (p.field_1 as string) ?? '',
-          field_2: (p.field_2 as string) ?? '',
-          field_3: (p.field_3 as string) ?? '',
-          field_4: (p.field_4 as string) ?? '',
-          stage: (p.stage as string | null) ?? null,
-        })
+      } else {
+        for (const p of pats ?? []) {
+          patentById.set(p.id as string, {
+            id: p.id as string,
+            field_1: (p.field_1 as string) ?? '',
+            field_2: (p.field_2 as string) ?? '',
+            field_3: (p.field_3 as string) ?? '',
+            field_4: (p.field_4 as string) ?? '',
+            stage: (p.stage as string | null) ?? null,
+          })
+        }
       }
     }
 
-    setSkillRows(
-      completions.map((r) => ({
-        id: r.id as string,
-        student_id: r.student_id as string,
-        tile_id: r.tile_id as string,
-        patent_id: (r.patent_id as string | null) ?? null,
-        created_at: r.created_at as string,
-        display_name: nameById.get(r.student_id as string) ?? null,
-        tile: tileById.get(r.tile_id as string) ?? null,
-        patent:
-          (r.patent_id as string | null)
-            ? patentById.get(r.patent_id as string) ?? null
-            : null,
-      })),
-    )
+    if (!compRes.error) {
+      setSkillRows(
+        completions.map((r) => ({
+          id: r.id as string,
+          student_id: r.student_id as string,
+          tile_id: r.tile_id as string,
+          patent_id: (r.patent_id as string | null) ?? null,
+          created_at: r.created_at as string,
+          display_name: nameById.get(r.student_id as string) ?? null,
+          tile: tileById.get(r.tile_id as string) ?? null,
+          patent:
+            (r.patent_id as string | null)
+              ? patentById.get(r.patent_id as string) ?? null
+              : null,
+        })),
+      )
+    }
 
-    setDutyRows(
-      duties.map((r) => ({
-        id: r.id as string,
-        student_id: r.student_id as string,
-        inventory_id: r.inventory_id as string,
-        item_name: r.item_name as string,
-        gold_reward: (r.gold_reward as number) ?? 0,
-        created_at: r.created_at as string,
-        display_name: nameById.get(r.student_id as string) ?? null,
-      })),
-    )
+    if (!dutyRes.error) {
+      setDutyRows(
+        duties.map((r) => ({
+          id: r.id as string,
+          student_id: r.student_id as string,
+          inventory_id: r.inventory_id as string,
+          item_name: r.item_name as string,
+          gold_reward: (r.gold_reward as number) ?? 0,
+          created_at: r.created_at as string,
+          display_name: nameById.get(r.student_id as string) ?? null,
+        })),
+      )
+    }
 
-    setRedemptionRows(
-      redemptions.map((r) => ({
-        id: r.id as string,
-        student_id: r.student_id as string,
-        inventory_id: r.inventory_id as string,
-        item_name: r.item_name as string,
-        created_at: r.created_at as string,
-        display_name: nameById.get(r.student_id as string) ?? null,
-      })),
-    )
+    if (!redRes.error) {
+      setRedemptionRows(
+        redemptions.map((r) => ({
+          id: r.id as string,
+          student_id: r.student_id as string,
+          inventory_id: r.inventory_id as string,
+          item_name: r.item_name as string,
+          created_at: r.created_at as string,
+          display_name: nameById.get(r.student_id as string) ?? null,
+        })),
+      )
+    }
 
-    setShopRequestRows(
-      shopRequests.map((r) => ({
-        id: r.id as string,
-        student_id: r.student_id as string,
-        item_name: r.item_name as string,
-        requested_grams: (r.requested_grams as number | null) ?? null,
-        calculated_gold_cost: (r.calculated_gold_cost as number) ?? 0,
-        notes: (r.notes as string | null) ?? null,
-        created_at: r.created_at as string,
-        display_name: nameById.get(r.student_id as string) ?? null,
-      })),
-    )
+    if (!shopReqRes.error) {
+      setShopRequestRows(
+        shopRequests.map((r) => ({
+          id: r.id as string,
+          student_id: r.student_id as string,
+          item_name: r.item_name as string,
+          requested_grams: (r.requested_grams as number | null) ?? null,
+          calculated_gold_cost: (r.calculated_gold_cost as number) ?? 0,
+          notes: (r.notes as string | null) ?? null,
+          created_at: r.created_at as string,
+          display_name: nameById.get(r.student_id as string) ?? null,
+        })),
+      )
+    }
 
-    setPlanRows(
-      plans.map((r) => ({
-        id: r.id as string,
-        student_id: r.student_id as string,
-        tile_id: r.tile_id as string,
-        created_at: r.created_at as string,
-        display_name: nameById.get(r.student_id as string) ?? null,
-        tile: planTileById.get(r.tile_id as string) ?? null,
-        patent: {
-          field_1: (r.field_1 as string) ?? '',
-          field_2: (r.field_2 as string) ?? '',
-        },
-      })),
-    )
+    if (!planRes.error) {
+      setPlanRows(
+        plans.map((r) => ({
+          id: r.id as string,
+          student_id: r.student_id as string,
+          tile_id: r.tile_id as string,
+          created_at: r.created_at as string,
+          display_name: nameById.get(r.student_id as string) ?? null,
+          tile: planTileById.get(r.tile_id as string) ?? null,
+          patent: null,
+        })),
+      )
+    }
 
-    setChecklistRows(
-      checklists.map((r) => ({
-        id: r.id as string,
-        student_id: r.student_id as string,
-        tile_id: r.tile_id as string,
-        created_at: r.created_at as string,
-        display_name: nameById.get(r.student_id as string) ?? null,
-        tile: planTileById.get(r.tile_id as string) ?? null,
-        upload_url: (r.upload_url as string | null) ?? null,
-      })),
-    )
+    if (!checklistRes.error) {
+      setChecklistRows(
+        checklists.map((r) => ({
+          id: r.id as string,
+          student_id: r.student_id as string,
+          tile_id: r.tile_id as string,
+          created_at: r.created_at as string,
+          display_name: nameById.get(r.student_id as string) ?? null,
+          tile: planTileById.get(r.tile_id as string) ?? null,
+          upload_url: (r.upload_url as string | null) ?? null,
+        })),
+      )
+    }
 
-    const pendingAlerts: TeacherSubmissionAlert[] = [
-      ...plans.map((r) => {
-        const sid = r.student_id as string
-        const tid = r.tile_id as string
-        return {
-          alertId: `plan:${r.id as string}`,
-          kind: 'plan' as const,
-          studentName: nameById.get(sid) ?? null,
-          detail: planTileById.get(tid)?.skill_name ?? 'Quest plan',
-        }
-      }),
-      ...checklists.map((r) => {
-        const sid = r.student_id as string
-        const tid = r.tile_id as string
-        return {
-          alertId: `checklist:${r.id as string}`,
-          kind: 'checklist' as const,
-          studentName: nameById.get(sid) ?? null,
-          detail: planTileById.get(tid)?.skill_name ?? 'Quest checklist',
-        }
-      }),
-      ...completions.map((r) => {
-        const sid = r.student_id as string
-        const tid = r.tile_id as string
-        return {
-          alertId: `skill:${r.id as string}`,
-          kind: 'skill' as const,
-          studentName: nameById.get(sid) ?? null,
-          detail: tileById.get(tid)?.skill_name ?? 'Skill completion',
-        }
-      }),
-      ...duties.map((r) => {
-        const sid = r.student_id as string
-        return {
-          alertId: `duty:${r.id as string}`,
-          kind: 'duty' as const,
-          studentName: nameById.get(sid) ?? null,
-          detail: ((r.item_name as string) ?? 'Shop duty').trim() || 'Shop duty',
-        }
-      }),
-      ...redemptions.map((r) => {
-        const sid = r.student_id as string
-        return {
-          alertId: `redemption:${r.id as string}`,
-          kind: 'redemption' as const,
-          studentName: nameById.get(sid) ?? null,
-          detail: ((r.item_name as string) ?? 'Shop item').trim() || 'Shop item',
-        }
-      }),
-      ...shopRequests.map((r) => {
-        const sid = r.student_id as string
-        return {
-          alertId: `shop-request:${r.id as string}`,
-          kind: 'redemption' as const,
-          studentName: nameById.get(sid) ?? null,
-          detail: ((r.item_name as string) ?? 'Shop request').trim() || 'Shop request',
-        }
-      }),
-    ]
-    applyTeacherPendingSnapshot(pendingAlerts)
+    if (queuesOk) {
+      const pendingAlerts: TeacherSubmissionAlert[] = [
+        ...plans.map((r) => {
+          const sid = r.student_id as string
+          const tid = r.tile_id as string
+          return {
+            alertId: `plan:${r.id as string}`,
+            kind: 'plan' as const,
+            studentName: nameById.get(sid) ?? null,
+            detail: planTileById.get(tid)?.skill_name ?? 'Quest plan',
+          }
+        }),
+        ...checklists.map((r) => {
+          const sid = r.student_id as string
+          const tid = r.tile_id as string
+          return {
+            alertId: `checklist:${r.id as string}`,
+            kind: 'checklist' as const,
+            studentName: nameById.get(sid) ?? null,
+            detail: planTileById.get(tid)?.skill_name ?? 'Quest checklist',
+          }
+        }),
+        ...completions.map((r) => {
+          const sid = r.student_id as string
+          const tid = r.tile_id as string
+          return {
+            alertId: `skill:${r.id as string}`,
+            kind: 'skill' as const,
+            studentName: nameById.get(sid) ?? null,
+            detail: tileById.get(tid)?.skill_name ?? 'Skill completion',
+          }
+        }),
+        ...duties.map((r) => {
+          const sid = r.student_id as string
+          return {
+            alertId: `duty:${r.id as string}`,
+            kind: 'duty' as const,
+            studentName: nameById.get(sid) ?? null,
+            detail: ((r.item_name as string) ?? 'Shop duty').trim() || 'Shop duty',
+          }
+        }),
+        ...redemptions.map((r) => {
+          const sid = r.student_id as string
+          return {
+            alertId: `redemption:${r.id as string}`,
+            kind: 'redemption' as const,
+            studentName: nameById.get(sid) ?? null,
+            detail: ((r.item_name as string) ?? 'Shop item').trim() || 'Shop item',
+          }
+        }),
+        ...shopRequests.map((r) => {
+          const sid = r.student_id as string
+          return {
+            alertId: `shop-request:${r.id as string}`,
+            kind: 'redemption' as const,
+            studentName: nameById.get(sid) ?? null,
+            detail: ((r.item_name as string) ?? 'Shop request').trim() || 'Shop request',
+          }
+        }),
+      ]
+      applyTeacherPendingSnapshot(pendingAlerts)
+      setLoadError(null)
+    } else {
+      setLoadError(queueErrors[0] ?? 'Could not refresh pending work.')
+    }
 
     setLoading(false)
   }, [])
@@ -1636,7 +1648,7 @@ export function TeacherPanelPage() {
 
       {loading ? (
         <p className="muted">Loading pending requests…</p>
-      ) : loadError ? null : (
+      ) : (
         <>
           {/* ========== Patent inbox + wide review, then compact duty / Kit / shop ========== */}
           <section

@@ -14,7 +14,7 @@ import { createClient } from '@supabase/supabase-js'
 import { serialAuthLock } from './authLock'
 import { createPkceBackupStorage } from './pkceVerifierBackup'
 
-const READ_TIMEOUT_MS = 8_000
+const READ_TIMEOUT_MS = 15_000
 const WRITE_TIMEOUT_MS = 15_000
 
 function timeoutResponse(): Response {
