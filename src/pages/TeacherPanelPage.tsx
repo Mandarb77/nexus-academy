@@ -29,7 +29,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
-import { pollWhileVisible } from '../lib/pollWhileVisible'
+import { pollWhileVisible, TEACHER_PENDING_POLL_MS } from '../lib/pollWhileVisible'
 import { registerTeacherPendingRefresh, scheduleTeacherPendingRefresh } from '../lib/teacherPendingRefresh'
 import { supabaseErrorText } from '../lib/supabaseErrorText'
 import { patentTileIdCandidates } from '../lib/patentTileQuery'
@@ -824,7 +824,7 @@ export function TeacherPanelPage() {
     void loadPending()
     const stopPoll = pollWhileVisible(() => {
       scheduleTeacherPendingRefresh()
-    }, 20_000)
+    }, TEACHER_PENDING_POLL_MS)
     return () => {
       unreg()
       stopPoll()
@@ -1126,7 +1126,7 @@ export function TeacherPanelPage() {
     setStudentsBusy(true)
     setStudentsLoadError(null)
     let lastMessage = 'unknown error'
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const { data, error } = await supabase
           .from('profiles')

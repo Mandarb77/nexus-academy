@@ -17,7 +17,7 @@ import { withWriteTimeout } from '../lib/writeTimeout'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import { notePatentGateRow } from '../lib/patentRealtimeGates'
-import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
+import { refreshWhenTabAwake, STUDENT_WAKE_REFRESH_MIN_MS } from '../lib/pollWhileVisible'
 import { buildTileBySlug } from '../lib/tileUnlock'
 import type { TileChip, TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
@@ -242,16 +242,12 @@ export function useSkillTree() {
     void refreshAll()
   }, [refreshAll])
 
-  // Teacher approval (and plan/checklist gates) should flip tree state without a full reload.
+  // Teacher approval: refresh when the tab wakes, not on an interval.
   useEffect(() => {
     if (!studentId || !isSupabaseConfigured) return
-    return pollWhileVisible(
-      () => {
-        void refreshLive()
-      },
-      15_000,
-      { jitterMs: jitterFromId(studentId, 6_000) },
-    )
+    return refreshWhenTabAwake(() => {
+      void refreshLive()
+    }, STUDENT_WAKE_REFRESH_MIN_MS)
   }, [studentId, refreshLive])
 
   // --- Derived: tiles grouped under canonical guild labels (for `/tree` sections) ---

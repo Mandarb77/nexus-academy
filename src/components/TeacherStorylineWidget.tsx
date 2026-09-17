@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { pollWhileVisible } from '../lib/pollWhileVisible'
+import { pollWhileVisible, TEACHER_STORYLINE_POLL_MS } from '../lib/pollWhileVisible'
 
 export type StorylineMilestone = {
   fragment_number: number
@@ -60,7 +60,7 @@ export function TeacherStorylineWidget({ enabled = true }: Props) {
     if (!enabled || !isSupabaseConfigured) return
     return pollWhileVisible(() => {
       void loadMilestone()
-    }, 30_000)
+    }, TEACHER_STORYLINE_POLL_MS)
   }, [enabled, loadMilestone])
 
   async function markDelivered() {

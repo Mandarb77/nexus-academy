@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { pollWhileVisible } from '../lib/pollWhileVisible'
+import { pollWhileVisible, CLEANUP_KIOSK_POLL_MS } from '../lib/pollWhileVisible'
 import { parseAssignments, type CleanupAssignment } from '../lib/cleanupJobs'
 import {
   CLEANUP_DICE_MS,
@@ -131,7 +131,7 @@ export function CleanupDisplayPage() {
     void tick()
     const stop = pollWhileVisible(() => {
       void tick()
-    }, 8_000)
+    }, CLEANUP_KIOSK_POLL_MS)
     return () => {
       abortRef.current?.abort()
       stop()

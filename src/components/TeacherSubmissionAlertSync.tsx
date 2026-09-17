@@ -1,8 +1,7 @@
 /*
  * Teacher pending chime snapshot — only when the approvals panel is not mounted.
  *
- * `/teacher` `loadPending` already writes the same snapshot. Skip Realtime WAL
- * subscriptions during class (they exhaust the tiny connection pool).
+ * `/teacher` `loadPending` already writes the same snapshot on an 8s poll.
  */
 
 import { useCallback, useEffect } from 'react'
@@ -14,10 +13,8 @@ import {
   registerTeacherPendingRefresh,
   scheduleTeacherPendingRefresh,
 } from '../lib/teacherPendingRefresh'
-import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
+import { pollWhileVisible, TEACHER_OTHER_POLL_MS } from '../lib/pollWhileVisible'
 import { isSupabaseConfigured } from '../lib/supabase'
-
-const POLL_MS = 20_000
 
 export function TeacherSubmissionAlertSync() {
   const { user, profile, studentPreviewMode } = useAuth()
@@ -39,13 +36,9 @@ export function TeacherSubmissionAlertSync() {
     const unreg = registerTeacherPendingRefresh(refresh)
     scheduleTeacherPendingRefresh()
 
-    const stopPoll = pollWhileVisible(
-      () => {
-        scheduleTeacherPendingRefresh()
-      },
-      POLL_MS,
-      { jitterMs: jitterFromId(user.id, 4_000) },
-    )
+    const stopPoll = pollWhileVisible(() => {
+      scheduleTeacherPendingRefresh()
+    }, TEACHER_OTHER_POLL_MS)
 
     return () => {
       unreg()

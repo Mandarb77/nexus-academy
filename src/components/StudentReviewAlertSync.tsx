@@ -27,7 +27,7 @@ import {
   type StudentReviewAlertTone,
 } from '../lib/studentReviewAlert'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
+import { refreshWhenTabAwake, STUDENT_WAKE_REFRESH_MIN_MS } from '../lib/pollWhileVisible'
 
 async function tileSkillName(tileId: string): Promise<string> {
   const { data } = await supabase.from('tiles').select('skill_name').eq('id', tileId).maybeSingle()
@@ -282,14 +282,9 @@ export function StudentReviewAlertSync() {
       seeded = true
     }
 
-    void tick()
-    return pollWhileVisible(
-      () => {
-        void tick()
-      },
-      30_000,
-      { jitterMs: jitterFromId(uid, 8_000) },
-    )
+    return refreshWhenTabAwake(() => {
+      void tick()
+    }, STUDENT_WAKE_REFRESH_MIN_MS)
   }, [user?.id, roleIsTeacher, studentPreviewMode, emit, patentNotApproved, usageNotNow])
 
   return null

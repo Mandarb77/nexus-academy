@@ -24,7 +24,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
+import { refreshWhenTabAwake, STUDENT_WAKE_REFRESH_MIN_MS } from '../lib/pollWhileVisible'
 import { startGoogleOAuth } from '../lib/googleSignIn'
 import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/profileCache'
 import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
@@ -353,16 +353,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [authReady, user?.id])
 
-  // --- Effect: poll own profile — refresh WP/gold without full page reload ---
+  // --- Wake: rarely refresh WP/gold. No interval — Chromebooks must not stampede REST. ---
   useEffect(() => {
     if (!isSupabaseConfigured || !user?.id) return
-    return pollWhileVisible(
-      () => {
-        void refreshProfile()
-      },
-      20_000,
-      { jitterMs: jitterFromId(user.id, 8_000) },
-    )
+    return refreshWhenTabAwake(() => {
+      void refreshProfile()
+    }, STUDENT_WAKE_REFRESH_MIN_MS)
   }, [user?.id, refreshProfile])
 
   const loading = !authReady || !profileReady

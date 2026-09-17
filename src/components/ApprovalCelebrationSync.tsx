@@ -10,7 +10,7 @@ import { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { hasShownApprovalCelebration, queueApprovalCelebration } from '../lib/approvalCelebration'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
+import { refreshWhenTabAwake, STUDENT_WAKE_REFRESH_MIN_MS } from '../lib/pollWhileVisible'
 
 function numAward(v: unknown): number {
   if (typeof v === 'number' && Number.isFinite(v)) return v
@@ -60,14 +60,9 @@ export function ApprovalCelebrationSync() {
       }
     }
 
-    void catchUpRecentApprovals()
-    return pollWhileVisible(
-      () => {
-        void catchUpRecentApprovals()
-      },
-      15_000,
-      { jitterMs: jitterFromId(uid, 6_000) },
-    )
+    return refreshWhenTabAwake(() => {
+      void catchUpRecentApprovals()
+    }, STUDENT_WAKE_REFRESH_MIN_MS)
   }, [user?.id, roleIsTeacher, studentPreviewMode, refreshProfile])
 
   return null

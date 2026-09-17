@@ -39,7 +39,6 @@ import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/patentPlanStatus'
 import { patentRowMatchesTile, patentTileIdCandidates } from '../lib/patentTileQuery'
 import { notePatentGateRow } from '../lib/patentRealtimeGates'
-import { pollWhileVisible } from '../lib/pollWhileVisible'
 import {
   mergeChecklistFromDraft,
   readChecklistDraft,
@@ -492,25 +491,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   useEffect(() => {
     void loadFromDatabase()
     void loadEntryNumber()
-  }, [loadFromDatabase, loadEntryNumber])
-
-  // --- Poll: plan/checklist gates + final approval ---
-  useEffect(() => {
-    if (!user?.id) return
-    const stop = pollWhileVisible(
-      () => {
-        if (uploadInFlightRef.current) return
-        void loadFromDatabase()
-        void refresh()
-      },
-      12_000,
-    )
     return () => {
-      stop()
       if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
       if (checklistSaveTimerRef.current) window.clearTimeout(checklistSaveTimerRef.current)
     }
-  }, [user?.id, tile.id, loadFromDatabase, refresh])
+  }, [loadFromDatabase, loadEntryNumber])
 
   // --- Derived progression ---
   const doneCount = checks.filter(Boolean).length

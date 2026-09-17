@@ -14,6 +14,58 @@ import { createClient } from '@supabase/supabase-js'
 import { serialAuthLock } from './authLock'
 import { createPkceBackupStorage } from './pkceVerifierBackup'
 
+const READ_TIMEOUT_MS = 8_000
+const WRITE_TIMEOUT_MS = 15_000
+
+function timeoutResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      message: 'the class database timed out. Wait a minute and try again.',
+      code: '522',
+    }),
+    { status: 503, headers: { 'Content-Type': 'application/json' } },
+  )
+}
+
+function linkAbortSignals(user: AbortSignal | undefined, timeout: AbortSignal): AbortSignal {
+  if (!user) return timeout
+  const out = new AbortController()
+  const abort = () => out.abort()
+  if (user.aborted || timeout.aborted) {
+    out.abort()
+    return out.signal
+  }
+  user.addEventListener('abort', abort, { once: true })
+  timeout.addEventListener('abort', abort, { once: true })
+  return out.signal
+}
+
+/** Fail fast on Cloudflare 522 HTML instead of hanging the Chromebook UI. */
+async function classHourFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const ms = method === 'GET' || method === 'HEAD' ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS
+  const timeout = new AbortController()
+  const timer = window.setTimeout(() => timeout.abort(), ms)
+  try {
+    const res = await fetch(input, {
+      ...init,
+      signal: linkAbortSignals(init?.signal ?? undefined, timeout.signal),
+    })
+    const ct = res.headers.get('content-type') ?? ''
+    if (res.status === 522 || (res.status >= 520 && res.status < 530) || (ct.includes('text/html') && !res.ok)) {
+      return timeoutResponse()
+    }
+    return res
+  } catch (err) {
+    if (timeout.signal.aborted) return timeoutResponse()
+    throw err
+  } finally {
+    window.clearTimeout(timer)
+  }
+}
+
+const classHourFetchOptions = { global: { fetch: classHourFetch } } as const
+
 const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? ''
 
@@ -60,6 +112,7 @@ const clientKey = isSupabaseConfigured ? anonKey : PLACEHOLDER_ANON_KEY
  * so initialize and the callback cannot burn the same code twice.
  */
 export const supabase = createClient(clientUrl, clientKey, {
+  ...classHourFetchOptions,
   auth: {
     detectSessionInUrl: false,
     flowType: 'pkce',
@@ -82,6 +135,7 @@ let oauthClient: ReturnType<typeof createClient> | null = null
 export function getSupabaseOAuth() {
   if (!oauthClient) {
     oauthClient = createClient(clientUrl, clientKey, {
+      ...classHourFetchOptions,
       auth: {
         autoRefreshToken: false,
         detectSessionInUrl: false,
