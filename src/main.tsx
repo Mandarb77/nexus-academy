@@ -17,6 +17,7 @@ import {
   canonicalUrlForCurrentLocation,
   shouldRedirectToCanonicalHost,
 } from './lib/canonicalHost'
+import { watchForNewDeploy } from './lib/watchForNewDeploy'
 
 /* Exposed for manual verification in dev tools (Safari/Firefox): type __NEXUS_NAV_LAYOUT_VERSION in the console. */
 declare global {
@@ -29,5 +30,6 @@ window.__NEXUS_NAV_LAYOUT_VERSION = '2-journey-powerups'
 if (shouldRedirectToCanonicalHost()) {
   window.location.replace(canonicalUrlForCurrentLocation())
 } else {
+  watchForNewDeploy()
   void import('./mountApp').then(({ mountApp }) => mountApp())
 }

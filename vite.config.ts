@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
     /\/$/,
     '',
   )
+  const nexusBuildId = process.env.VERCEL_GIT_COMMIT_SHA || `local-${Date.now()}`
 
   return {
   /** Load `.env` from the project root (same folder as this file). */
@@ -21,11 +22,18 @@ export default defineConfig(({ mode }) => {
     {
       name: 'html-cache-bust',
       transformIndexHtml(html) {
-        const t = Date.now()
         return html.replace(
           '</head>',
-          `  <meta name="nexus-build" content="${t}" />\n  </head>`,
+          `  <meta name="nexus-build" content="${nexusBuildId}" />\n` +
+            `  <meta name="nexus-build-id" content="${nexusBuildId}" />\n  </head>`,
         )
+      },
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'nexus-build.txt',
+          source: `${nexusBuildId}\n`,
+        })
       },
     },
     {

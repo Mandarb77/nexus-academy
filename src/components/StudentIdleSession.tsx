@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   idleMs,
   installIdleListeners,
+  onIdleWake,
   STUDENT_IDLE_LOGOUT_MS,
   STUDENT_IDLE_QUIET_MS,
   touchIdleClock,
@@ -35,7 +36,8 @@ export function StudentIdleSession() {
     touchIdleClock()
     void supabase.auth.startAutoRefresh()
 
-    const stopListen = installIdleListeners(() => {
+    installIdleListeners()
+    const stopWake = onIdleWake(() => {
       void supabase.auth.startAutoRefresh()
     })
 
@@ -52,7 +54,7 @@ export function StudentIdleSession() {
 
     return () => {
       window.clearInterval(tick)
-      stopListen()
+      stopWake()
     }
   }, [studentSeat, kiosk, signOut])
 

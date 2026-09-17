@@ -46,15 +46,27 @@ export function takeIdleLogoutNotice(): boolean {
   }
 }
 
-export function installIdleListeners(onWakeFromQuiet?: () => void): () => void {
-  if (listenersOn) return () => {}
+const wakes = new Set<() => void>()
+
+export function onIdleWake(fn: () => void): () => void {
+  wakes.add(fn)
+  return () => {
+    wakes.delete(fn)
+  }
+}
+
+/** Page-lifetime listeners. Safe to call more than once. */
+export function installIdleListeners(): void {
+  if (listenersOn) return
   listenersOn = true
 
   let moveArmed = true
   const bump = () => {
     const wasQuiet = isStudentNetworkQuiet()
     touchIdleClock()
-    if (wasQuiet) onWakeFromQuiet?.()
+    if (wasQuiet) {
+      for (const fn of wakes) fn()
+    }
   }
   const onMove = () => {
     if (!moveArmed) return
@@ -69,12 +81,4 @@ export function installIdleListeners(onWakeFromQuiet?: () => void): () => void {
   window.addEventListener('keydown', bump, { capture: true })
   window.addEventListener('touchstart', bump, { capture: true })
   window.addEventListener('mousemove', onMove, { capture: true })
-
-  return () => {
-    listenersOn = false
-    window.removeEventListener('pointerdown', bump, { capture: true })
-    window.removeEventListener('keydown', bump, { capture: true })
-    window.removeEventListener('touchstart', bump, { capture: true })
-    window.removeEventListener('mousemove', onMove, { capture: true })
-  }
 }
