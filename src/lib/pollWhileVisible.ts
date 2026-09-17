@@ -3,7 +3,7 @@
  * overnight). Optional jitter spreads class-hour polls so they do not hit the
  * database in one wave.
  *
- * Students do not interval-poll. Teacher pending is the only hot path.
+ * Students poll notices only while the tab is visible and they are not idle.
  */
 
 import { isStudentNetworkQuiet } from './idleSession'
@@ -16,15 +16,18 @@ export const TEACHER_STORYLINE_POLL_MS = 120_000
 export const CLEANUP_KIOSK_POLL_MS = 10_000
 /** Student WP / tree / toasts: only when the tab wakes, and rarely. */
 export const STUDENT_WAKE_REFRESH_MIN_MS = 180_000
+/** Chickadee + tree/patent gates while a student is actually at the keyboard. */
+export const STUDENT_NOTICE_POLL_MS = 12_000
 
 export function pollWhileVisible(
   fn: () => void,
   ms: number,
-  options?: { immediate?: boolean; jitterMs?: number },
+  options?: { immediate?: boolean; jitterMs?: number; skipWhenQuiet?: boolean },
 ): () => void {
   let intervalId = 0
   const tick = () => {
     if (document.hidden) return
+    if (options?.skipWhenQuiet && isStudentNetworkQuiet()) return
     fn()
   }
   if (options?.immediate) tick()
@@ -33,7 +36,7 @@ export function pollWhileVisible(
     intervalId = window.setInterval(tick, ms)
   }, jitter)
   const onVis = () => {
-    if (!document.hidden) fn()
+    if (!document.hidden) tick()
   }
   document.addEventListener('visibilitychange', onVis)
   return () => {
