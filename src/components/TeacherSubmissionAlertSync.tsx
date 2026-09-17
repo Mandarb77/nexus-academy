@@ -1,24 +1,23 @@
 /*
  * Teacher pending chime snapshot — only when the approvals panel is not mounted.
  *
- * `/teacher` `loadPending` already writes the same snapshot. A second Realtime
- * channel + six REST queries on the same path was a class-hour stampede.
+ * `/teacher` `loadPending` already writes the same snapshot. Skip Realtime WAL
+ * subscriptions during class (they exhaust the tiny connection pool).
  */
 
 import { useCallback, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isPatentGateUpdate } from '../lib/patentRealtimeGates'
 import { fetchTeacherPendingSnapshot } from '../lib/fetchTeacherPendingSnapshot'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
 import {
-  isPendingQueueTransition,
   registerTeacherPendingRefresh,
   scheduleTeacherPendingRefresh,
 } from '../lib/teacherPendingRefresh'
-import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
+import { isSupabaseConfigured } from '../lib/supabase'
 
-const POLL_MS = 30_000
+const POLL_MS = 20_000
 
 export function TeacherSubmissionAlertSync() {
   const { user, profile, studentPreviewMode } = useAuth()
@@ -40,54 +39,17 @@ export function TeacherSubmissionAlertSync() {
     const unreg = registerTeacherPendingRefresh(refresh)
     scheduleTeacherPendingRefresh()
 
-    const poll = window.setInterval(() => {
-      scheduleTeacherPendingRefresh()
-    }, POLL_MS)
-
-    const channel = supabase
-      .channel(`teacher-submission-alert-${user.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'patents' }, () => {
+    const stopPoll = pollWhileVisible(
+      () => {
         scheduleTeacherPendingRefresh()
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'patents' }, (payload) => {
-        if (!isPatentGateUpdate((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-          return
-        }
-        scheduleTeacherPendingRefresh()
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'skill_completions' }, () => {
-        scheduleTeacherPendingRefresh()
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'skill_completions' }, (payload) => {
-        if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-          return
-        }
-        scheduleTeacherPendingRefresh()
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'redemption_requests' }, () => {
-        scheduleTeacherPendingRefresh()
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'redemption_requests' }, (payload) => {
-        if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-          return
-        }
-        scheduleTeacherPendingRefresh()
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'shop_purchase_requests' }, () => {
-        scheduleTeacherPendingRefresh()
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'shop_purchase_requests' }, (payload) => {
-        if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-          return
-        }
-        scheduleTeacherPendingRefresh()
-      })
-      .subscribe()
+      },
+      POLL_MS,
+      { jitterMs: jitterFromId(user.id, 4_000) },
+    )
 
     return () => {
       unreg()
-      window.clearInterval(poll)
-      void supabase.removeChannel(channel)
+      stopPoll()
     }
   }, [user?.id, isTeacher, studentPreviewMode, onTeacherTree, onApprovalsPanel, refresh])
 

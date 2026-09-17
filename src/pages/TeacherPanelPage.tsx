@@ -12,7 +12,7 @@
  * privacy if kids glimpse the teacher laptop during class. Profile email is a mailto:
  * link for quick contact without leaving the panel.
  *
- * Realtime refreshes lists; new items also surface globally via
+ * Pending lists poll while this tab is visible; new items also surface globally via
  * TeacherSubmissionAlertSync (banner + chime in App.tsx).
  *
  * “Duplicate plan rows” in approve/return handlers: loops touch every pending plan row
@@ -28,9 +28,10 @@ import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAle
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
-import { isPatentGateUpdate } from '../lib/patentRealtimeGates'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
-import { isPendingQueueTransition, registerTeacherPendingRefresh, scheduleTeacherPendingRefresh } from '../lib/teacherPendingRefresh'
+import { pollWhileVisible } from '../lib/pollWhileVisible'
+import { registerTeacherPendingRefresh, scheduleTeacherPendingRefresh } from '../lib/teacherPendingRefresh'
+import { supabaseErrorText } from '../lib/supabaseErrorText'
 import { patentTileIdCandidates } from '../lib/patentTileQuery'
 import type { TeacherSubmissionAlert } from '../lib/teacherSubmissionAlert'
 
@@ -505,14 +506,14 @@ export function TeacherPanelPage() {
       setSkillRows([])
       setDutyRows([])
       setRedemptionRows([])
-      setLoadError(compRes.error.message)
+      setLoadError(supabaseErrorText(compRes.error.message))
       setLoading(false)
       return
     }
     if (dutyRes.error) {
       console.error('teacher panel duty completions:', dutyRes.error.message)
       setDutyRows([])
-      setLoadError(dutyRes.error.message)
+      setLoadError(supabaseErrorText(dutyRes.error.message))
       setLoading(false)
       return
     }
@@ -521,14 +522,14 @@ export function TeacherPanelPage() {
       setSkillRows([])
       setDutyRows([])
       setRedemptionRows([])
-      setLoadError(redRes.error.message)
+      setLoadError(supabaseErrorText(redRes.error.message))
       setLoading(false)
       return
     }
     if (shopReqRes.error) {
       console.error('teacher panel shop purchase requests:', shopReqRes.error.message)
       setShopRequestRows([])
-      setLoadError(shopReqRes.error.message)
+      setLoadError(supabaseErrorText(shopReqRes.error.message))
       setLoading(false)
       return
     }
@@ -538,14 +539,14 @@ export function TeacherPanelPage() {
       setDutyRows([])
       setRedemptionRows([])
       setPlanRows([])
-      setLoadError(planRes.error.message)
+      setLoadError(supabaseErrorText(planRes.error.message))
       setLoading(false)
       return
     }
     if (checklistRes.error) {
       console.error('teacher panel checklist approvals:', checklistRes.error.message)
       setChecklistRows([])
-      setLoadError(checklistRes.error.message)
+      setLoadError(supabaseErrorText(checklistRes.error.message))
       setLoading(false)
       return
     }
@@ -578,7 +579,7 @@ export function TeacherPanelPage() {
         console.error('profiles for teacher panel:', pErr.message)
         setSkillRows([])
         setRedemptionRows([])
-        setLoadError(pErr.message)
+        setLoadError(supabaseErrorText(pErr.message))
         setLoading(false)
         return
       }
@@ -598,7 +599,7 @@ export function TeacherPanelPage() {
         console.error('tiles for teacher panel:', tErr.message)
         setSkillRows([])
         setRedemptionRows([])
-        setLoadError(tErr.message)
+        setLoadError(supabaseErrorText(tErr.message))
         setLoading(false)
         return
       }
@@ -627,7 +628,7 @@ export function TeacherPanelPage() {
         setSkillRows([])
         setRedemptionRows([])
         setPlanRows([])
-        setLoadError(ptErr.message)
+        setLoadError(supabaseErrorText(ptErr.message))
         setLoading(false)
         return
       }
@@ -656,7 +657,7 @@ export function TeacherPanelPage() {
         console.error('patents for teacher panel:', patErr.message)
         setSkillRows([])
         setRedemptionRows([])
-        setLoadError(patErr.message)
+        setLoadError(supabaseErrorText(patErr.message))
         setLoading(false)
         return
       }
@@ -821,100 +822,13 @@ export function TeacherPanelPage() {
   useEffect(() => {
     const unreg = registerTeacherPendingRefresh(loadPending)
     void loadPending()
-    const poll = window.setInterval(() => {
+    const stopPoll = pollWhileVisible(() => {
       scheduleTeacherPendingRefresh()
-    }, 30_000)
+    }, 20_000)
     return () => {
       unreg()
-      window.clearInterval(poll)
+      stopPoll()
     }
-  }, [loadPending])
-
-  // ---------------------------------------------------------------------------
-  // Realtime — re-fetch when students touch `patents` or `skill_completions`
-  // ---------------------------------------------------------------------------
-  /** Realtime: re-fetch pending items whenever a student submits a plan, checklist, or final packet. */
-  useEffect(() => {
-    if (!isSupabaseConfigured) return
-    const channel = supabase
-      .channel('teacher-panel-student-submissions')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'patents' },
-        () => { scheduleTeacherPendingRefresh() },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'patents' },
-        (payload) => {
-          if (!isPatentGateUpdate((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-            return
-          }
-          scheduleTeacherPendingRefresh()
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'skill_completions' },
-        () => { scheduleTeacherPendingRefresh() },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'skill_completions' },
-        (payload) => {
-          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-            return
-          }
-          scheduleTeacherPendingRefresh()
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'shop_duty_completions' },
-        () => { scheduleTeacherPendingRefresh() },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'shop_duty_completions' },
-        (payload) => {
-          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-            return
-          }
-          scheduleTeacherPendingRefresh()
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'redemption_requests' },
-        () => { scheduleTeacherPendingRefresh() },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'redemption_requests' },
-        (payload) => {
-          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-            return
-          }
-          scheduleTeacherPendingRefresh()
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'shop_purchase_requests' },
-        () => { scheduleTeacherPendingRefresh() },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'shop_purchase_requests' },
-        (payload) => {
-          if (!isPendingQueueTransition((payload.old ?? {}) as Record<string, unknown>, (payload.new ?? {}) as Record<string, unknown>)) {
-            return
-          }
-          scheduleTeacherPendingRefresh()
-        },
-      )
-      .subscribe()
-    return () => { void supabase.removeChannel(channel) }
   }, [loadPending])
 
   // ---------------------------------------------------------------------------
@@ -1242,11 +1156,7 @@ export function TeacherPanelPage() {
     }
     setStudentsBusy(false)
     setStudents([])
-    const busy =
-      /failed to fetch|networkerror|load failed|timeout|abort/i.test(lastMessage)
-    const text = busy
-      ? 'Could not load students: the class database is busy. Wait a few seconds and try again.'
-      : `Could not load students: ${lastMessage}`
+    const text = `Could not load students: ${supabaseErrorText(lastMessage)}`
     console.error('teacher panel students:', lastMessage)
     setStudentsLoadError(text)
     setAdminMessage(text)

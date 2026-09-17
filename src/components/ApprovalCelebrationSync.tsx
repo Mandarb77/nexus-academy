@@ -1,7 +1,7 @@
 /*
- * Realtime listener: teacher approved a skill → queue celebration + rewards display
+ * Poll: teacher approved a skill → queue celebration + rewards display
  *
- * Fires on every transition into `approved` (plan/checklist use StudentReviewAlertSync).
+ * Fires on catch-up of recent `approved` rows (plan/checklist use StudentReviewAlertSync).
  * Awards may land in a follow-up trigger update — we still notify on the status change,
  * then refresh the profile (WP/gold) so Workshop updates without a manual reload.
  */
@@ -10,16 +10,7 @@ import { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { hasShownApprovalCelebration, queueApprovalCelebration } from '../lib/approvalCelebration'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-
-function hasOwn(obj: Record<string, unknown>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(obj, key)
-}
-
-function isFinalApproval(prev: Record<string, unknown>, next: Record<string, unknown>): boolean {
-  if (next.status !== 'approved') return false
-  if (hasOwn(prev, 'status')) return prev.status !== 'approved'
-  return true
-}
+import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
 
 function numAward(v: unknown): number {
   if (typeof v === 'number' && Number.isFinite(v)) return v
@@ -37,7 +28,7 @@ export function ApprovalCelebrationSync() {
 
     const uid = user.id
 
-    /* WP/gold also arrive on the profiles Realtime channel in AuthContext — one pull is enough. */
+    /* WP/gold also refresh from the profile poll in AuthContext — one extra pull is enough. */
     const refreshBalanceSoon = () => {
       void refreshProfile()
     }
@@ -69,49 +60,14 @@ export function ApprovalCelebrationSync() {
       }
     }
 
-    const channel = supabase
-      .channel(`approval-celebration-${uid}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'skill_completions', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const prev = (payload.old ?? {}) as Record<string, unknown>
-          const next = (payload.new ?? {}) as Record<string, unknown>
-          if (!isFinalApproval(prev, next)) return
-
-          const id = next.id != null ? String(next.id) : ''
-          if (!id) return
-
-          if (next.wp_awarded != null && next.gold_awarded != null) {
-            emit(id, numAward(next.wp_awarded), numAward(next.gold_awarded))
-            return
-          }
-
-          /* Always notify on approve; fill awards when the trigger has written them. */
-          emit(id, 0, 0)
-          void supabase
-            .from('skill_completions')
-            .select('wp_awarded, gold_awarded')
-            .eq('id', id)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data?.wp_awarded == null && data?.gold_awarded == null) return
-              const wp = numAward(data?.wp_awarded)
-              const gold = numAward(data?.gold_awarded)
-              /* Replace pending toast amounts if still showing this completion. */
-              queueApprovalCelebration({ wp, gold, completionId: id })
-            })
-        },
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          void catchUpRecentApprovals()
-        }
-      })
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
+    void catchUpRecentApprovals()
+    return pollWhileVisible(
+      () => {
+        void catchUpRecentApprovals()
+      },
+      15_000,
+      { jitterMs: jitterFromId(uid, 6_000) },
+    )
   }, [user?.id, roleIsTeacher, studentPreviewMode, refreshProfile])
 
   return null

@@ -5,8 +5,7 @@
  * (WP, gold, role, display name, preferred_first_name). Student pages read `profile`
  * for economy state; teacher pages use `role`. `updatePreferredFirstName` persists the
  * Fran-voice name collected by PreferredFirstNameGate. `refreshProfile` is called after
- * skill approvals and from a Realtime listener on the signed-in user’s profile
- * (`profiles` is in `supabase_realtime`) so WP/gold appear without a full reload.
+ * skill approvals and from a visible-tab poll so WP/gold appear without a full reload.
  * `studentPreviewMode` lets
  * teachers walk the student UI without losing their session. Retries in `fetchProfile`
  * exist because right after Google OAuth the row can lag briefly behind the session.
@@ -25,6 +24,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import type { Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
 import { startGoogleOAuth } from '../lib/googleSignIn'
 import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/profileCache'
 import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
@@ -353,34 +353,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [authReady, user?.id])
 
-  // --- Effect: Realtime on own profile — refresh WP/gold without full page reload ---
-  /*
-   * When WP changes after a teacher approves a skill (or other server-side profile
-   * update), pull the latest row without a full page reload — keeps header/student
-   * home in sync with the database.
-   */
+  // --- Effect: poll own profile — refresh WP/gold without full page reload ---
   useEffect(() => {
     if (!isSupabaseConfigured || !user?.id) return
-
-    const channel = supabase
-      .channel(`profiles-wp-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`,
-        },
-        () => {
-          void refreshProfile()
-        },
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
+    return pollWhileVisible(
+      () => {
+        void refreshProfile()
+      },
+      20_000,
+      { jitterMs: jitterFromId(user.id, 8_000) },
+    )
   }, [user?.id, refreshProfile])
 
   const loading = !authReady || !profileReady

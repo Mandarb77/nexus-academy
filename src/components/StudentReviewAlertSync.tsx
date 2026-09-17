@@ -27,7 +27,7 @@ import {
   type StudentReviewAlertTone,
 } from '../lib/studentReviewAlert'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { isPatentGateUpdate } from '../lib/patentRealtimeGates'
+import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
 
 async function tileSkillName(tileId: string): Promise<string> {
   const { data } = await supabase.from('tiles').select('skill_name').eq('id', tileId).maybeSingle()
@@ -129,138 +129,167 @@ export function StudentReviewAlertSync() {
     if (roleIsTeacher && !studentPreviewMode) return
 
     const uid = user.id
+    const patentPrev = new Map<string, Record<string, unknown>>()
+    const skillPrev = new Map<string, Record<string, unknown>>()
+    const redemptionPrev = new Map<string, Record<string, unknown>>()
+    const shopPrev = new Map<string, Record<string, unknown>>()
+    const dutyPrev = new Map<string, Record<string, unknown>>()
+    let seeded = false
 
-    const channel = supabase
-      .channel(`student-review-alert-${uid}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'patents', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const prev = (payload.old ?? {}) as Record<string, unknown>
-          const next = (payload.new ?? {}) as Record<string, unknown>
-          const patentId = next.id != null ? String(next.id) : ''
-          if (!patentId) return
-          if (!isPatentGateUpdate(prev, next)) return
+    const handlePatent = (row: Record<string, unknown>, prev: Record<string, unknown> | undefined) => {
+      const patentId = row.id != null ? String(row.id) : ''
+      if (!patentId) return
+      if (!prev) return
+      const planApproved = isPlanApproval(prev, row)
+      const checklistApproved = isChecklistApproval(prev, row)
+      const planReturned = isPlanReturn(prev, row)
+      const checklistReturned = isChecklistReturn(prev, row)
+      const tileId = String(row.tile_id ?? patentId)
 
-          const planApproved = isPlanApproval(prev, next)
-          const checklistApproved = isChecklistApproval(prev, next)
-          const planReturned = isPlanReturn(prev, next)
-          const checklistReturned = isChecklistReturn(prev, next)
-          const tileId = String(next.tile_id ?? patentId)
-
-          if (planApproved) {
-            void tileSkillName(tileId).then((quest) => {
-              /* Key by tile so duplicate plan rows only chime once per approve click. */
-              emit(`plan:${tileId}`, `Your plan for ${quest} was approved — the Work tab is open.`)
-            })
-          }
-
-          if (checklistApproved) {
-            void tileSkillName(tileId).then((quest) => {
-              emit(`checklist:${tileId}`, `Checklist approved for ${quest} — the Record tab is open.`)
-            })
-          }
-
-          if (planReturned) {
-            void continueHrefForTile(tileId, 1).then((continueHref) => {
-              emit(`patent-return:plan:${tileId}`, patentNotApproved, 'denied', {
-                continueHref,
-                continueLabel: 'Fix and continue',
-              })
-            })
-          }
-
-          if (checklistReturned) {
-            void continueHrefForTile(tileId, 2).then((continueHref) => {
-              emit(`patent-return:checklist:${tileId}`, patentNotApproved, 'denied', {
-                continueHref,
-                continueLabel: 'Fix and continue',
-              })
-            })
-          }
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'skill_completions', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const prev = (payload.old ?? {}) as Record<string, unknown>
-          const next = (payload.new ?? {}) as Record<string, unknown>
-          if (!isStatusDenial(prev, next, 'returned')) return
-          const id = next.id != null ? String(next.id) : ''
-          if (!id) return
-          const tileId = next.tile_id != null ? String(next.tile_id) : ''
-          void (tileId ? continueHrefForTile(tileId, 3) : Promise.resolve('/journey')).then((continueHref) => {
-            emit(`patent-return:skill:${id}`, patentNotApproved, 'denied', {
-              continueHref,
-              continueLabel: 'Fix and continue',
-            })
+      if (planApproved) {
+        void tileSkillName(tileId).then((quest) => {
+          emit(`plan:${tileId}`, `Your plan for ${quest} was approved — the Work tab is open.`)
+        })
+      }
+      if (checklistApproved) {
+        void tileSkillName(tileId).then((quest) => {
+          emit(`checklist:${tileId}`, `Checklist approved for ${quest} — the Record tab is open.`)
+        })
+      }
+      if (planReturned) {
+        void continueHrefForTile(tileId, 1).then((continueHref) => {
+          emit(`patent-return:plan:${tileId}`, patentNotApproved, 'denied', {
+            continueHref,
+            continueLabel: 'Fix and continue',
           })
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'redemption_requests', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const prev = (payload.old ?? {}) as Record<string, unknown>
-          const next = (payload.new ?? {}) as Record<string, unknown>
-          const id = next.id != null ? String(next.id) : ''
-          if (!id) return
-          if (isStatusApproval(prev, next)) {
-            const item = ((next.item_name as string) ?? 'Shop item').trim() || 'Shop item'
-            emit(`redemption:${id}`, `${item} — your redemption was approved.`)
-            return
-          }
-          if (isStatusDenial(prev, next, 'returned')) {
-            emit(`redemption-return:${id}`, usageNotNow, 'denied', {
-              continueHref: '/inventory',
-              continueLabel: 'Open inventory',
-            })
-          }
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'shop_purchase_requests', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const prev = (payload.old ?? {}) as Record<string, unknown>
-          const next = (payload.new ?? {}) as Record<string, unknown>
-          const id = next.id != null ? String(next.id) : ''
-          if (!id) return
-          if (isStatusApproval(prev, next)) {
-            const item = ((next.item_name as string) ?? 'Supply item').trim() || 'Supply item'
-            emit(`shop:${id}`, `${item} — your Supply request was approved.`)
-            return
-          }
-          if (isStatusDenial(prev, next, 'rejected')) {
-            emit(`shop-reject:${id}`, usageNotNow, 'denied', {
-              continueHref: '/shop',
-              continueLabel: 'Open Supply',
-            })
-          }
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'shop_duty_completions', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const prev = (payload.old ?? {}) as Record<string, unknown>
-          const next = (payload.new ?? {}) as Record<string, unknown>
-          const id = next.id != null ? String(next.id) : ''
-          if (!id) return
-          if (isStatusDenial(prev, next, 'returned')) {
-            emit(`duty-return:${id}`, usageNotNow, 'denied', {
-              continueHref: '/inventory',
-              continueLabel: 'Open inventory',
-            })
-          }
-        },
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
+        })
+      }
+      if (checklistReturned) {
+        void continueHrefForTile(tileId, 2).then((continueHref) => {
+          emit(`patent-return:checklist:${tileId}`, patentNotApproved, 'denied', {
+            continueHref,
+            continueLabel: 'Fix and continue',
+          })
+        })
+      }
     }
+
+    const tick = async () => {
+      const [patents, skills, redemptions, shops, duties] = await Promise.all([
+        supabase
+          .from('patents')
+          .select('id, tile_id, status, stage, checklist_approved, checklist_submitted')
+          .eq('student_id', uid)
+          .order('created_at', { ascending: false })
+          .limit(40),
+        supabase
+          .from('skill_completions')
+          .select('id, tile_id, status')
+          .eq('student_id', uid)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('redemption_requests')
+          .select('id, item_name, status')
+          .eq('student_id', uid)
+          .order('created_at', { ascending: false })
+          .limit(12),
+        supabase
+          .from('shop_purchase_requests')
+          .select('id, item_name, status')
+          .eq('student_id', uid)
+          .order('created_at', { ascending: false })
+          .limit(12),
+        supabase
+          .from('shop_duty_completions')
+          .select('id, status')
+          .eq('student_id', uid)
+          .order('created_at', { ascending: false })
+          .limit(12),
+      ])
+
+      const apply = (
+        rows: Record<string, unknown>[] | null,
+        prevMap: Map<string, Record<string, unknown>>,
+        onChange: (next: Record<string, unknown>, prev: Record<string, unknown> | undefined) => void,
+      ) => {
+        for (const row of rows ?? []) {
+          const id = row.id != null ? String(row.id) : ''
+          if (!id) continue
+          const prev = prevMap.get(id)
+          if (seeded) onChange(row, prev)
+          prevMap.set(id, row)
+        }
+      }
+
+      apply((patents.data ?? []) as Record<string, unknown>[], patentPrev, handlePatent)
+      apply((skills.data ?? []) as Record<string, unknown>[], skillPrev, (next, prev) => {
+        if (!prev) return
+        if (!isStatusDenial(prev, next, 'returned')) return
+        const id = next.id != null ? String(next.id) : ''
+        if (!id) return
+        const tileId = next.tile_id != null ? String(next.tile_id) : ''
+        void (tileId ? continueHrefForTile(tileId, 3) : Promise.resolve('/journey')).then((continueHref) => {
+          emit(`patent-return:skill:${id}`, patentNotApproved, 'denied', {
+            continueHref,
+            continueLabel: 'Fix and continue',
+          })
+        })
+      })
+      apply((redemptions.data ?? []) as Record<string, unknown>[], redemptionPrev, (next, prev) => {
+        if (!prev) return
+        const id = next.id != null ? String(next.id) : ''
+        if (!id) return
+        if (isStatusApproval(prev, next)) {
+          const item = ((next.item_name as string) ?? 'Shop item').trim() || 'Shop item'
+          emit(`redemption:${id}`, `${item} — your redemption was approved.`)
+          return
+        }
+        if (isStatusDenial(prev, next, 'returned')) {
+          emit(`redemption-return:${id}`, usageNotNow, 'denied', {
+            continueHref: '/inventory',
+            continueLabel: 'Open inventory',
+          })
+        }
+      })
+      apply((shops.data ?? []) as Record<string, unknown>[], shopPrev, (next, prev) => {
+        if (!prev) return
+        const id = next.id != null ? String(next.id) : ''
+        if (!id) return
+        if (isStatusApproval(prev, next)) {
+          const item = ((next.item_name as string) ?? 'Supply item').trim() || 'Supply item'
+          emit(`shop:${id}`, `${item} — your Supply request was approved.`)
+          return
+        }
+        if (isStatusDenial(prev, next, 'rejected')) {
+          emit(`shop-reject:${id}`, usageNotNow, 'denied', {
+            continueHref: '/shop',
+            continueLabel: 'Open Supply',
+          })
+        }
+      })
+      apply((duties.data ?? []) as Record<string, unknown>[], dutyPrev, (next, prev) => {
+        if (!prev) return
+        const id = next.id != null ? String(next.id) : ''
+        if (!id) return
+        if (isStatusDenial(prev, next, 'returned')) {
+          emit(`duty-return:${id}`, usageNotNow, 'denied', {
+            continueHref: '/inventory',
+            continueLabel: 'Open inventory',
+          })
+        }
+      })
+      seeded = true
+    }
+
+    void tick()
+    return pollWhileVisible(
+      () => {
+        void tick()
+      },
+      30_000,
+      { jitterMs: jitterFromId(uid, 8_000) },
+    )
   }, [user?.id, roleIsTeacher, studentPreviewMode, emit, patentNotApproved, usageNotNow])
 
   return null

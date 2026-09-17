@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { pollWhileVisible } from '../lib/pollWhileVisible'
 
 export type StorylineMilestone = {
   fragment_number: number
@@ -57,21 +58,9 @@ export function TeacherStorylineWidget({ enabled = true }: Props) {
 
   useEffect(() => {
     if (!enabled || !isSupabaseConfigured) return
-
-    const channel = supabase
-      .channel('storyline-milestones')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'storyline_milestones' },
-        () => {
-          void loadMilestone()
-        },
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
+    return pollWhileVisible(() => {
+      void loadMilestone()
+    }, 30_000)
   }, [enabled, loadMilestone])
 
   async function markDelivered() {

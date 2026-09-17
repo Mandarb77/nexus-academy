@@ -1,12 +1,13 @@
 /*
  * Raspberry Pi kiosk display (`/cleanup/display`)
  *
- * No controls: waits for INSERT on `cleanup_triggers` via Supabase Realtime, plays a
+ * No controls: polls `cleanup_triggers` while this tab is visible, plays a
  * dice-roll click train, then reveals each student → job pairing 500ms apart with a ding.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { pollWhileVisible } from '../lib/pollWhileVisible'
 import { parseAssignments, type CleanupAssignment } from '../lib/cleanupJobs'
 import {
   CLEANUP_DICE_MS,
@@ -99,27 +100,41 @@ export function CleanupDisplayPage() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
+    let lastId: string | null = null
+    let primed = false
+    setLive(true)
 
-    const channel = supabase
-      .channel('cleanup-triggers-kiosk')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'cleanup_triggers' },
-        (payload) => {
-          const row = (payload.new ?? {}) as TriggerPayload
-          const next = parseAssignments(row.assignments)
-          const label = typeof row.class_name === 'string' && row.class_name.trim() ? row.class_name.trim() : 'Cleanup'
-          if (next.length === 0) return
-          void runReveal(label, next)
-        },
-      )
-      .subscribe((status) => {
-        setLive(status === 'SUBSCRIBED')
-      })
+    const tick = async () => {
+      const { data, error } = await supabase
+        .from('cleanup_triggers')
+        .select('id, class_name, assignments')
+        .order('triggered_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (error || !data) return
+      const row = data as TriggerPayload
+      const id = row.id != null ? String(row.id) : ''
+      if (!id) return
+      if (!primed) {
+        primed = true
+        lastId = id
+        return
+      }
+      if (id === lastId) return
+      lastId = id
+      const next = parseAssignments(row.assignments)
+      const label = typeof row.class_name === 'string' && row.class_name.trim() ? row.class_name.trim() : 'Cleanup'
+      if (next.length === 0) return
+      void runReveal(label, next)
+    }
 
+    void tick()
+    const stop = pollWhileVisible(() => {
+      void tick()
+    }, 8_000)
     return () => {
       abortRef.current?.abort()
-      void supabase.removeChannel(channel)
+      stop()
     }
   }, [runReveal])
 

@@ -38,7 +38,8 @@ import { parsePatentStepParam } from '../lib/questContinue'
 import { selectStudentPatentPrimary } from '../lib/patentPlanRow'
 import { normalizePatentPlanStatus, type UiPatentPlanStatus } from '../lib/patentPlanStatus'
 import { patentRowMatchesTile, patentTileIdCandidates } from '../lib/patentTileQuery'
-import { isPatentGateUpdate, notePatentGateRow } from '../lib/patentRealtimeGates'
+import { notePatentGateRow } from '../lib/patentRealtimeGates'
+import { pollWhileVisible } from '../lib/pollWhileVisible'
 import {
   mergeChecklistFromDraft,
   readChecklistDraft,
@@ -493,42 +494,19 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     void loadEntryNumber()
   }, [loadFromDatabase, loadEntryNumber])
 
-  // --- Realtime: plan/checklist gates + final approval ---
+  // --- Poll: plan/checklist gates + final approval ---
   useEffect(() => {
     if (!user?.id) return
-    const uid = user.id
-    const channel = supabase
-      .channel(`patent-ledger-${tile.id}-${uid}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'patents', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const prev = payload.old as Record<string, unknown>
-          const next = payload.new as Record<string, unknown>
-          if (!patentRowMatchesTile(tile.id, next.tile_id)) return
-          if (uploadInFlightRef.current) return
-          if (!isPatentGateUpdate(prev, next)) return
-          void loadFromDatabase()
-          if (next.stage === 'plan' && next.status === 'approved' && prev.status !== 'approved')
-            showBanner('Plan approved — opening the Work tab.', 'success')
-          else if (next.checklist_approved === true && prev.checklist_approved !== true)
-            showBanner('Checklist approved — opening the Record tab.', 'success')
-          /* Plan/checklist/packet returns: chickadee overlay is the messenger (StudentReviewAlertSync). */
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'skill_completions', filter: `student_id=eq.${uid}` },
-        (payload) => {
-          const next = payload.new as Record<string, unknown>
-          if (!patentRowMatchesTile(tile.id, next.tile_id)) return
-          void loadFromDatabase()
-          void refresh()
-        },
-      )
-      .subscribe()
+    const stop = pollWhileVisible(
+      () => {
+        if (uploadInFlightRef.current) return
+        void loadFromDatabase()
+        void refresh()
+      },
+      12_000,
+    )
     return () => {
-      void supabase.removeChannel(channel)
+      stop()
       if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
       if (checklistSaveTimerRef.current) window.clearTimeout(checklistSaveTimerRef.current)
     }

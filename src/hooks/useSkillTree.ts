@@ -16,7 +16,8 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { withWriteTimeout } from '../lib/writeTimeout'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
-import { isPatentGateUpdate, notePatentGateRow } from '../lib/patentRealtimeGates'
+import { notePatentGateRow } from '../lib/patentRealtimeGates'
+import { jitterFromId, pollWhileVisible } from '../lib/pollWhileVisible'
 import { buildTileBySlug } from '../lib/tileUnlock'
 import type { TileChip, TileRow } from '../types/tile'
 import type { SkillCompletionStatus } from '../types/skillCompletion'
@@ -244,44 +245,14 @@ export function useSkillTree() {
   // Teacher approval (and plan/checklist gates) should flip tree state without a full reload.
   useEffect(() => {
     if (!studentId || !isSupabaseConfigured) return
-
-    const channel = supabase
-      .channel(`skill-tree-live-${studentId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'skill_completions',
-          filter: `student_id=eq.${studentId}`,
-        },
-        () => {
-          void refreshCompletions()
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'patents',
-          filter: `student_id=eq.${studentId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const prev = (payload.old ?? {}) as Record<string, unknown>
-            const next = (payload.new ?? {}) as Record<string, unknown>
-            if (!isPatentGateUpdate(prev, next)) return
-          }
-          void refreshPatentProgress()
-        },
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [studentId, refreshCompletions, refreshPatentProgress])
+    return pollWhileVisible(
+      () => {
+        void refreshLive()
+      },
+      15_000,
+      { jitterMs: jitterFromId(studentId, 6_000) },
+    )
+  }, [studentId, refreshLive])
 
   // --- Derived: tiles grouped under canonical guild labels (for `/tree` sections) ---
   const tilesByGuild = useMemo(() => {
