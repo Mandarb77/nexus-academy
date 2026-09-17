@@ -430,6 +430,7 @@ export function TeacherPanelPage() {
   const [actingChecklistId, setActingChecklistId] = useState<string | null>(null)
   const [actingChecklistKind, setActingChecklistKind] = useState<'approve' | 'return' | null>(null)
   const [studentsBusy, setStudentsBusy] = useState(false)
+  const [studentsLoadError, setStudentsLoadError] = useState<string | null>(null)
   const [archivingStudentId, setArchivingStudentId] = useState<string | null>(null)
   const [awardWpAmount, setAwardWpAmount] = useState('')
   const [awardGoldAmount, setAwardGoldAmount] = useState('')
@@ -1209,32 +1210,52 @@ export function TeacherPanelPage() {
   const loadStudents = useCallback(async () => {
     if (!isSupabaseConfigured) return
     setStudentsBusy(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, display_name, email, wp, gold, role')
-      .eq('role', 'student')
-      .is('archived_from_class_at', null)
-      .order('display_name', { ascending: true })
-    setStudentsBusy(false)
-    if (error) {
-      console.error('teacher panel students:', error.message)
-      setAdminMessage(`Could not load students: ${error.message}`)
-      setStudents([])
-      return
+    setStudentsLoadError(null)
+    let lastMessage = 'unknown error'
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, email, wp, gold, role')
+          .eq('role', 'student')
+          .is('archived_from_class_at', null)
+          .order('display_name', { ascending: true })
+        if (!error) {
+          const list: StudentSummary[] = (data ?? []).map((p) => ({
+            id: p.id as string,
+            display_name: (p.display_name as string | null) ?? null,
+            email: (p.email as string | null) ?? null,
+            wp: (p.wp as number) ?? 0,
+            gold: (p.gold as number) ?? 0,
+          }))
+          setStudents(list)
+          setStudentsBusy(false)
+          return
+        }
+        lastMessage = error.message
+      } catch (err) {
+        lastMessage = err instanceof Error ? err.message : String(err)
+      }
+      if (attempt < 2) {
+        await new Promise((resolve) => window.setTimeout(resolve, 800 * (attempt + 1)))
+      }
     }
-    const list: StudentSummary[] = (data ?? []).map((p) => ({
-      id: p.id as string,
-      display_name: (p.display_name as string | null) ?? null,
-      email: (p.email as string | null) ?? null,
-      wp: (p.wp as number) ?? 0,
-      gold: (p.gold as number) ?? 0,
-    }))
-    setStudents(list)
+    setStudentsBusy(false)
+    setStudents([])
+    const busy =
+      /failed to fetch|networkerror|load failed|timeout|abort/i.test(lastMessage)
+    const text = busy
+      ? 'Could not load students: the class database is busy. Wait a few seconds and try again.'
+      : `Could not load students: ${lastMessage}`
+    console.error('teacher panel students:', lastMessage)
+    setStudentsLoadError(text)
+    setAdminMessage(text)
   }, [])
 
   useEffect(() => {
+    if (!showStudentProgress) return
     void loadStudents()
-  }, [loadStudents])
+  }, [showStudentProgress, loadStudents])
 
   const selectedStudent = useMemo(
     () => (selectedStudentId ? students.find((s) => s.id === selectedStudentId) ?? null : null),
@@ -2245,6 +2266,13 @@ export function TeacherPanelPage() {
                 ) : (
               studentsBusy ? (
                 <p className="muted">Loading students…</p>
+              ) : studentsLoadError ? (
+                <p className="error" role="alert">
+                  {studentsLoadError}{' '}
+                  <button type="button" className="btn-secondary" onClick={() => void loadStudents()}>
+                    Try again
+                  </button>
+                </p>
               ) : students.length === 0 ? (
                 <p className="muted">No students found.</p>
               ) : (
