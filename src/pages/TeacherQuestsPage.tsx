@@ -82,11 +82,15 @@ export function TeacherQuestsPage() {
       'id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, is_core, level4_eligible, tile_description, recipient_guidance, steps'
     const coreSelect =
       'id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, tile_description, recipient_guidance, steps'
-    let { data, error } = await supabase.from('tiles').select(fullSelect).order('guild', { ascending: true }).order('skill_name', { ascending: true })
-    if (error) {
+    let data: Record<string, unknown>[] | null = null
+    let error: { message: string } | null = null
+    const full = await supabase.from('tiles').select(fullSelect).order('guild', { ascending: true }).order('skill_name', { ascending: true })
+    if (full.error) {
       const fallback = await supabase.from('tiles').select(coreSelect).order('guild', { ascending: true }).order('skill_name', { ascending: true })
-      data = fallback.data
+      data = (fallback.data as Record<string, unknown>[] | null) ?? null
       error = fallback.error
+    } else {
+      data = (full.data as Record<string, unknown>[] | null) ?? null
     }
     setLoadingQuests(false)
     if (error) { setLoadError(error.message); return }
