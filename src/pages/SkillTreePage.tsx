@@ -38,13 +38,14 @@ export function SkillTreePage() {
     completionByTileId,
     patentProgressByTileId,
     loading,
+    tilesError,
     submittingTileId,
     markComplete,
     canUseDb,
     tileBySlug,
   } = useSkillTree()
 
-  const [openGuildKey, setOpenGuildKey] = useState<string | null>(null)
+  const [openGuildKey, setOpenGuildKey] = useState<string | null>('Forge')
 
   const toggleGuild = useCallback((guildKey: string) => {
     setOpenGuildKey((prev) => (prev === guildKey ? null : guildKey))
@@ -154,6 +155,11 @@ export function SkillTreePage() {
                 className={`skill-tree-guild-panel skill-tree-guild-panel--detached skill-tree-guild--${skillTreeGuildModifier(openGuildKey)}`}
               >
                 <h3 className="skill-tree-guild-panel-title">{heading(openGuildKey)} guild</h3>
+                {tilesError ? (
+                  <p className="error" role="alert">
+                    Could not load quests ({tilesError}). Wait a moment — the list retries while this tab is open.
+                  </p>
+                ) : null}
                 {isGuildComingSoonForUser(openGuildKey, user) ? (
                   <div className="guild-coming-soon-box guild-coming-soon-box--inline">
                     <p className="guild-coming-soon-box__icon">🔒</p>

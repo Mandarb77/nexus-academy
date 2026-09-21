@@ -120,6 +120,14 @@ export function SkillTilesList({
     return (a.skill_name ?? '').localeCompare(b.skill_name ?? '', undefined, { sensitivity: 'base' })
   })
 
+  if (sortedTiles.length === 0) {
+    return (
+      <p className="muted" role="status">
+        No quests loaded for this guild yet. If the rest of Nexus is slow, wait a few seconds — this list retries on its own.
+      </p>
+    )
+  }
+
   return (
     <>
       {completeError ? (

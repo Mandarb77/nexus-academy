@@ -78,15 +78,19 @@ export function TeacherQuestsPage() {
   const loadQuests = useCallback(async () => {
     if (!isSupabaseConfigured) { setLoadingQuests(false); return }
     setLoadingQuests(true)
-    const { data, error } = await supabase
-      .from('tiles')
-      .select(
-        'id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, is_core, level4_eligible, tile_description, recipient_guidance, steps',
-      )
-      .order('guild', { ascending: true })
-      .order('skill_name', { ascending: true })
+    const fullSelect =
+      'id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, is_core, level4_eligible, tile_description, recipient_guidance, steps'
+    const coreSelect =
+      'id, guild, skill_name, wp_value, gold_value, wp_display, gold_display, quest_kind, tile_description, recipient_guidance, steps'
+    let { data, error } = await supabase.from('tiles').select(fullSelect).order('guild', { ascending: true }).order('skill_name', { ascending: true })
+    if (error) {
+      const fallback = await supabase.from('tiles').select(coreSelect).order('guild', { ascending: true }).order('skill_name', { ascending: true })
+      data = fallback.data
+      error = fallback.error
+    }
     setLoadingQuests(false)
     if (error) { setLoadError(error.message); return }
+    setLoadError(null)
     setQuests(
       (data ?? []).map((r) => {
         const row = {
@@ -508,6 +512,16 @@ export function TeacherQuestsPage() {
                     {q.steps.length > 0 ? ` · ${q.steps.length} step${q.steps.length !== 1 ? 's' : ''}` : ' · Mark complete'}
                     {q.level4_eligible ? ' · L4' : ''}
                   </p>
+                  {q.tile_description?.trim() ? (
+                    <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.88rem' }}>
+                      {q.tile_description.trim()}
+                    </p>
+                  ) : null}
+                  {q.recipient_guidance?.trim() ? (
+                    <p className="muted" style={{ margin: '0.25rem 0 0', fontSize: '0.84rem' }}>
+                      Recipient: {q.recipient_guidance.trim()}
+                    </p>
+                  ) : null}
                   <details style={{ marginTop: '0.35rem' }}>
                     <summary style={{ fontSize: '0.85rem', cursor: 'pointer', color: 'var(--muted-text,#666)' }}>View steps</summary>
                     <ol style={{ marginTop: '0.35rem', paddingLeft: '1.25rem', fontSize: '0.84rem' }}>

@@ -36,6 +36,7 @@ export function GuildSkillTreePage() {
     completionByTileId,
     patentProgressByTileId,
     loading,
+    tilesError,
     submittingTileId,
     markComplete,
     canUseDb,
@@ -128,7 +129,12 @@ export function GuildSkillTreePage() {
             </div>
           ) : null}
 
-          {slug === 'void' && !showComingSoon && tiles.length === 0 ? (
+          {tilesError ? (
+            <p className="error" role="alert">
+              Could not load quests ({tilesError}). Wait a moment — this page retries while the tab is open.
+            </p>
+          ) : null}
+          {slug === 'void' && !showComingSoon && tiles.length === 0 && !tilesError ? (
             <p className="error" role="alert">
               No Void quests in the database yet. Apply migration{' '}
               <code className="inline-code">057_void_navigators_quest_tree.sql</code> in Supabase, then refresh.

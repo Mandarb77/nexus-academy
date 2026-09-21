@@ -17,6 +17,7 @@ import { withWriteTimeout } from '../lib/writeTimeout'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
 import { pickStudentPlanPatentContext } from '../lib/patentPlanRow'
 import { notePatentGateRow } from '../lib/patentRealtimeGates'
+import { isStudentNetworkQuiet } from '../lib/idleSession'
 import { jitterFromId, pollWhileVisible, STUDENT_NOTICE_POLL_MS } from '../lib/pollWhileVisible'
 import { buildTileBySlug } from '../lib/tileUnlock'
 import type { TileChip, TileRow } from '../types/tile'
@@ -61,6 +62,34 @@ function normalizeTilesFromApi(rows: unknown[] | null): TileRow[] {
 
 const GUILD_ORDER = ['forge', 'prism', 'folded path', 'silicon covenant', 'void navigators']
 
+const TILE_SELECT_FULL =
+  'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps, checklist_footer_note, flow_in_style, record_prompts, ledger_resources'
+
+const TILE_SELECT_CORE =
+  'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps'
+
+async function fetchPublicTiles(): Promise<{ rows: unknown[] | null; error: string | null }> {
+  const run = (columns: string) =>
+    supabase
+      .from('tiles')
+      .select(columns)
+      .order('guild', { ascending: true })
+      .order('sort_order', { ascending: true })
+      .order('skill_name', { ascending: true })
+
+  let lastError: string | null = null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data, error } = await run(TILE_SELECT_FULL)
+    if (!error) return { rows: data ?? [], error: null }
+    lastError = error.message
+    await new Promise((r) => window.setTimeout(r, 500 + attempt * 700))
+  }
+
+  const fallback = await run(TILE_SELECT_CORE)
+  if (!fallback.error) return { rows: fallback.data ?? [], error: null }
+  return { rows: null, error: fallback.error.message || lastError || 'Could not load quests' }
+}
+
 export type TileCompletionState = {
   status: SkillCompletionStatus
   completionId: string
@@ -90,6 +119,7 @@ function sortGuildKeys(guilds: string[]): string[] {
 // -----------------------------------------------------------------------------
 
 export function useSkillTree() {
+  const [tilesError, setTilesError] = useState<string | null>(null)
   const { user, profile, studentPreviewMode } = useAuth()
   const [tiles, setTiles] = useState<TileRow[]>([])
   const [completionByTileId, setCompletionByTileId] = useState<
@@ -205,23 +235,17 @@ export function useSkillTree() {
     if (tilesLenRef.current === 0) setLoading(true)
 
     /*
-     * Includes `checklist_footer_note` + `flow_in_style` (migrations 034+, 056+).
-     * columns — PostgREST used to return an error for the whole `tiles` select, which made
-     * the skill tree empty for everyone until the migration landed.
+     * Fat select includes patent footer + flow connectors (migrations 034+, 056+).
+     * A schema-cache timeout used to wipe the tree because we set tiles=[] and never
+     * retried — guild headers still rendered from SKILL_TREE_SECTION_GUILDS.
      */
-    const { data: tileRows, error: tileErr } = await supabase
-      .from('tiles')
-      .select(
-        'id, guild, skill_name, slug, sort_order, unlock_after_slugs, unlock_after_any_slugs, chips, wp_value, gold_value, wp_display, gold_display, subtitle, tile_description, recipient_guidance, quest_kind, steps, checklist_footer_note, flow_in_style, record_prompts, ledger_resources',
-      )
-      .order('guild', { ascending: true })
-      .order('sort_order', { ascending: true })
-      .order('skill_name', { ascending: true })
-
+    const { rows: tileRows, error: tileErr } = await fetchPublicTiles()
     if (tileErr) {
-      console.error('tiles:', tileErr.message)
-      setTiles([])
+      console.error('tiles:', tileErr)
+      setTilesError(tileErr)
+      if (tilesLenRef.current === 0) setTiles([])
     } else {
+      setTilesError(null)
       setTiles(normalizeTilesFromApi(tileRows ?? []))
     }
 
@@ -230,8 +254,12 @@ export function useSkillTree() {
   }, [refreshCompletions, refreshPatentProgress])
 
   const refreshLive = useCallback(async () => {
+    if (tilesLenRef.current === 0) {
+      await refreshAll()
+      return
+    }
     await Promise.all([refreshCompletions(), refreshPatentProgress()])
-  }, [refreshCompletions, refreshPatentProgress])
+  }, [refreshAll, refreshCompletions, refreshPatentProgress])
 
   useEffect(() => {
     tilesLenRef.current = tiles.length
@@ -247,10 +275,12 @@ export function useSkillTree() {
     if (!studentId || !isSupabaseConfigured) return
     return pollWhileVisible(
       () => {
+        /* Empty tree after a timeout must retry even if the student is sitting still. */
+        if (tilesLenRef.current > 0 && isStudentNetworkQuiet()) return
         void refreshLive()
       },
       STUDENT_NOTICE_POLL_MS,
-      { skipWhenQuiet: true, jitterMs: jitterFromId(studentId, 4_000) },
+      { jitterMs: jitterFromId(studentId, 4_000) },
     )
   }, [studentId, refreshLive])
 
@@ -344,6 +374,7 @@ export function useSkillTree() {
     completionByTileId,
     patentProgressByTileId,
     loading,
+    tilesError,
     submittingTileId,
     markComplete,
     refresh: refreshLive,
