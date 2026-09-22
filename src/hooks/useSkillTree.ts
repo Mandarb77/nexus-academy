@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { canonicalSkillTreeGuild, guildHeading, SKILL_TREE_SECTION_GUILDS } from '../lib/guildTree'
-import { isReadOnlyBrowse } from '../lib/schoolEmail'
+import { isGuestBrowse, isReadOnlyBrowse } from '../lib/schoolEmail'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { withWriteTimeout } from '../lib/writeTimeout'
 import { normalizePatentPlanStatus } from '../lib/patentPlanStatus'
@@ -121,6 +121,7 @@ function sortGuildKeys(guilds: string[]): string[] {
 export function useSkillTree() {
   const [tilesError, setTilesError] = useState<string | null>(null)
   const { user, profile, studentPreviewMode } = useAuth()
+  const guestBrowse = isGuestBrowse(user?.email ?? profile?.email, profile)
   const [tiles, setTiles] = useState<TileRow[]>([])
   const [completionByTileId, setCompletionByTileId] = useState<
     Map<string, TileCompletionState>
@@ -135,7 +136,7 @@ export function useSkillTree() {
 
   // --- Load skill_completions into a Map (pending / approved / returned per tile) ---
   const refreshCompletions = useCallback(async () => {
-    if (!studentId || !isSupabaseConfigured) {
+    if (!studentId || !isSupabaseConfigured || guestBrowse) {
       setCompletionByTileId(new Map())
       return
     }
@@ -160,11 +161,11 @@ export function useSkillTree() {
       }
     }
     setCompletionByTileId(next)
-  }, [studentId])
+  }, [studentId, guestBrowse])
 
   // --- Latest plan-stage patent per tile (checklist progress on skill tree) ---
   const refreshPatentProgress = useCallback(async () => {
-    if (!studentId || !isSupabaseConfigured) {
+    if (!studentId || !isSupabaseConfigured || guestBrowse) {
       setPatentProgressByTileId(new Map())
       return
     }
@@ -218,7 +219,7 @@ export function useSkillTree() {
       })
     }
     setPatentProgressByTileId(next)
-  }, [studentId])
+  }, [studentId, guestBrowse])
 
   // --- One-shot refresh: all tiles + completions + patent rows (used on mount + after actions) ---
   const tilesLenRef = useRef(0)
@@ -272,7 +273,7 @@ export function useSkillTree() {
 
   // Teacher approval should flip tree/patent badges while the student is at the keyboard.
   useEffect(() => {
-    if (!studentId || !isSupabaseConfigured) return
+    if (!studentId || !isSupabaseConfigured || guestBrowse) return
     return pollWhileVisible(
       () => {
         /* Empty tree after a timeout must retry even if the student is sitting still. */
@@ -282,7 +283,7 @@ export function useSkillTree() {
       STUDENT_NOTICE_POLL_MS,
       { jitterMs: jitterFromId(studentId, 4_000) },
     )
-  }, [studentId, refreshLive])
+  }, [studentId, refreshLive, guestBrowse])
 
   // --- Derived: tiles grouped under canonical guild labels (for `/tree` sections) ---
   const tilesByGuild = useMemo(() => {

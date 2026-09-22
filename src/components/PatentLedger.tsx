@@ -575,7 +575,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   }, [loadFromDatabase, loadEntryNumber])
 
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || guestBrowse) return
     return pollWhileVisible(
       () => {
         if (uploadInFlightRef.current) return
@@ -586,7 +586,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       STUDENT_NOTICE_POLL_MS,
       { skipWhenQuiet: true },
     )
-  }, [user?.id, tile.id, loadFromDatabase, refresh])
+  }, [user?.id, tile.id, loadFromDatabase, refresh, guestBrowse])
 
   // --- Derived progression ---
   const doneCount = checks.filter(Boolean).length

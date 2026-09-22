@@ -28,6 +28,7 @@ import {
 } from '../lib/studentReviewAlert'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { jitterFromId, pollWhileVisible, STUDENT_NOTICE_POLL_MS } from '../lib/pollWhileVisible'
+import { isGuestBrowse } from '../lib/schoolEmail'
 
 async function tileSkillName(tileId: string): Promise<string> {
   const { data } = await supabase.from('tiles').select('skill_name').eq('id', tileId).maybeSingle()
@@ -127,6 +128,7 @@ export function StudentReviewAlertSync() {
   useEffect(() => {
     if (!isSupabaseConfigured || !user?.id) return
     if (roleIsTeacher && !studentPreviewMode) return
+    if (isGuestBrowse(user.email ?? profile?.email, profile)) return
 
     const uid = user.id
     const patentPrev = new Map<string, Record<string, unknown>>()
@@ -289,7 +291,7 @@ export function StudentReviewAlertSync() {
       STUDENT_NOTICE_POLL_MS,
       { skipWhenQuiet: true, jitterMs: jitterFromId(uid, 4_000), immediate: true },
     )
-  }, [user?.id, roleIsTeacher, studentPreviewMode, emit, patentNotApproved, usageNotNow])
+  }, [user?.id, user?.email, profile, roleIsTeacher, studentPreviewMode, emit, patentNotApproved, usageNotNow])
 
   return null
 }

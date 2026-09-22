@@ -30,7 +30,7 @@ import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/prof
 import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
 import { readStudentPreviewFlag, writeStudentPreviewFlag } from '../lib/studentPreview'
 import { writeIdleLogoutNotice } from '../lib/idleSession'
-import { endGuestBrowse } from '../lib/schoolEmail'
+import { endGuestBrowse, isGuestBrowse } from '../lib/schoolEmail'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -359,10 +359,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // --- Wake: rarely refresh WP/gold. No interval — Chromebooks must not stampede REST. ---
   useEffect(() => {
     if (!isSupabaseConfigured || !user?.id) return
+    if (isGuestBrowse(user.email, profile)) return
     return refreshWhenTabAwake(() => {
       void refreshProfile()
     }, STUDENT_WAKE_REFRESH_MIN_MS)
-  }, [user?.id, refreshProfile])
+  }, [user?.id, user?.email, profile, refreshProfile])
 
   const loading = !authReady || !profileReady
 

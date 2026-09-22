@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { hasShownApprovalCelebration, queueApprovalCelebration } from '../lib/approvalCelebration'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { jitterFromId, pollWhileVisible, STUDENT_NOTICE_POLL_MS } from '../lib/pollWhileVisible'
+import { isGuestBrowse } from '../lib/schoolEmail'
 
 function numAward(v: unknown): number {
   if (typeof v === 'number' && Number.isFinite(v)) return v
@@ -25,6 +26,7 @@ export function ApprovalCelebrationSync() {
   useEffect(() => {
     if (!isSupabaseConfigured || !user?.id) return
     if (roleIsTeacher && !studentPreviewMode) return
+    if (isGuestBrowse(user.email ?? profile?.email, profile)) return
 
     const uid = user.id
 
@@ -67,7 +69,7 @@ export function ApprovalCelebrationSync() {
       STUDENT_NOTICE_POLL_MS,
       { skipWhenQuiet: true, jitterMs: jitterFromId(uid, 4_000), immediate: true },
     )
-  }, [user?.id, roleIsTeacher, studentPreviewMode, refreshProfile])
+  }, [user?.id, user?.email, profile, roleIsTeacher, studentPreviewMode, refreshProfile])
 
   return null
 }
