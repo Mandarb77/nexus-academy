@@ -75,6 +75,50 @@ type PlanState = { id: string; status: PlanStatus }
 const EMPTY_DRAFT: PatentDraft = { field1: '', field3: '', field4: '', field5: '', field6: '', field7: '' }
 const VIDEO_RE = /\.(mp4|webm|mov|avi|m4v)$/i
 
+type RecordDraft = Pick<PatentDraft, 'field3' | 'field4' | 'field5' | 'field6' | 'field7'>
+
+function readRecordDraft(key: string): Partial<RecordDraft> {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return {}
+    const o = JSON.parse(raw) as Record<string, unknown>
+    const pick = (k: keyof RecordDraft) => (typeof o[k] === 'string' ? (o[k] as string) : undefined)
+    return {
+      field3: pick('field3'),
+      field4: pick('field4'),
+      field5: pick('field5'),
+      field6: pick('field6'),
+      field7: pick('field7'),
+    }
+  } catch {
+    return {}
+  }
+}
+
+function writeRecordDraft(key: string, p: PatentDraft) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        field3: p.field3,
+        field4: p.field4,
+        field5: p.field5,
+        field6: p.field6,
+        field7: p.field7,
+      } satisfies RecordDraft),
+    )
+  } catch {
+    /* private mode */
+  }
+}
+
+function studentIsTypingInField(): boolean {
+  const el = document.activeElement
+  if (!el) return false
+  const tag = el.tagName
+  return tag === 'TEXTAREA' || tag === 'INPUT'
+}
+
 function guildBackRoute(guild: string): string {
   const mod = skillTreeGuildModifier(guild)
   if (mod === 'forge') return '/tree/forge'
@@ -233,6 +277,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
 
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
+  const recordDraftKey = `nexus:tile-patent-record:${studentId}:${tile.id}`
   const checklistDraftKey = `nexus:tile-patent-checks:${studentId}:${tile.id}`
   const phaseKey = `nexus:patent-phase:${studentId}:${tile.id}`
 
@@ -263,6 +308,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const phaseHydrateSigRef = useRef<string>('')
   const hydrateGenRef = useRef(0)
+  const textHydratedRef = useRef(false)
   const uploadInFlightRef = useRef(false)
   const checklistSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fieldSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -345,7 +391,12 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     const { primary: row } = selectStudentPatentPrimary(allRows, normalizePatentPlanStatus)
 
     if (hydrateGen !== hydrateGenRef.current) return
+    const skipText = textHydratedRef.current
     if (!row) {
+      if (skipText) {
+        setInitialised(true)
+        return
+      }
       phaseHydrateSigRef.current = ''
       setPhase(1)
       try {
@@ -362,8 +413,18 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       setPlanCreatedAt(null)
       const draftF1 = localStorage.getItem(field1DraftKey) ?? ''
       const draftEmpathy = localStorage.getItem(empathyDraftKey) ?? null
-      setPatent({ ...EMPTY_DRAFT, field1: draftF1 })
+      const rd = readRecordDraft(recordDraftKey)
+      setPatent({
+        ...EMPTY_DRAFT,
+        field1: draftF1,
+        field3: rd.field3 ?? '',
+        field4: rd.field4 ?? '',
+        field5: rd.field5 ?? '',
+        field6: rd.field6 ?? '',
+        field7: rd.field7 ?? '',
+      })
       setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : EMPTY_EMPATHY)
+      textHydratedRef.current = true
       setInitialised(true)
       return
     }
@@ -415,44 +476,55 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
         /* ignore */
       }
     }
-    setChecks(nextChecks)
+    if (!skipText) {
+      setChecks(nextChecks)
+    }
     if (!uploadInFlightRef.current) {
       setUploadUrl(row.upload_url ?? null)
     }
 
-    const draftField1 = planStatus !== 'approved' ? localStorage.getItem(field1DraftKey) : null
-    const draftEmpathy = planStatus !== 'approved' ? localStorage.getItem(empathyDraftKey) : null
-    if (planStatus === 'approved') {
-      localStorage.removeItem(field1DraftKey)
-      localStorage.removeItem(empathyDraftKey)
-    }
-    const merged = fillPatentPlanFieldsFromRows(row, allRows)
-    setPatent((p) => ({
-      ...p,
-      field1: draftField1 ?? merged.field_1,
-      field3: merged.field_3,
-      field4: merged.field_4,
-    }))
-    setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(merged.field_2 || null))
-
-    /* Best-effort: field_5 + signature (043) + delivery_url (044). Ignore errors if columns absent. */
-    const { data: extra, error: extraErr } = await supabase
-      .from('patents')
-      .select('field_5, field_6, field_7, maker_signature_url, delivery_url')
-      .eq('id', row.id)
-      .maybeSingle()
-    if (hydrateGen !== hydrateGenRef.current) return
-    if (!extraErr && extra) {
-      const ex = extra as {
-        field_5: string | null
-        field_6: string | null
-        field_7: string | null
-        maker_signature_url: string | null
-        delivery_url: string | null
+    if (!skipText) {
+      const draftField1 = planStatus !== 'approved' ? localStorage.getItem(field1DraftKey) : null
+      const draftEmpathy = planStatus !== 'approved' ? localStorage.getItem(empathyDraftKey) : null
+      if (planStatus === 'approved') {
+        localStorage.removeItem(field1DraftKey)
+        localStorage.removeItem(empathyDraftKey)
       }
-      setPatent((p) => ({ ...p, field5: ex.field_5 ?? '', field6: ex.field_6 ?? '', field7: ex.field_7 ?? '' }))
-      setSignatureUrl(ex.maker_signature_url ?? null)
-      setDeliveryUrl(ex.delivery_url ?? null)
+      const merged = fillPatentPlanFieldsFromRows(row, allRows)
+      const rd = readRecordDraft(recordDraftKey)
+      setPatent((p) => ({
+        ...p,
+        field1: draftField1 ?? merged.field_1,
+        field3: rd.field3 || merged.field_3,
+        field4: rd.field4 || merged.field_4,
+      }))
+      setEmpathy(draftEmpathy ? parseEmpathy(draftEmpathy) : parseEmpathy(merged.field_2 || null))
+
+      /* Best-effort: field_5 + signature (043) + delivery_url (044). Ignore errors if columns absent. */
+      const { data: extra, error: extraErr } = await supabase
+        .from('patents')
+        .select('field_5, field_6, field_7, maker_signature_url, delivery_url')
+        .eq('id', row.id)
+        .maybeSingle()
+      if (hydrateGen !== hydrateGenRef.current) return
+      if (!extraErr && extra) {
+        const ex = extra as {
+          field_5: string | null
+          field_6: string | null
+          field_7: string | null
+          maker_signature_url: string | null
+          delivery_url: string | null
+        }
+        setPatent((p) => ({
+          ...p,
+          field5: rd.field5 || ex.field_5 || '',
+          field6: rd.field6 || ex.field_6 || '',
+          field7: rd.field7 || ex.field_7 || '',
+        }))
+        setSignatureUrl(ex.maker_signature_url ?? null)
+        setDeliveryUrl(ex.delivery_url ?? null)
+      }
+      textHydratedRef.current = true
     }
 
     const maxPh: 1 | 2 | 3 = !row.id
@@ -467,7 +539,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     const requested = urlStep != null && urlStep >= serverPh ? urlStep : serverPh
     const nextPhase = Math.min(Math.max(requested, 1), maxPh) as 1 | 2 | 3
     const sig = `${row.id}|${primaryStage}|${planStatus}|${checklistAppr}|${checklistSub}|${urlStep ?? ''}`
-    if (phaseHydrateSigRef.current !== sig) {
+    if (phaseHydrateSigRef.current !== sig && !(skipText && studentIsTypingInField())) {
       phaseHydrateSigRef.current = sig
       setPhase(nextPhase)
       try {
@@ -487,7 +559,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       }
     }
     setInitialised(true)
-  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, checklistDraftKey, phaseKey, urlStep, bypassApprovals, setSearchParams])
+  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, recordDraftKey, checklistDraftKey, phaseKey, urlStep, bypassApprovals, setSearchParams])
+
+  useEffect(() => {
+    textHydratedRef.current = false
+  }, [tile.id, user?.id])
 
   useEffect(() => {
     void loadFromDatabase()
@@ -503,6 +579,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     return pollWhileVisible(
       () => {
         if (uploadInFlightRef.current) return
+        if (studentIsTypingInField()) return
         void loadFromDatabase()
         void refresh()
       },
@@ -901,6 +978,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     }
     localStorage.removeItem(field1DraftKey)
     localStorage.removeItem(empathyDraftKey)
+    localStorage.removeItem(recordDraftKey)
     try {
       sessionStorage.removeItem(phaseKey)
     } catch {
@@ -908,6 +986,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     }
     phaseHydrateSigRef.current = ''
     setPatent(EMPTY_DRAFT)
+    textHydratedRef.current = false
     setEmpathy(EMPTY_EMPATHY)
     setChecks(Array(steps.length).fill(false))
     setPlan({ id: '', status: 'none' })
@@ -948,19 +1027,23 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
     field7: patent.field7,
   }
   const setRecordField = (field: RecordFieldKey, value: string) => {
-    if (field === 'field_3') {
-      setPatent((p) => ({ ...p, field3: value }))
-      if (plan.id) void saveFieldToDb('field_3', value, plan.id)
-      return
+    setPatent((p) => {
+      const next =
+        field === 'field_3'
+          ? { ...p, field3: value }
+          : field === 'field_4'
+            ? { ...p, field4: value }
+            : field === 'field_5'
+              ? { ...p, field5: value }
+              : field === 'field_6'
+                ? { ...p, field6: value }
+                : { ...p, field7: value }
+      writeRecordDraft(recordDraftKey, next)
+      return next
+    })
+    if (plan.id && (field === 'field_3' || field === 'field_4' || field === 'field_6')) {
+      void saveFieldToDb(field, value, plan.id)
     }
-    if (field === 'field_4') {
-      setPatent((p) => ({ ...p, field4: value }))
-      if (plan.id) void saveFieldToDb('field_4', value, plan.id)
-      return
-    }
-    if (field === 'field_5') setPatent((p) => ({ ...p, field5: value }))
-    else if (field === 'field_6') setPatent((p) => ({ ...p, field6: value }))
-    else setPatent((p) => ({ ...p, field7: value }))
   }
   /* Autopopulate: the plan's submit date once it exists, otherwise today (the day it's being filled). */
   const dateText = formatLedgerDate(planCreatedAt ?? new Date().toISOString())
