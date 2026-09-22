@@ -11,6 +11,7 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { readStudentPreviewFlag } from '../lib/studentPreview'
+import { isGuestBrowse } from '../lib/schoolEmail'
 import { isTeacherProfile } from '../lib/teacher'
 import { LoginPage } from '../pages/LoginPage'
 import { StudentHomePage } from '../pages/StudentHomePage'
@@ -29,6 +30,7 @@ export function HomeRoute() {
   }
 
   if (!user) {
+    if (isGuestBrowse(null, null)) return <StudentHomePage />
     return <LoginPage />
   }
 

@@ -11,6 +11,7 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { readStudentPreviewFlag } from '../lib/studentPreview'
+import { isGuestBrowse } from '../lib/schoolEmail'
 import { isTeacherProfile } from '../lib/teacher'
 
 export function StudentOnlyRoute({ children }: { children: ReactNode }) {
@@ -25,6 +26,7 @@ export function StudentOnlyRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
+    if (isGuestBrowse(null, null)) return <>{children}</>
     return <Navigate to="/" replace />
   }
 

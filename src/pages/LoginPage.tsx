@@ -9,16 +9,17 @@
  */
 
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { oauthRedirectErrorMessage } from '../lib/oauthRedirectError'
 import { takeIdleLogoutNotice } from '../lib/idleSession'
-import { isGuestBrowse } from '../lib/schoolEmail'
+import { beginGuestBrowse, isGuestBrowse } from '../lib/schoolEmail'
 
 export function LoginPage() {
   const { user, profile, signInWithGoogle, signOut, switchToSchoolGoogleAccount } =
     useAuth()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(() =>
     oauthRedirectErrorMessage(window.location.search),
@@ -89,14 +90,19 @@ export function LoginPage() {
           ) : null}
           <div className="signed-in-actions">
             {guest ? (
-              <button
-                type="button"
-                className="btn-primary btn-block"
-                onClick={() => void handleSwitchToSchool()}
-                disabled={busy}
-              >
-                {busy ? 'Opening Google…' : 'Switch to school account'}
-              </button>
+              <>
+                <Link to="/" className="btn-primary btn-block" onClick={() => beginGuestBrowse()}>
+                  Look around as a guest
+                </Link>
+                <button
+                  type="button"
+                  className="btn-secondary btn-block"
+                  onClick={() => void handleSwitchToSchool()}
+                  disabled={busy}
+                >
+                  {busy ? 'Opening Google…' : 'Switch to school account'}
+                </button>
+              </>
             ) : (
               <Link to="/" className="btn-primary btn-block">
                 Go to home
@@ -132,8 +138,8 @@ export function LoginPage() {
       <header className="brand">
         <h1>Nexus Academy at Kents Hill</h1>
         <p className="tagline">
-          Technology and Engineering Class — use your <strong>@kentshill.org</strong> Google
-          account, not a personal Gmail.
+          Technology and Engineering class at Kents Hill. Students use{' '}
+          <strong>@kentshill.org</strong>. Visitors may look around without an account.
         </p>
       </header>
 
@@ -148,8 +154,22 @@ export function LoginPage() {
           {busy ? 'Opening Google…' : 'Sign in with Google'}
         </button>
         <p className="muted login-school-hint">
-          Click once and wait. Next you should see <strong>Google</strong> — pick{' '}
-          <strong>@kentshill.org</strong>. Stay in this tab.
+          Class work: click once and wait, then pick <strong>@kentshill.org</strong>. Stay in this
+          tab.
+        </p>
+        <button
+          type="button"
+          className="btn-secondary btn-block"
+          onClick={() => {
+            beginGuestBrowse()
+            navigate('/', { replace: true })
+          }}
+        >
+          Look around as a guest
+        </button>
+        <p className="muted login-school-hint">
+          Guest view is read-only: you can scroll the guilds, shop, and field guide, but you cannot
+          submit, buy, or save progress.
         </p>
         {idleLogout ? (
           <p className="muted login-school-hint" role="status">

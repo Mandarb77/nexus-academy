@@ -7,14 +7,17 @@
 
 import { MainNav } from '../components/MainNav'
 import { useAuth } from '../contexts/AuthContext'
+import { isGuestBrowse } from '../lib/schoolEmail'
 import { preferredFirstNameForVoice } from '../lib/preferredFirstName'
 
 export function StudentHomePage() {
   const { profile, user, signOut } = useAuth()
+  const guest = isGuestBrowse(user?.email ?? profile?.email, profile)
 
   const voiceName = preferredFirstNameForVoice(profile)
-  const welcomeName =
-    voiceName !== 'friend'
+  const welcomeName = guest
+    ? 'visitor'
+    : voiceName !== 'friend'
       ? voiceName
       : profile?.display_name?.trim() ||
         user?.user_metadata?.full_name ||
@@ -37,7 +40,7 @@ export function StudentHomePage() {
 
       <header className="student-home-header">
         <div>
-          <p className="student-home-label">Welcome back</p>
+          <p className="student-home-label">{guest ? 'Looking around' : 'Welcome back'}</p>
           <p className="student-home-name">{welcomeName}</p>
         </div>
       </header>

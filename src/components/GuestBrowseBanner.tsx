@@ -1,5 +1,5 @@
 /*
- * Banner for off-domain Google accounts browsing the class site read-only
+ * Banner for visitors browsing the class site read-only
  *
  * School (@kentshill.org) students and teachers never see this. Visitors can look
  * around; submits, shop, and kit stay locked until they use a school account.
@@ -10,15 +10,19 @@ import { useAuth } from '../contexts/AuthContext'
 import { isGuestBrowse } from '../lib/schoolEmail'
 
 export function GuestBrowseBanner() {
-  const { user, profile, switchToSchoolGoogleAccount } = useAuth()
+  const { user, profile, signInWithGoogle, switchToSchoolGoogleAccount } = useAuth()
   const [busy, setBusy] = useState(false)
   if (!isGuestBrowse(user?.email ?? profile?.email, profile)) return null
 
-  async function onSwitch() {
+  async function onSchool() {
     setBusy(true)
     try {
-      const started = await switchToSchoolGoogleAccount()
-      if (!started) setBusy(false)
+      if (user) {
+        const started = await switchToSchoolGoogleAccount()
+        if (!started) setBusy(false)
+        return
+      }
+      await signInWithGoogle()
     } catch {
       setBusy(false)
     }
@@ -27,14 +31,19 @@ export function GuestBrowseBanner() {
   return (
     <div className="bench-preview-banner bench-preview-banner--guest" role="status">
       <span className="bench-preview-banner__text">
-        Guest view — you signed in as <strong>{user?.email}</strong>. Use your{' '}
-        <strong>@kentshill.org</strong> Google account to submit quests, buy supplies, and save
-        progress.
+        Guest view — look around, but you cannot submit quests, buy supplies, or save progress.
+        {user?.email ? (
+          <>
+            {' '}
+            Signed in as <strong>{user.email}</strong>.
+          </>
+        ) : null}{' '}
+        Use <strong>@kentshill.org</strong> to participate.
       </span>
       <button
         type="button"
         className="bench-preview-banner__exit"
-        onClick={() => void onSwitch()}
+        onClick={() => void onSchool()}
         disabled={busy}
       >
         {busy ? 'Opening Google…' : 'Use school account'}

@@ -30,6 +30,7 @@ import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/prof
 import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
 import { readStudentPreviewFlag, writeStudentPreviewFlag } from '../lib/studentPreview'
 import { writeIdleLogoutNotice } from '../lib/idleSession'
+import { endGuestBrowse } from '../lib/schoolEmail'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -380,6 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userSignedOutRef.current = true
     lastGoodSessionRef.current = null
     clearSessionBackup()
+    endGuestBrowse()
     writeStudentPreviewFlag(false)
     setStudentPreviewMode(false)
     setProfile(null)
