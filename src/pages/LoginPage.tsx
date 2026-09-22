@@ -168,8 +168,8 @@ export function LoginPage() {
           Look around as a guest
         </button>
         <p className="muted login-school-hint">
-          Guest view is read-only: you can scroll the guilds, shop, and field guide, but you cannot
-          submit, buy, or save progress.
+          Guest view is read-only: you can open guilds and patent sheets (blank forms, not student
+          answers). You cannot submit, buy, or save progress.
         </p>
         {idleLogout ? (
           <p className="muted login-school-hint" role="status">

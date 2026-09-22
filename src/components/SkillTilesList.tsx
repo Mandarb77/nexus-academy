@@ -90,6 +90,7 @@ export function SkillTilesList({
   const navigate = useNavigate()
   const { profile, studentPreviewMode, user } = useAuth()
   const readOnlyBrowse = isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)
+  const canOpenPatent = canUseDb || readOnlyBrowse
   const [completeError, setCompleteError] = useState<string | null>(null)
 
   const onMarkComplete = async (tile: TileRow) => {
@@ -269,7 +270,7 @@ export function SkillTilesList({
                     <button
                       type="button"
                       className="btn-skill btn-skill--complete"
-                      disabled={!canUseDb}
+                      disabled={!canOpenPatent}
                       onClick={() => navigate(patentHref!)}
                     >
                       Open quest
@@ -282,7 +283,7 @@ export function SkillTilesList({
                     <button
                       type="button"
                       className="btn-skill btn-skill--complete"
-                      disabled={!canUseDb}
+                      disabled={!canOpenPatent}
                       onClick={() => navigate(patentHref!)}
                     >
                       Fix and continue
@@ -295,7 +296,7 @@ export function SkillTilesList({
                     </button>
                   ) : isPatentTile ? (
                     <button type="button" className="btn-skill btn-skill--complete"
-                      disabled={!canUseDb}
+                      disabled={!canOpenPatent}
                       onClick={() => {
                         console.log('[SkillTilesList] Opening patent application for tile:', tile.id)
                         navigate(patentHref!)

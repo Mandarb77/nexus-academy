@@ -13,11 +13,12 @@ import { QuestLockedGate } from '../components/QuestLockedGate'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { skillTreeGuildModifier } from '../lib/guildTree'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 export function PatentCustomPage() {
   const { tileId } = useParams<{ tileId: string }>()
   const { signOut } = useAuth()
-  const { tiles, loading, refresh, completionByTileId, canUseDb, tileBySlug } = useSkillTree()
+  const { tiles, loading, refresh, completionByTileId, tileBySlug } = useSkillTree()
 
   // ---------------------------------------------------------------------------
   // Resolve URL tile id → `tiles` row from skill tree hook
@@ -64,7 +65,7 @@ export function PatentCustomPage() {
 
       {/* ---------- Main: loading / error / `PatentLedger` (self-contained header) ---------- */}
       <main className="page patent-game-piece-main">
-        {!canUseDb ? (
+        {!isSupabaseConfigured ? (
           <p className="muted" role="alert">Connect Supabase in <code className="inline-code">.env</code> to use this page.</p>
         ) : null}
 

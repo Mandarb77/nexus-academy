@@ -14,12 +14,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
 import { isStickerQuestLocked } from '../lib/stickerTile'
 import { isReadOnlyBrowse } from '../lib/schoolEmail'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 export function PatentStickerPage() {
   const { tileId } = useParams<{ tileId: string }>()
   const { signOut, profile, studentPreviewMode, user } = useAuth()
   const previewBrowse = isReadOnlyBrowse(studentPreviewMode, profile, user?.email ?? profile?.email)
-  const { tiles, loading, refresh, completionByTileId, canUseDb, tileBySlug } = useSkillTree()
+  const { tiles, loading, refresh, completionByTileId, tileBySlug } = useSkillTree()
 
   // ---------------------------------------------------------------------------
   // URL → tile; `isStickerQuestLocked` drives “coming soon” vs full wizard
@@ -54,7 +55,7 @@ export function PatentStickerPage() {
 
       {/* ---------- Main: locked explainer vs `PatentLedger` ---------- */}
       <main className="page patent-game-piece-main" data-patent-page="sticker-stepped">
-        {!canUseDb ? (
+        {!isSupabaseConfigured ? (
           <p className="muted" role="alert">
             Connect Supabase in <code className="inline-code">.env</code> to use this page.
           </p>

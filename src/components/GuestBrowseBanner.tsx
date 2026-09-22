@@ -31,7 +31,7 @@ export function GuestBrowseBanner() {
   return (
     <div className="bench-preview-banner bench-preview-banner--guest" role="status">
       <span className="bench-preview-banner__text">
-        Guest view — look around, but you cannot submit quests, buy supplies, or save progress.
+        Guest view — you can open guilds and patent sheets. You cannot submit, buy, or save.
         {user?.email ? (
           <>
             {' '}

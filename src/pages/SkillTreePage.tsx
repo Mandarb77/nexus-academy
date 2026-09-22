@@ -18,6 +18,7 @@ import { ReadingGuildPagesKey } from '../components/fieldGuide/ReadingGuildPages
 import { SkillTilesList } from '../components/SkillTilesList'
 import { useAuth } from '../contexts/AuthContext'
 import { useSkillTree } from '../hooks/useSkillTree'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { skillTreeGuildModifier } from '../lib/guildTree'
 import { isGuildComingSoonForUser } from '../lib/voidProtoAccess'
 
@@ -80,7 +81,7 @@ export function SkillTreePage() {
         </div>
       </header>
 
-      {!canUseDb ? (
+      {!isSupabaseConfigured ? (
         <p className="muted" role="alert">
           Connect Supabase in <code className="inline-code">.env</code> to use the skill tree.
         </p>

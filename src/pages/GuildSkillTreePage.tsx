@@ -17,6 +17,7 @@ import { guildBannerSrc } from '../lib/guildBannerAssets'
 import { guildHeading, skillTreeGuildModifier } from '../lib/guildTree'
 import { GUILD_WELCOME_BY_SLUG, type GuildWelcomeSlug } from '../lib/guildWelcomeCopy'
 import { isGuildComingSoonForUser } from '../lib/voidProtoAccess'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 type GuildSlug = GuildMarkSlug
 
@@ -87,7 +88,7 @@ export function GuildSkillTreePage() {
     >
       {header}
 
-      {!canUseDb ? (
+      {!isSupabaseConfigured ? (
         <p className="muted" role="alert">
           Connect Supabase in <code className="inline-code">.env</code> to use the skill tree.
         </p>
