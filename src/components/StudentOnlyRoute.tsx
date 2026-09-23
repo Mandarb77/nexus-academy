@@ -15,7 +15,7 @@ import { isGuestBrowse } from '../lib/schoolEmail'
 import { isTeacherProfile } from '../lib/teacher'
 
 export function StudentOnlyRoute({ children }: { children: ReactNode }) {
-  const { user, profile, authReady, studentPreviewMode } = useAuth()
+  const { user, profile, authReady, studentPreviewMode, guestBrowseOk } = useAuth()
 
   if (!authReady) {
     return (
@@ -26,7 +26,7 @@ export function StudentOnlyRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    if (isGuestBrowse(null, null)) return <>{children}</>
+    if (guestBrowseOk || isGuestBrowse(null, null)) return <>{children}</>
     return <Navigate to="/" replace />
   }
 

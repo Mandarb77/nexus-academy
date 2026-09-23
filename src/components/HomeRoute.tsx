@@ -17,7 +17,7 @@ import { LoginPage } from '../pages/LoginPage'
 import { StudentHomePage } from '../pages/StudentHomePage'
 
 export function HomeRoute() {
-  const { user, profile, studentPreviewMode } = useAuth()
+  const { user, profile, studentPreviewMode, guestBrowseOk } = useAuth()
   const previewAsStudent = studentPreviewMode || readStudentPreviewFlag()
 
   const oauthCode = new URLSearchParams(window.location.search).get('code')
@@ -30,7 +30,7 @@ export function HomeRoute() {
   }
 
   if (!user) {
-    if (isGuestBrowse(null, null)) return <StudentHomePage />
+    if (guestBrowseOk || isGuestBrowse(null, null)) return <StudentHomePage />
     return <LoginPage />
   }
 

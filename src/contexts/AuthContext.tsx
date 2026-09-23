@@ -30,7 +30,7 @@ import { profileForUi, readCachedProfile, writeCachedProfile } from '../lib/prof
 import { clearSessionBackup, readSessionBackup, writeSessionBackup } from '../lib/sessionBackup'
 import { readStudentPreviewFlag, writeStudentPreviewFlag } from '../lib/studentPreview'
 import { writeIdleLogoutNotice } from '../lib/idleSession'
-import { endGuestBrowse, isGuestBrowse } from '../lib/schoolEmail'
+import { beginGuestBrowse, endGuestBrowse, isGuestBrowse, isGuestBrowseSession } from '../lib/schoolEmail'
 import type { Profile } from '../types/profile'
 
 // -----------------------------------------------------------------------------
@@ -88,6 +88,9 @@ type AuthContextValue = {
   /** Idle student laptop uses local scope so other devices stay signed in. */
   signOut: (opts?: { idle?: boolean }) => Promise<void>
   refreshProfile: () => Promise<void>
+  /** Signed-out visitor who clicked Look around as a guest (sessionStorage + React). */
+  guestBrowseOk: boolean
+  startGuestBrowse: () => void
   /** Persist preferred first name (Fran/Barry voice + welcome). */
   updatePreferredFirstName: (name: string) => Promise<{ error: string | null }>
 }
@@ -159,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false)
   const [profileReady, setProfileReady] = useState(false)
   const [studentPreviewMode, setStudentPreviewMode] = useState(() => readStudentPreviewFlag())
+  const [guestBrowseOk, setGuestBrowseOk] = useState(() => isGuestBrowseSession())
   const userSignedOutRef = useRef(false)
   const lastGoodSessionRef = useRef<Session | null>(readSessionBackup())
   const lastRestoreAtRef = useRef(0)
@@ -378,11 +382,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true
   }, [])
 
+  const startGuestBrowse = useCallback(() => {
+    beginGuestBrowse()
+    setGuestBrowseOk(true)
+  }, [])
+
   const signOut = useCallback(async (opts?: { idle?: boolean }) => {
     userSignedOutRef.current = true
     lastGoodSessionRef.current = null
     clearSessionBackup()
     endGuestBrowse()
+    setGuestBrowseOk(false)
     writeStudentPreviewFlag(false)
     setStudentPreviewMode(false)
     setProfile(null)
@@ -416,6 +426,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       switchToSchoolGoogleAccount,
       signOut,
+      startGuestBrowse,
+      guestBrowseOk,
       refreshProfile,
       updatePreferredFirstName,
     }),
@@ -430,6 +442,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       switchToSchoolGoogleAccount,
       signOut,
+      startGuestBrowse,
+      guestBrowseOk,
       refreshProfile,
       updatePreferredFirstName,
     ],

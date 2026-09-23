@@ -14,10 +14,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { oauthRedirectErrorMessage } from '../lib/oauthRedirectError'
 import { takeIdleLogoutNotice } from '../lib/idleSession'
-import { beginGuestBrowse, isGuestBrowse } from '../lib/schoolEmail'
+import { isGuestBrowse } from '../lib/schoolEmail'
 
 export function LoginPage() {
-  const { user, profile, signInWithGoogle, signOut, switchToSchoolGoogleAccount } =
+  const { user, profile, signInWithGoogle, signOut, switchToSchoolGoogleAccount, startGuestBrowse } =
     useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -91,7 +91,7 @@ export function LoginPage() {
           <div className="signed-in-actions">
             {guest ? (
               <>
-                <Link to="/" className="btn-primary btn-block" onClick={() => beginGuestBrowse()}>
+                <Link to="/" className="btn-primary btn-block" onClick={() => startGuestBrowse()}>
                   Look around as a guest
                 </Link>
                 <button
@@ -161,7 +161,7 @@ export function LoginPage() {
           type="button"
           className="btn-secondary btn-block"
           onClick={() => {
-            beginGuestBrowse()
+            startGuestBrowse()
             navigate('/', { replace: true })
           }}
         >
