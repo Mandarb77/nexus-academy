@@ -2874,6 +2874,84 @@ a.btn-primary {
   font-size: 0.85rem;
 }
 
+.teacher-gradebook {
+  margin: 0 0 1.15rem;
+}
+
+.teacher-gradebook__lede {
+  margin: 0 0 0.85rem;
+  max-width: 42rem;
+}
+
+.teacher-gradebook__example {
+  font-style: italic;
+}
+
+.teacher-gradebook__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.teacher-gradebook__empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.teacher-gradebook__picks {
+  margin: 0 0 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.teacher-gradebook__pick {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.teacher-gradebook__count {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.teacher-gradebook__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.teacher-gradebook__preview-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.teacher-gradebook__preview {
+  width: 100%;
+  min-height: 8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.4;
+  resize: vertical;
+}
+
 .teacher-panel-section {
   margin-bottom: 2.25rem;
 }

@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
+import { TeacherGradeBookExport } from '../components/TeacherGradeBookExport'
 import { TeacherStorylineWidget } from '../components/TeacherStorylineWidget'
 import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAlertToggle'
 import { useAuth } from '../contexts/AuthContext'
@@ -2198,6 +2199,8 @@ export function TeacherPanelPage() {
               ) : students.length === 0 ? (
                 <p className="muted">No students found.</p>
               ) : (
+                <>
+                <TeacherGradeBookExport students={students} />
                 <ul className="teacher-panel-students">
                   {students.map((s) => {
                     const name = s.display_name?.trim() || `Student (${s.id.slice(0, 8)}…)`
@@ -2231,6 +2234,7 @@ export function TeacherPanelPage() {
                     )
                   })}
                 </ul>
+                </>
               )
                 )}
               </div>
