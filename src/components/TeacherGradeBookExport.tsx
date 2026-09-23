@@ -5,10 +5,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildGradeBookRows,
+  compareStudentsForGradeBook,
   gradeBookLines,
-  gradeBookShortName,
+  gradeBookRosterLabel,
   gradeBookTsv,
+  sortGradeBookRows,
   type GradeBookCompletion,
+  type GradeBookRow,
+  type GradeBookSort,
   type GradeBookStudent,
 } from '../lib/gradeBookExport'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -16,6 +20,8 @@ import { supabaseErrorText } from '../lib/supabaseErrorText'
 
 type Props = {
   students: GradeBookStudent[]
+  sort: GradeBookSort
+  onSortChange: (sort: GradeBookSort) => void
 }
 
 const IN_CHUNK = 80
@@ -81,15 +87,13 @@ async function fetchApprovedForStudents(studentIds: string[]): Promise<GradeBook
   })
 }
 
-export function TeacherGradeBookExport({ students }: Props) {
+export function TeacherGradeBookExport({ students, sort, onSortChange }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [includeEmpty, setIncludeEmpty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copyNote, setCopyNote] = useState<string | null>(null)
-  const [lines, setLines] = useState('')
-  const [tsv, setTsv] = useState('')
-  const [rowCount, setRowCount] = useState(0)
+  const [rows, setRows] = useState<GradeBookRow[]>([])
   const primed = useRef(false)
 
   useEffect(() => {
@@ -107,10 +111,23 @@ export function TeacherGradeBookExport({ students }: Props) {
     setSelectedIds((prev) => new Set([...prev].filter((id) => live.has(id))))
   }, [students])
 
-  const selectedStudents = useMemo(
-    () => students.filter((s) => selectedIds.has(s.id)),
-    [students, selectedIds],
+  const pickedStudents = useMemo(
+    () =>
+      students
+        .filter((s) => selectedIds.has(s.id))
+        .sort((a, b) => compareStudentsForGradeBook(a, b, sort)),
+    [students, selectedIds, sort],
   )
+
+  const listedStudents = useMemo(
+    () => [...students].sort((a, b) => compareStudentsForGradeBook(a, b, sort)),
+    [students, sort],
+  )
+
+  const sortedRows = useMemo(() => sortGradeBookRows(rows, sort), [rows, sort])
+  const lines = useMemo(() => gradeBookLines(sortedRows), [sortedRows])
+  const tsv = useMemo(() => (sortedRows.length ? gradeBookTsv(sortedRows) : ''), [sortedRows])
+  const rowCount = sortedRows.length
 
   function toggle(id: string) {
     setSelectedIds((prev) => {
@@ -128,24 +145,20 @@ export function TeacherGradeBookExport({ students }: Props) {
       setError('Supabase is not configured.')
       return
     }
-    if (selectedStudents.length === 0) {
+    if (pickedStudents.length === 0) {
       setError('Check at least one student, or choose All students.')
       return
     }
     setBusy(true)
     try {
-      const completions = await fetchApprovedForStudents(selectedStudents.map((s) => s.id))
-      const rows = buildGradeBookRows(selectedStudents, completions, { includeEmpty })
-      setRowCount(rows.length)
-      setLines(gradeBookLines(rows))
-      setTsv(gradeBookTsv(rows))
-      if (rows.length === 0) {
+      const completions = await fetchApprovedForStudents(pickedStudents.map((s) => s.id))
+      const next = buildGradeBookRows(pickedStudents, completions, { includeEmpty, sort })
+      setRows(next)
+      if (next.length === 0) {
         setCopyNote('No approved quests for the selected students.')
       }
     } catch (err) {
-      setLines('')
-      setTsv('')
-      setRowCount(0)
+      setRows([])
       setError(`Could not build the list: ${supabaseErrorText(err instanceof Error ? err.message : String(err))}`)
     } finally {
       setBusy(false)
@@ -188,6 +201,16 @@ export function TeacherGradeBookExport({ students }: Props) {
         >
           Clear checks
         </button>
+        <label className="teacher-gradebook__sort">
+          Sort by
+          <select
+            value={sort}
+            onChange={(e) => onSortChange(e.target.value === 'last' ? 'last' : 'first')}
+          >
+            <option value="first">First name</option>
+            <option value="last">Last initial</option>
+          </select>
+        </label>
         <label className="teacher-gradebook__empty">
           <input
             type="checkbox"
@@ -201,10 +224,10 @@ export function TeacherGradeBookExport({ students }: Props) {
       {students.length === 0 ? (
         <p className="muted">No students on the roster.</p>
       ) : (
-        <fieldset className="teacher-gradebook__picks">
+        <fieldset className={`teacher-gradebook__picks${sort === 'last' ? ' teacher-gradebook__picks--last' : ''}`}>
           <legend className="visually-hidden">Students to include</legend>
-          {students.map((s) => {
-            const label = s.display_name?.trim() || gradeBookShortName(s.display_name, s.email)
+          {listedStudents.map((s) => {
+            const label = gradeBookRosterLabel(s, sort)
             return (
               <label key={s.id} className="teacher-gradebook__pick">
                 <input

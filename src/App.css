@@ -2902,6 +2902,17 @@ a.btn-primary {
   font-size: 0.9rem;
 }
 
+.teacher-gradebook__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.teacher-gradebook__sort select {
+  font: inherit;
+}
+
 .teacher-gradebook__picks {
   margin: 0 0 0.5rem;
   padding: 0.65rem 0.75rem;
@@ -2912,6 +2923,10 @@ a.btn-primary {
   gap: 0.35rem 0.75rem;
   max-height: 14rem;
   overflow: auto;
+}
+
+.teacher-gradebook__picks--last {
+  grid-template-columns: minmax(0, 22rem);
 }
 
 .teacher-gradebook__pick {

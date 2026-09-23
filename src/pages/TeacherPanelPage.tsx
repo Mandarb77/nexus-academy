@@ -27,6 +27,11 @@ import { TeacherGradeBookExport } from '../components/TeacherGradeBookExport'
 import { TeacherStorylineWidget } from '../components/TeacherStorylineWidget'
 import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAlertToggle'
 import { useAuth } from '../contexts/AuthContext'
+import {
+  compareStudentsForGradeBook,
+  gradeBookRosterLabel,
+  type GradeBookSort,
+} from '../lib/gradeBookExport'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { parseEmpathy } from '../lib/empathy'
 import { applyTeacherPendingSnapshot } from '../lib/teacherPendingSnapshot'
@@ -475,6 +480,7 @@ export function TeacherPanelPage() {
   const [previewClearing, setPreviewClearing] = useState(false)
   /* Roster hidden until opened — avoids flashing student names if the panel is visible. */
   const [showStudentProgress, setShowStudentProgress] = useState(false)
+  const [progressSort, setProgressSort] = useState<GradeBookSort>('first')
   const [penaltyByCompletionId, setPenaltyByCompletionId] = useState<Map<string, number>>(
     () => new Map(),
   )
@@ -1183,6 +1189,11 @@ export function TeacherPanelPage() {
   const selectedStudent = useMemo(
     () => (selectedStudentId ? students.find((s) => s.id === selectedStudentId) ?? null : null),
     [students, selectedStudentId],
+  )
+
+  const progressStudents = useMemo(
+    () => [...students].sort((a, b) => compareStudentsForGradeBook(a, b, progressSort)),
+    [students, progressSort],
   )
 
   const archiveStudentFromRoster = async (student: StudentSummary) => {
@@ -2200,10 +2211,14 @@ export function TeacherPanelPage() {
                 <p className="muted">No students found.</p>
               ) : (
                 <>
-                <TeacherGradeBookExport students={students} />
+                <TeacherGradeBookExport
+                  students={progressStudents}
+                  sort={progressSort}
+                  onSortChange={setProgressSort}
+                />
                 <ul className="teacher-panel-students">
-                  {students.map((s) => {
-                    const name = s.display_name?.trim() || `Student (${s.id.slice(0, 8)}…)`
+                  {progressStudents.map((s) => {
+                    const name = gradeBookRosterLabel(s, progressSort)
                     const archiving = archivingStudentId === s.id
                     return (
                       <li key={s.id}>
