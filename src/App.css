@@ -3425,6 +3425,14 @@ a.btn-primary {
   align-items: flex-start;
 }
 
+.teacher-panel-student-answers {
+  flex: 1 1 100%;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
 .teacher-panel-mini-main {
   display: flex;
   flex-direction: column;

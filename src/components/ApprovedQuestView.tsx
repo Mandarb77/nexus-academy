@@ -25,6 +25,8 @@ type Props = {
   empathy?: EmpathyDraft | null
   uploadUrl?: string | null
   repeatNote?: string
+  /** Teacher student-progress uses the same card without student “trophy” copy. */
+  variant?: 'student' | 'teacher'
 }
 
 // -----------------------------------------------------------------------------
@@ -76,21 +78,31 @@ function EmpathyReadOnly({ e }: { e: EmpathyDraft }) {
 // ApprovedQuestView — banner + checklist + answers + optional artifact URL
 // -----------------------------------------------------------------------------
 
-export function ApprovedQuestView({ steps, checks, answers, empathy, uploadUrl, repeatNote }: Props) {
+export function ApprovedQuestView({
+  steps,
+  checks,
+  answers,
+  empathy,
+  uploadUrl,
+  repeatNote,
+  variant = 'student',
+}: Props) {
+  const teacher = variant === 'teacher'
   return (
     <div className="approved-quest-view">
-      {/* ========== Approved banner ========== */}
-      <div className="approved-quest-banner" role="status">
-        <span className="approved-quest-banner__icon">✅</span>
-        <div>
-          <p className="approved-quest-banner__title">Quest approved!</p>
-          <p className="approved-quest-banner__sub">Your work and answers are saved below for reference.</p>
+      {teacher ? null : (
+        <div className="approved-quest-banner" role="status">
+          <span className="approved-quest-banner__icon">✅</span>
+          <div>
+            <p className="approved-quest-banner__title">Quest approved!</p>
+            <p className="approved-quest-banner__sub">Your work and answers are saved below for reference.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ========== Checklist (read-only) ========== */}
       <section className="approved-quest-section">
-        <h3 className="approved-quest-section-heading">Your checklist</h3>
+        <h3 className="approved-quest-section-heading">{teacher ? 'Checklist' : 'Your checklist'}</h3>
         <ul className="approved-quest-checklist">
           {steps.map((label, idx) => (
             <li key={idx} className="approved-quest-checklist-item">
@@ -108,7 +120,7 @@ export function ApprovedQuestView({ steps, checks, answers, empathy, uploadUrl, 
 
       {/* ========== Written answers (+ empathy slot) ========== */}
       <section className="approved-quest-section">
-        <h3 className="approved-quest-section-heading">Your answers</h3>
+        <h3 className="approved-quest-section-heading">{teacher ? 'Answers' : 'Your answers'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {answers.map(({ label, value }) =>
             label === '__empathy__' ? (

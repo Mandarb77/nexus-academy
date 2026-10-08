@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { TeacherGradeBookExport } from '../components/TeacherGradeBookExport'
+import { TeacherStudentQuestAnswers } from '../components/TeacherStudentQuestAnswers'
 import { TeacherStorylineWidget } from '../components/TeacherStorylineWidget'
 import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAlertToggle'
 import { useAuth } from '../contexts/AuthContext'
@@ -485,6 +486,7 @@ export function TeacherPanelPage() {
     () => new Map(),
   )
   const [resettingCompletionId, setResettingCompletionId] = useState<string | null>(null)
+  const [expandedAnswersCompletionId, setExpandedAnswersCompletionId] = useState<string | null>(null)
   /** Selected patent inbox row (`plan:id` / `checklist:id` / `packet:id`). */
   const [patentInboxKey, setPatentInboxKey] = useState<string | null>(null)
 
@@ -1224,6 +1226,7 @@ export function TeacherPanelPage() {
       setStudentSkills([])
       setStudentInventory([])
       setStudentRedemptions([])
+      setExpandedAnswersCompletionId(null)
     }
     void loadStudents()
   }
@@ -1977,6 +1980,7 @@ export function TeacherPanelPage() {
                       setStudentSkills([])
                       setStudentInventory([])
                       setStudentRedemptions([])
+                      setExpandedAnswersCompletionId(null)
                     }
                     return !open
                   })
@@ -1999,6 +2003,7 @@ export function TeacherPanelPage() {
                     setStudentSkills([])
                     setStudentInventory([])
                     setStudentRedemptions([])
+                    setExpandedAnswersCompletionId(null)
                   }}
                 >
                   ← Back to students
@@ -2083,6 +2088,9 @@ export function TeacherPanelPage() {
 
                 <div className="card teacher-panel-student-block">
                   <h3 className="teacher-panel-subheading">Skill completions</h3>
+                  <p className="muted teacher-panel-award-note">
+                    Open a quest to read the patent questions and this student’s answers.
+                  </p>
                   {studentsBusy ? (
                     <p className="muted">Loading…</p>
                   ) : studentSkills.length === 0 ? (
@@ -2143,12 +2151,27 @@ export function TeacherPanelPage() {
                               <button
                                 type="button"
                                 className="btn-secondary"
+                                aria-expanded={expandedAnswersCompletionId === r.id}
+                                onClick={() =>
+                                  setExpandedAnswersCompletionId((prev) => (prev === r.id ? null : r.id))
+                                }
+                              >
+                                {expandedAnswersCompletionId === r.id ? 'Hide answers' : 'Show answers'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-secondary"
                                 disabled={!canReset || missingAwards || busy}
                                 onClick={() => void resetCompletion(r)}
                               >
                                 {busy ? 'Resetting…' : 'Reset'}
                               </button>
                             </div>
+                            {expandedAnswersCompletionId === r.id && selectedStudentId ? (
+                              <div className="teacher-panel-student-answers">
+                                <TeacherStudentQuestAnswers studentId={selectedStudentId} tileId={r.tile_id} />
+                              </div>
+                            ) : null}
                           </li>
                         )
                       })}
