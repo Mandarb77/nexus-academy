@@ -101,6 +101,7 @@ export function ApprovedQuestView({
       )}
 
       {/* ========== Checklist (read-only) ========== */}
+      {steps.length > 0 ? (
       <section className="approved-quest-section">
         <h3 className="approved-quest-section-heading">{teacher ? 'Checklist' : 'Your checklist'}</h3>
         <ul className="approved-quest-checklist">
@@ -117,6 +118,7 @@ export function ApprovedQuestView({
           ))}
         </ul>
       </section>
+      ) : null}
 
       {/* ========== Written answers (+ empathy slot) ========== */}
       <section className="approved-quest-section">

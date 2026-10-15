@@ -73,12 +73,14 @@ export function tileForPatentRoute(row: {
   id: unknown
   guild?: unknown
   skill_name?: unknown
+  slug?: unknown
   steps?: unknown
 }): TileRow {
   return {
     id: String(row.id ?? ''),
     guild: String(row.guild ?? ''),
     skill_name: String(row.skill_name ?? ''),
+    slug: typeof row.slug === 'string' ? row.slug : null,
     wp_value: 0,
     steps: parseTileStepsJson(row.steps),
   }

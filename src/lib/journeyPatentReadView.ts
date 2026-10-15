@@ -23,6 +23,7 @@ import { selectStudentPatentPrimary } from './patentPlanRow'
 import { normalizePatentPlanStatus } from './patentPlanStatus'
 import { patentTileIdCandidates } from './patentTileQuery'
 import { supabase } from './supabase'
+import { isSiliconSignalLessonTile } from './siliconSignalLesson'
 
 export type JourneyPatentReadViewModel = {
   steps: string[]
@@ -129,6 +130,29 @@ export function buildJourneyPatentReadViewFromRows(
   const merged = fillPatentPlanFieldsFromRows(primary, allRows)
   const empathyRaw = pickField2EmpathySource(primary, allRows)
   const empathy = parseEmpathy(empathyRaw)
+
+  const hasWrittenSignalAnswers =
+    isSiliconSignalLessonTile(tile) &&
+    [merged.field_1, merged.field_3, merged.field_4, empathy.who, empathy.what_changed].some(
+      (v) => typeof v === 'string' && v.trim().length > 0,
+    )
+
+  if (isSiliconSignalLessonTile(tile) && !hasWrittenSignalAnswers) {
+    const uploadUrl = newestPacketUploadUrl(allRows) ?? primary.upload_url ?? null
+    return {
+      steps: [],
+      checks: [],
+      empathy,
+      answers: [
+        {
+          label: 'Silicon 1 demo',
+          value: 'Live micro:bit demo in class (shake, A, and B). No written patent answers.',
+        },
+      ],
+      uploadUrl: typeof uploadUrl === 'string' ? uploadUrl : null,
+      repeatNote: repeatNoteForTile(tile),
+    }
+  }
 
   const steps = checklistStepLabels(tile)
   const clen = steps.length

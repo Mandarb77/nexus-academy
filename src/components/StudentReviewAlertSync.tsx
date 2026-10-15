@@ -39,7 +39,7 @@ async function tileSkillName(tileId: string): Promise<string> {
 async function continueHrefForTile(tileId: string, step: PatentContinueStep): Promise<string> {
   const { data } = await supabase
     .from('tiles')
-    .select('id, guild, skill_name, steps')
+    .select('id, guild, skill_name, slug, steps')
     .eq('id', tileId)
     .maybeSingle()
   if (!data) return '/journey'

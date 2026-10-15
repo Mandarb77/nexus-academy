@@ -53,6 +53,8 @@ import {
   recordPromptsForTile,
   recordSubmitReady,
 } from '../lib/recordPrompts'
+import { isSiliconSignalLessonTile, SILICON_SIGNAL_TAB_TITLES } from '../lib/siliconSignalLesson'
+import { SiliconSignalLessonBody } from './SiliconSignalLessonBody'
 import '../patentLedger.css'
 
 type Props = {
@@ -274,6 +276,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const backRoute = guildBackRoute(tile.guild)
   const guildLabel = guildHeading(tile.guild).toUpperCase()
   const guildMod = skillTreeGuildModifier(tile.guild)
+  const signalLesson = isSiliconSignalLessonTile(tile)
 
   const field1DraftKey = `nexus:tile-patent-f1:${studentId}:${tile.id}`
   const empathyDraftKey = `nexus:tile-patent-empathy:${studentId}:${tile.id}`
@@ -398,11 +401,13 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
         return
       }
       phaseHydrateSigRef.current = ''
-      setPhase(1)
-      try {
-        sessionStorage.setItem(phaseKey, '1')
-      } catch {
-        /* ignore */
+      if (!isSiliconSignalLessonTile(tile)) {
+        setPhase(1)
+        try {
+          sessionStorage.setItem(phaseKey, '1')
+        } catch {
+          /* ignore */
+        }
       }
       setPlan({ id: '', status: 'none' })
       setChecks(Array(steps.length).fill(false))
@@ -527,19 +532,27 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       textHydratedRef.current = true
     }
 
-    const maxPh: 1 | 2 | 3 = !row.id
-      ? 1
-      : !canOpenWork
+    const maxPh: 1 | 2 | 3 = isSiliconSignalLessonTile(tile)
+      ? 3
+      : !row.id
         ? 1
-        : !checklistAppr && !(bypassApprovals && checklistSub)
-          ? 2
-          : 3
-    const serverPh = serverSuggestedPatentPhase({ primaryStage, planStatus, checklistApproved: checklistAppr })
+        : !canOpenWork
+          ? 1
+          : !checklistAppr && !(bypassApprovals && checklistSub)
+            ? 2
+            : 3
+    const serverPh = isSiliconSignalLessonTile(tile)
+      ? ((urlStep ?? 1) as 1 | 2 | 3)
+      : serverSuggestedPatentPhase({ primaryStage, planStatus, checklistApproved: checklistAppr })
     /* Stale `?step=1` from opening the plan must not pin kids after the teacher unlocks Work/Record. */
     const requested = urlStep != null && urlStep >= serverPh ? urlStep : serverPh
     const nextPhase = Math.min(Math.max(requested, 1), maxPh) as 1 | 2 | 3
     const sig = `${row.id}|${primaryStage}|${planStatus}|${checklistAppr}|${checklistSub}|${urlStep ?? ''}`
-    if (phaseHydrateSigRef.current !== sig && !(skipText && studentIsTypingInField())) {
+    if (
+      !isSiliconSignalLessonTile(tile) &&
+      phaseHydrateSigRef.current !== sig &&
+      !(skipText && studentIsTypingInField())
+    ) {
       phaseHydrateSigRef.current = sig
       setPhase(nextPhase)
       try {
@@ -559,7 +572,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       }
     }
     setInitialised(true)
-  }, [user?.id, tile.id, steps.length, field1DraftKey, empathyDraftKey, recordDraftKey, checklistDraftKey, phaseKey, urlStep, bypassApprovals, setSearchParams])
+  }, [user?.id, tile.id, tile.slug, steps.length, field1DraftKey, empathyDraftKey, recordDraftKey, checklistDraftKey, phaseKey, urlStep, bypassApprovals, setSearchParams])
 
   useEffect(() => {
     textHydratedRef.current = false
@@ -598,12 +611,12 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const uploadRequired = !bypassApprovals
 
   const maxPhase = useMemo((): 1 | 2 | 3 => {
-    if (previewBrowse) return 3
+    if (previewBrowse || signalLesson) return 3
     if (!planSubmitted) return 1
     if (!planApprovedForChecklist) return 1
     if (!checklistApproved && !(bypassApprovals && checklistSubmitted)) return 2
     return 3
-  }, [previewBrowse, planSubmitted, planApprovedForChecklist, checklistApproved, bypassApprovals, checklistSubmitted])
+  }, [previewBrowse, signalLesson, planSubmitted, planApprovedForChecklist, checklistApproved, bypassApprovals, checklistSubmitted])
 
   const prevMaxPhaseRef = useRef<1 | 2 | 3>(1)
   useEffect(() => {
@@ -611,7 +624,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   }, [tile.id])
 
   useEffect(() => {
-    if (!initialised) return
+    if (!initialised || signalLesson) return
     const prevMax = prevMaxPhaseRef.current
     prevMaxPhaseRef.current = maxPhase
     setPhase((p) => {
@@ -619,7 +632,12 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       if (maxPhase > prevMax) return maxPhase
       return p
     })
-  }, [initialised, maxPhase])
+  }, [initialised, maxPhase, signalLesson])
+
+  useEffect(() => {
+    if (!signalLesson || urlStep == null) return
+    setPhase(urlStep)
+  }, [signalLesson, urlStep])
 
   const goPhase = (p: 1 | 2 | 3) => {
     const cap = previewBrowse ? 3 : maxPhase
@@ -903,57 +921,116 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
       }
       /* Signature is persisted from the pad, not on the submit click. */
 
-      const tileIds = patentTileIdCandidates(tile.id).map((id) => String(id))
-      const { data: existingRows, error: existingErr } = await supabase
-        .from('skill_completions')
-        .select('id, status')
-        .eq('student_id', user.id)
-        .in('tile_id', tileIds)
-      if (existingErr) throw existingErr
-
-      const completions = (existingRows ?? []) as { id: string; status: string }[]
-      const returnedRow = completions.find((row) => row.status === 'returned')
-      const pendingRow = completions.find((row) => row.status === 'pending')
-      const approvedRow = completions.find((row) => row.status === 'approved')
-
-      if (approvedRow && !bypassApprovals) {
-        throw new Error('This quest is already approved.')
-      }
-
-      if (bypassApprovals) {
-        const target = approvedRow ?? pendingRow ?? returnedRow
-        if (target) {
-          const { error } = await supabase
-            .from('skill_completions')
-            .update({ status: 'approved', patent_id: pid })
-            .eq('id', target.id)
-          if (error) throw error
-        } else {
-          const { error } = await supabase
-            .from('skill_completions')
-            .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'approved', patent_id: pid })
-          if (error) throw error
-        }
-      } else if (returnedRow) {
-        const { data: updated, error } = await supabase
-          .from('skill_completions')
-          .update({ status: 'pending', patent_id: pid, wp_awarded: null, gold_awarded: null })
-          .eq('id', returnedRow.id)
-          .eq('status', 'returned')
-          .select('id, status')
-          .maybeSingle()
-        if (error) throw error
-        if (updated?.status !== 'pending') {
-          throw new Error('Could not resubmit this patent. It is still waiting for Mr. Cook.')
-        }
-      } else if (!pendingRow) {
-        const { error } = await supabase
-          .from('skill_completions')
-          .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'pending', patent_id: pid })
-        if (error) throw error
-      }
+      await upsertPacketSkillCompletion(pid)
       void refresh()
       showBanner(bypassApprovals ? 'Entry complete.' : 'Final entry submitted — awaiting teacher approval.', 'success')
+      window.setTimeout(() => navigate(backRoute), 1500)
+    } catch (e: unknown) {
+      setSubmitApprovalError(e instanceof Error ? e.message : 'Submit failed.')
+    } finally {
+      setSubmittingPatent(false)
+    }
+  }
+
+  const upsertPacketSkillCompletion = async (pid: string) => {
+    if (!user?.id) throw new Error('Sign in to submit.')
+    const tileIds = patentTileIdCandidates(tile.id).map((id) => String(id))
+    const { data: existingRows, error: existingErr } = await supabase
+      .from('skill_completions')
+      .select('id, status')
+      .eq('student_id', user.id)
+      .in('tile_id', tileIds)
+    if (existingErr) throw existingErr
+
+    const completions = (existingRows ?? []) as { id: string; status: string }[]
+    const returnedRow = completions.find((row) => row.status === 'returned')
+    const pendingRow = completions.find((row) => row.status === 'pending')
+    const approvedRow = completions.find((row) => row.status === 'approved')
+
+    if (approvedRow && !bypassApprovals) {
+      throw new Error('This quest is already approved.')
+    }
+
+    if (bypassApprovals) {
+      const target = approvedRow ?? pendingRow ?? returnedRow
+      if (target) {
+        const { error } = await supabase
+          .from('skill_completions')
+          .update({ status: 'approved', patent_id: pid })
+          .eq('id', target.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('skill_completions')
+          .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'approved', patent_id: pid })
+        if (error) throw error
+      }
+    } else if (returnedRow) {
+      const { data: updated, error } = await supabase
+        .from('skill_completions')
+        .update({ status: 'pending', patent_id: pid, wp_awarded: null, gold_awarded: null })
+        .eq('id', returnedRow.id)
+        .eq('status', 'returned')
+        .select('id, status')
+        .maybeSingle()
+      if (error) throw error
+      if (updated?.status !== 'pending') {
+        throw new Error('Could not resubmit this patent. It is still waiting for Mr. Cook.')
+      }
+    } else if (!pendingRow) {
+      const { error } = await supabase
+        .from('skill_completions')
+        .insert({ student_id: user.id, tile_id: tile.id, skill_key: tile.id, status: 'pending', patent_id: pid })
+      if (error) throw error
+    }
+  }
+
+  const onSubmitSignalDemo = async () => {
+    if (previewBrowse || !signalLesson) return
+    setSubmitApprovalError(null)
+    if (!user?.id) {
+      setSubmitApprovalError('Sign in to submit.')
+      return
+    }
+    setSubmittingPatent(true)
+    try {
+      let pid = plan.id
+      if (pid) {
+        const { error } = await supabase
+          .from('patents')
+          .update({
+            stage: 'packet',
+            status: 'approved',
+            field_1: patent.field1,
+            field_2: serializeEmpathy(empathy),
+            field_3: patent.field3,
+            field_4: patent.field4,
+          })
+          .eq('id', pid)
+        if (error) throw error
+      } else {
+        const { data, error } = await supabase
+          .from('patents')
+          .insert({
+            student_id: user.id,
+            tile_id: tile.id,
+            field_1: '',
+            field_2: '',
+            field_3: '',
+            field_4: '',
+            stage: 'packet',
+            status: 'approved',
+          })
+          .select('id')
+          .single()
+        if (error) throw error
+        pid = (data as { id: string }).id
+        setPlan({ id: pid, status: 'approved' })
+        planIdRef.current = pid
+      }
+      await upsertPacketSkillCompletion(pid)
+      void refresh()
+      showBanner('Demo submitted — waiting for your teacher to watch it.', 'success')
       window.setTimeout(() => navigate(backRoute), 1500)
     } catch (e: unknown) {
       setSubmitApprovalError(e instanceof Error ? e.message : 'Submit failed.')
@@ -1049,16 +1126,28 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
   const dateText = formatLedgerDate(planCreatedAt ?? new Date().toISOString())
   const entryText = entryNumber != null ? String(entryNumber).padStart(2, '0') : '___'
 
-  const tabs: { n: 1 | 2 | 3; numeral: string }[] = [
-    { n: 1, numeral: 'i' },
-    { n: 2, numeral: 'ii' },
-    { n: 3, numeral: 'iii' },
-  ]
+  const tabs: { n: 1 | 2 | 3; numeral: string }[] = signalLesson
+    ? [
+        { n: 1, numeral: '1' },
+        { n: 2, numeral: '2' },
+        { n: 3, numeral: '3' },
+      ]
+    : [
+        { n: 1, numeral: 'i' },
+        { n: 2, numeral: 'ii' },
+        { n: 3, numeral: 'iii' },
+      ]
 
   const workStatusText = guestBrowse
     ? 'Guest view'
     : previewBrowse
     ? 'Teacher preview'
+    : signalLesson
+    ? isApproved
+      ? 'Approved'
+      : isFinalPending
+        ? 'Waiting for teacher'
+        : 'Follow along — submit on page 3'
     : !planSubmitted
     ? 'Submit the plan first'
     : !planApprovedForChecklist
@@ -1080,8 +1169,9 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
               type="button"
               role="tab"
               aria-selected={phase === n}
-              disabled={!previewBrowse && n > maxPhase}
+              disabled={!previewBrowse && !signalLesson && n > maxPhase}
               className={`side-tab${phase === n ? ' active' : ''}`}
+              aria-label={signalLesson ? SILICON_SIGNAL_TAB_TITLES[n] : `Panel ${numeral}`}
               onClick={() => goPhase(n)}
             >
               <span className="tab-body" />
@@ -1300,35 +1390,39 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
           ) : null}
 
           {/* ── Panel i — The Plan ── */}
-          <div className={`panel${phase === 1 ? ' active' : ''}`} role="tabpanel">
+          <div className={`panel${phase === 1 ? ' active' : ''}`} role="tabpanel" hidden={phase !== 1}>
             {banner && phase === 1 ? (
               <div className={`status-banner ${banner.tone}`} role="status">
                 {banner.text}
               </div>
             ) : null}
-            {plan.status === 'pending' ? (
+            {signalLesson ? <SiliconSignalLessonBody page={1} /> : null}
+
+            {!signalLesson && plan.status === 'pending' ? (
               <div className="status-banner" role="status">
                 ⏳ Plan submitted — waiting for teacher approval.
               </div>
-            ) : plan.status === 'approved' ? (
+            ) : !signalLesson && plan.status === 'approved' ? (
               <div className="status-banner success" role="status">
                 ✓ Plan approved — your answers are recorded below. Open the Work tab.
               </div>
             ) : null}
 
-            {tile.tile_description?.trim() ? (
+            {!signalLesson && tile.tile_description?.trim() ? (
               <div className="ways-hint" style={{ borderTop: 'none', marginTop: 0 }}>
                 <strong style={{ display: 'block', marginBottom: '0.25rem' }}>Quest brief</strong>
                 <span className="quest-brief-body">{tile.tile_description.trim()}</span>
               </div>
             ) : null}
 
-            {content.recipientGuidance ? (
+            {!signalLesson && content.recipientGuidance ? (
               <div className="ways-hint" style={{ borderTop: 'none', marginTop: tile.tile_description?.trim() ? undefined : 0 }}>
                 {content.recipientGuidance}
               </div>
             ) : null}
 
+            {!signalLesson ? (
+            <>
             <div className="ledger-row">
               <span className="row-num">i.</span>
               <div className="row-body">
@@ -1438,16 +1532,22 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
               </button>
             ) : null}
             {planSubmitError ? <div className="status-banner returned" role="alert">{planSubmitError}</div> : null}
+            </>
+            ) : null}
           </div>
 
           {/* ── Panel ii — The Work ── */}
-          <div className={`panel${phase === 2 ? ' active' : ''}`} role="tabpanel">
+          <div className={`panel${phase === 2 ? ' active' : ''}`} role="tabpanel" hidden={phase !== 2}>
             {banner && phase === 2 ? (
               <div className={`status-banner ${banner.tone}`} role="status">
                 {banner.text}
               </div>
             ) : null}
 
+            {signalLesson ? <SiliconSignalLessonBody page={2} /> : null}
+
+            {!signalLesson ? (
+            <>
             <div className="cl-header">
               <span className="cl-progress">
                 {doneCount} of {steps.length} complete
@@ -1572,10 +1672,12 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                 </div>
               </>
             ) : null}
+            </>
+            ) : null}
           </div>
 
           {/* ── Panel iii — The Record ── */}
-          <div className={`panel${phase === 3 ? ' active' : ''}`} role="tabpanel">
+          <div className={`panel${phase === 3 ? ' active' : ''}`} role="tabpanel" hidden={phase !== 3}>
             {banner && phase === 3 ? (
               <div className={`status-banner ${banner.tone}`} role="status">
                 {banner.text}
@@ -1583,11 +1685,16 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
             ) : null}
             {isFinalPending ? (
               <div className="status-banner" role="status">
-                ⏳ Final entry submitted — waiting for teacher approval.
+                {signalLesson
+                  ? '⏳ Demo submitted — waiting for your teacher to watch it.'
+                  : '⏳ Final entry submitted — waiting for teacher approval.'}
               </div>
             ) : null}
 
-            {recordRows.map((row, idx) => {
+            {signalLesson ? <SiliconSignalLessonBody page={3} /> : null}
+
+            {!signalLesson
+              ? recordRows.map((row, idx) => {
               const value = recordFieldValue(recordPatentValues, row.field)
               const isLast = idx === recordRows.length - 1
               const multiline = row.multiline !== false
@@ -1624,9 +1731,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                   </div>
                 </div>
               )
-            })}
+            })
+              : null}
 
             {/* Delivery proof — photo/video of the finished piece, ideally with the recipient */}
+            {!signalLesson ? (
             <div className="ledger-row" style={{ borderBottom: 'none' }}>
               <span className="row-num">📷</span>
               <div className="row-body">
@@ -1668,9 +1777,11 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                 ) : null}
               </div>
             </div>
+            ) : null}
 
             {/* Signoff block */}
             <div className="signoff">
+              {!signalLesson ? (
               <div className="sc">
                 <div className="sc-label">Maker's declaration</div>
                 <SignaturePad
@@ -1687,6 +1798,7 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                   }}
                 />
               </div>
+              ) : null}
               <div className="sc">
                 <div className="sc-label">Teacher review</div>
                 <div className="wp-row">
@@ -1732,10 +1844,10 @@ export function PatentLedger({ tile, refresh, completionStatus }: Props) {
                   !canUseDb ||
                   submittingPatent ||
                   isFinalPending ||
-                  !recordSubmitReady(tile, patent) ||
-                  (!checklistApproved && !bypassApprovals)
+                  (!signalLesson && !recordSubmitReady(tile, patent)) ||
+                  (!signalLesson && !checklistApproved && !bypassApprovals)
                 }
-                onClick={() => void onSubmitRecord()}
+                onClick={() => void (signalLesson ? onSubmitSignalDemo() : onSubmitRecord())}
               >
                 {submittingPatent ? 'Submitting…' : 'Submit for teacher approval'}
               </button>

@@ -11,6 +11,7 @@ import { isPersonalGamePieceTile } from './gamePieceTile'
 import { isPopUpCardTile } from './popUpCardQuest'
 import { isStickerTile } from './stickerTile'
 import { isCustomTile } from './customTile'
+import { isSiliconSignalLessonTile } from './siliconSignalLesson'
 
 // =============================================================================
 // `getPatentRoute` — skill tile → patent wizard URL (or null)
@@ -22,6 +23,8 @@ export function getPatentRoute(tile: TileRow): string | null {
   /* Intentionally the same URL as game piece: one React page branches on tile id for Prism pop-up vs Forge piece. */
   if (isPopUpCardTile(tile)) return `/patent-game-piece/${encodeURIComponent(tile.id)}`
   if (isStickerTile(tile)) return `/patent-sticker/${encodeURIComponent(tile.id)}`
+  /* SIGNAL keeps a patent URL even with an empty checklist — lesson pages live in code. */
+  if (isSiliconSignalLessonTile(tile)) return `/patent-custom/${encodeURIComponent(tile.id)}`
   /* Quest Builder rows and embedded templates (e.g. T-shirt) share the generic patent component. */
   if (isCustomTile(tile)) return `/patent-custom/${encodeURIComponent(tile.id)}`
   return null

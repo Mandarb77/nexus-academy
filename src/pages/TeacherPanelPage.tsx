@@ -41,6 +41,7 @@ import { registerTeacherPendingRefresh, scheduleTeacherPendingRefresh } from '..
 import { supabaseErrorText } from '../lib/supabaseErrorText'
 import { patentTileIdCandidates } from '../lib/patentTileQuery'
 import type { TeacherSubmissionAlert } from '../lib/teacherSubmissionAlert'
+import { isSiliconSignalLessonTile, SILICON_SIGNAL_INBOX_LABEL } from '../lib/siliconSignalLesson'
 
 // =============================================================================
 // Types — Supabase row shapes + UI “acting” state for button spinners
@@ -49,6 +50,7 @@ import type { TeacherSubmissionAlert } from '../lib/teacherSubmissionAlert'
 type TileInfo = {
   guild: string
   skill_name: string
+  slug?: string | null
   wp_value: number
   gold_value: number
   wp_display?: string | null
@@ -162,6 +164,13 @@ const PATENT_INBOX_KIND_LABEL: Record<PatentInboxKind, string> = {
   plan: 'Plan',
   checklist: 'Checklist',
   packet: 'Packet',
+}
+
+function patentInboxKindLabel(item: PatentInboxItem): string {
+  if (item.kind === 'packet' && isSiliconSignalLessonTile({ slug: item.packet.tile?.slug })) {
+    return 'Demo'
+  }
+  return PATENT_INBOX_KIND_LABEL[item.kind]
 }
 
 function fallbackStudentName(displayName: string | null | undefined, studentId: string) {
@@ -280,7 +289,7 @@ function PatentReviewPane({
   onReturnPacket: (id: string) => void
   isActingSkill: (id: string, action: 'approve' | 'return') => boolean
 }) {
-  const kindLabel = PATENT_INBOX_KIND_LABEL[item.kind]
+  const kindLabel = patentInboxKindLabel(item)
   let approveLabel = 'Approve'
   let returnLabel = 'Return'
   let busyApprove = false
@@ -301,7 +310,8 @@ function PatentReviewPane({
     onApprove = () => onApproveChecklist(item.checklist.id)
     onReturn = () => onReturnChecklist(item.checklist.id)
   } else {
-    approveLabel = 'Approve packet'
+    const signalDemo = isSiliconSignalLessonTile({ slug: item.packet.tile?.slug })
+    approveLabel = signalDemo ? 'Approve demo' : 'Approve packet'
     busyApprove = isActingSkill(item.packet.id, 'approve')
     busyReturn = isActingSkill(item.packet.id, 'return')
     onApprove = () => onApprovePacket(item.packet.id)
@@ -392,7 +402,15 @@ function PatentReviewPane({
         ) : null}
 
         {item.kind === 'packet' ? (
-          item.packet.patent ? (
+          isSiliconSignalLessonTile({ slug: item.packet.tile?.slug }) ? (
+            <div className="teacher-panel-patent">
+              <p className="teacher-panel-patent-title">{SILICON_SIGNAL_INBOX_LABEL}</p>
+              <p className="teacher-panel-patent-copy">
+                Watch the live demo: shake, button A, then button B. Ask one question about the
+                code, then approve. There are no written patent answers on this tile.
+              </p>
+            </div>
+          ) : item.packet.patent ? (
             <div className="teacher-panel-patent">
               <p className="teacher-panel-patent-title">Patent packet</p>
               <dl className="teacher-panel-patent-dl">
@@ -613,7 +631,7 @@ export function TeacherPanelPage() {
     if (tileIds.length > 0) {
       const { data: tileRows, error: tErr } = await supabase
         .from('tiles')
-        .select('id, guild, skill_name, wp_value, gold_value, wp_display, gold_display')
+        .select('id, guild, skill_name, slug, wp_value, gold_value, wp_display, gold_display')
         .in('id', tileIds)
       if (tErr) {
         console.error('tiles for teacher panel:', tErr.message)
@@ -622,8 +640,11 @@ export function TeacherPanelPage() {
           tileById.set(t.id as string, {
             guild: t.guild as string,
             skill_name: t.skill_name as string,
+            slug: (t.slug as string | null) ?? null,
             wp_value: (t.wp_value as number) ?? 10,
             gold_value: (t.gold_value as number) ?? 10,
+            wp_display: (t.wp_display as string | null) ?? null,
+            gold_display: (t.gold_display as string | null) ?? null,
           })
         }
       }
@@ -1606,7 +1627,9 @@ export function TeacherPanelPage() {
         kind: 'packet' as const,
         createdAt: packet.created_at,
         studentName: fallbackStudentName(packet.display_name, packet.student_id),
-        skillName: packet.tile?.skill_name ?? 'Unknown skill',
+        skillName: isSiliconSignalLessonTile({ slug: packet.tile?.slug })
+          ? SILICON_SIGNAL_INBOX_LABEL
+          : (packet.tile?.skill_name ?? 'Unknown skill'),
         guild: packet.tile?.guild ?? null,
         packet,
       })),
@@ -1694,7 +1717,7 @@ export function TeacherPanelPage() {
                         onClick={() => setPatentInboxKey(item.key)}
                       >
                         <span className="teacher-panel-patent-inbox-kind">
-                          {PATENT_INBOX_KIND_LABEL[item.kind]}
+                          {patentInboxKindLabel(item)}
                         </span>
                         <span className="teacher-panel-patent-inbox-name">{item.studentName}</span>
                         <span className="teacher-panel-patent-inbox-tile">{item.skillName}</span>

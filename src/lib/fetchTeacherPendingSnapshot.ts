@@ -7,6 +7,7 @@
 
 import { isSupabaseConfigured, supabase } from './supabase'
 import type { TeacherSubmissionAlert } from './teacherSubmissionAlert'
+import { isSiliconSignalLessonTile, SILICON_SIGNAL_INBOX_LABEL } from './siliconSignalLesson'
 
 export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAlert[]> {
   if (!isSupabaseConfigured) return []
@@ -96,9 +97,11 @@ export async function fetchTeacherPendingSnapshot(): Promise<TeacherSubmissionAl
 
   const tileNameById = new Map<string, string>()
   if (tileIds.length > 0) {
-    const { data: tiles } = await supabase.from('tiles').select('id, skill_name').in('id', tileIds)
+    const { data: tiles } = await supabase.from('tiles').select('id, skill_name, slug').in('id', tileIds)
     for (const t of tiles ?? []) {
-      const name = (t.skill_name as string | null)?.trim()
+      const name = isSiliconSignalLessonTile({ slug: t.slug as string | null })
+        ? SILICON_SIGNAL_INBOX_LABEL
+        : (t.skill_name as string | null)?.trim()
       if (name) tileNameById.set(t.id as string, name)
     }
   }
