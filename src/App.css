@@ -7384,6 +7384,102 @@ body:has(.bench-chrome) {
   text-align: center;
 }
 
+.popup-event-gate {
+  align-items: start;
+  overflow: auto;
+}
+
+.popup-event-card {
+  width: min(94vw, 36rem);
+  margin: 1.5rem auto;
+}
+
+.popup-event-intro {
+  white-space: pre-line;
+}
+
+.popup-event-privacy {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--color-ink-secondary, #5c5346);
+}
+
+.popup-event-note {
+  margin: 0 0 1.1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--color-rule-strong, #8b7355);
+  background: rgba(255, 253, 248, 0.7);
+}
+
+.popup-event-note-title {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+}
+
+.popup-event-note ul {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.popup-event-note li {
+  margin: 0.35rem 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.popup-event-field {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.popup-event-prompt {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.popup-event-hint,
+.popup-event-short {
+  display: block;
+  margin: 0.25rem 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-ink-secondary, #5c5346);
+}
+
+.popup-event-short {
+  color: #8b2e1f;
+}
+
+.popup-event-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-rule-strong, #8b7355);
+  border-radius: 2px;
+  background: #fffdf8;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.teacher-event-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.teacher-event-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  margin: 0.45rem 0;
+  padding: 0.35rem 0;
+  border-bottom: 1px dotted var(--color-rule, #c8bc9e);
+}
+
 /* ============================================================
  * END TEXTURE LAYER
  * ============================================================ */

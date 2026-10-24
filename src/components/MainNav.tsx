@@ -108,6 +108,14 @@ export function MainNav({ variant = 'student' }: MainNavProps) {
           >
             Tools
           </NavLink>
+          <NavLink
+            to="/teacher/events"
+            className={({ isActive }) =>
+              `student-nav-link${isActive ? ' student-nav-link--active' : ''}`
+            }
+          >
+            Events
+          </NavLink>
 
           <button
             type="button"

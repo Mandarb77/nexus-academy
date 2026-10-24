@@ -40,6 +40,7 @@ import { TeacherShopPage } from './pages/TeacherShopPage'
 import { TeacherToolGlossaryPage } from './pages/TeacherToolGlossaryPage'
 import { TeacherBeyondTilesPage } from './pages/TeacherBeyondTilesPage'
 import { TeacherLearnToolsPage } from './pages/TeacherLearnToolsPage'
+import { TeacherEventsPage } from './pages/TeacherEventsPage'
 import { PatentGamePiecePage } from './pages/PatentGamePiecePage'
 import { PatentStickerPage } from './pages/PatentStickerPage'
 import { PatentCustomPage } from './pages/PatentCustomPage'
@@ -54,6 +55,7 @@ import { StudentReviewAlertHost } from './components/StudentReviewAlertHost'
 import { StudentReviewAlertSync } from './components/StudentReviewAlertSync'
 import { StudentIdleSession } from './components/StudentIdleSession'
 import { PreferredFirstNameGate } from './components/PreferredFirstNameGate'
+import { PopupEventGate } from './components/PopupEventGate'
 import { SchoolAccountGate } from './components/SchoolAccountGate'
 import './App.css'
 
@@ -100,6 +102,7 @@ export default function App() {
         <TeacherSubmissionAlertSync />
         <StudentIdleSession />
         <PreferredFirstNameGate />
+        <PopupEventGate />
         <SchoolAccountGate />
         <Routes>
           {/* ========== Public / entry ========== */}
@@ -256,6 +259,14 @@ export default function App() {
             element={
               <TeacherDashboardRoute>
                 <TeacherToolGlossaryPage />
+              </TeacherDashboardRoute>
+            }
+          />
+          <Route
+            path="/teacher/events"
+            element={
+              <TeacherDashboardRoute>
+                <TeacherEventsPage />
               </TeacherDashboardRoute>
             }
           />
