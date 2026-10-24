@@ -1,7 +1,36 @@
 -- Pop-up events (class-wide one-shot forms) + Quarter 1 Reflection seed (inactive).
--- Students cannot call teacher_grant_economy (it requires is_teacher()). Submit RPC
--- writes the response and the same teacher_economy_grants / profile balance change
--- in one transaction. grant_type 'event' marks these rows in the existing audit log.
+-- Production never received 20260804120000_teacher_economy_tools.sql, so create the
+-- grant audit table here if missing. Students cannot call teacher_grant_economy
+-- (it requires is_teacher()). Submit RPC writes the response and the same
+-- teacher_economy_grants / profile balance change in one transaction.
+
+create table if not exists public.teacher_economy_grants (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.profiles (id) on delete cascade,
+  wp_delta integer not null default 0,
+  gold_delta integer not null default 0,
+  reason text not null check (length(trim(reason)) between 1 and 500),
+  granted_by uuid not null references public.profiles (id) on delete restrict,
+  grant_type text not null default 'manual',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists teacher_economy_grants_created_at_idx
+  on public.teacher_economy_grants (created_at desc);
+
+create index if not exists teacher_economy_grants_student_id_idx
+  on public.teacher_economy_grants (student_id);
+
+alter table public.teacher_economy_grants enable row level security;
+
+drop policy if exists teacher_economy_grants_teacher_select on public.teacher_economy_grants;
+create policy teacher_economy_grants_teacher_select
+  on public.teacher_economy_grants
+  for select
+  to authenticated
+  using (public.is_teacher());
+
+grant select on public.teacher_economy_grants to authenticated;
 
 alter table public.teacher_economy_grants
   drop constraint if exists teacher_economy_grants_grant_type_check;
