@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MainNav } from '../components/MainNav'
 import { TeacherGradeBookExport } from '../components/TeacherGradeBookExport'
 import { TeacherStudentQuestAnswers } from '../components/TeacherStudentQuestAnswers'
+import { TeacherStudentSurveyResponses } from '../components/TeacherStudentSurveyResponses'
 import { TeacherStorylineWidget } from '../components/TeacherStorylineWidget'
 import { TeacherSubmissionAlertToggle } from '../components/TeacherSubmissionAlertToggle'
 import { useAuth } from '../contexts/AuthContext'
@@ -2200,6 +2201,17 @@ export function TeacherPanelPage() {
                       })}
                     </ul>
                   )}
+                </div>
+
+                <div className="card teacher-panel-student-block">
+                  <h3 className="teacher-panel-subheading">Class surveys</h3>
+                  <p className="muted teacher-panel-award-note">
+                    Reflections and pop-up events for comments and grading. Copy puts the
+                    questions and answers on the clipboard.
+                  </p>
+                  {selectedStudentId ? (
+                    <TeacherStudentSurveyResponses studentId={selectedStudentId} />
+                  ) : null}
                 </div>
 
                 <div className="card teacher-panel-student-block">

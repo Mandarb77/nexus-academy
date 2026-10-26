@@ -3433,6 +3433,20 @@ a.btn-primary {
   border-top: 1px solid var(--border);
 }
 
+.teacher-panel-survey-copy-all {
+  margin-bottom: 0.75rem;
+}
+
+.teacher-panel-survey-qa,
+.teacher-panel-survey-note {
+  margin-top: 0.85rem;
+}
+
+.teacher-panel-survey-note ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
 .teacher-panel-mini-main {
   display: flex;
   flex-direction: column;
